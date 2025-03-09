@@ -4,10 +4,9 @@ import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonParser;
+import com.mojang.datafixers.TypeRewriteRule;
 import dev.hugeblank.allium.Allium;
-import dev.hugeblank.allium.loader.Entrypoint;
-import dev.hugeblank.allium.loader.Manifest;
-import dev.hugeblank.allium.loader.Script;
+import dev.hugeblank.allium.loader.*;
 import net.fabricmc.loader.api.FabricLoader;
 import net.fabricmc.loader.api.ModContainer;
 import net.fabricmc.loader.api.metadata.CustomValue;
@@ -18,8 +17,11 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.*;
+import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Stream;
 
 public class FileHelper {
@@ -27,7 +29,7 @@ public class FileHelper {
       /allium
         /<unique dir name> | unique file name, bonus point if using the namespace ID
           /<libs and stuff>
-          manifest.json |  File containing key information about the script. ID, Name, Version, Entrypoint files
+          manifest.json |  File containing key information about the script. ID, Name, Version, Entrypoint locations
     */
 
     public static final Path SCRIPT_DIR = FabricLoader.getInstance().getGameDir().resolve(Allium.ID);
@@ -48,7 +50,7 @@ public class FileHelper {
         return SCRIPT_DIR;
     }
 
-    public static Set<Script> getValidDirScripts(Path p) {
+    public static Set<Script> getValidDirScripts(Path p, ScriptRegistry.EnvType containerEnvType) {
         Set<Script> out = new HashSet<>();
         try {
             Stream<Path> files = Files.list(p);
@@ -60,6 +62,7 @@ public class FileHelper {
                     try {
                         FileSystem fs = FileSystems.newFileSystem(scriptDir); // zip, tarball, whatever has a provider.
                         path = fs.getPath("/");
+                        fs.close();
                     } catch (IOException | ProviderNotFoundException e) {
                         return; // Just a file we can't read, ignore it and move on.
                     }
@@ -67,84 +70,93 @@ public class FileHelper {
                 try {
                     BufferedReader reader = Files.newBufferedReader(path.resolve(MANIFEST_FILE_NAME));
                     Manifest manifest = new Gson().fromJson(reader, Manifest.class);
-                    out.add(new Script(manifest, path));
+                    if (manifest.isComplete() && manifest.entrypoints().has(containerEnvType)) {
+                        out.add(new Script(manifest, path, containerEnvType));
+                    }
                 } catch (IOException e) {
                     Allium.LOGGER.error("Could not find " + MANIFEST_FILE_NAME  + " file on path " + scriptDir, e);
                 }
             });
+            files.close();
         } catch (IOException e) {
             Allium.LOGGER.error("Could not read from scripts directory", e);
         }
         return out;
     }
 
-    public static Set<Script> getValidModScripts() { // I have no idea if this works in production.
+    // TODO: Test in prod
+    public static Set<Script> getValidModScripts(ScriptRegistry.EnvType containerEnvType) {
         Set<Script> out = new HashSet<>();
         FabricLoader.getInstance().getAllMods().forEach((container) -> {
-            if (container.getMetadata().getCustomValue(Allium.ID) != null) {
-                ModMetadata metadata = container.getMetadata();
-                try { // Let's see if the value we're after is an object
-                    CustomValue.CvObject value = metadata.getCustomValue(Allium.ID).getAsObject();
-                    Manifest man = makeManifest( // Make a manifest using the default values, use optional args otherwise.
-                            value,
-                            metadata.getId(),
-                            metadata.getVersion().getFriendlyString(),
-                            metadata.getName()
-                    );
-                    if (man == null || man.entrypoints().valid()) { // Make sure the manifest exists and has an entrypoint
-                        Allium.LOGGER.error("Could not read manifest from script with ID {}", metadata.getId());
-                    } else {
-                        Script script = scriptFromContainer(man, container);
-                        if (script != null) {
+            ModMetadata metadata = container.getMetadata();
+            if (metadata.containsCustomValue(Allium.ID)) {
+                switch (metadata.getCustomValue(Allium.ID).getType()) {
+                    case OBJECT -> {
+                        CustomValue.CvObject value = metadata.getCustomValue(Allium.ID).getAsObject();
+                        Manifest man = makeManifest( // Make a manifest using the default values, use optional args otherwise.
+                                value,
+                                metadata.getId(),
+                                metadata.getVersion().getFriendlyString(),
+                                metadata.getName()
+                        );
+                        if (!man.isComplete()) { // Make sure the manifest exists and has an entrypoint
+                            Allium.LOGGER.error("Could not read manifest from script with ID {}", metadata.getId());
+                            return;
+                        }
+                        if (!man.entrypoints().has(containerEnvType)) {
+                            if (!man.entrypoints().get(containerEnvType).valid()) {
+                                Allium.LOGGER.error("Invalid {} entrypoint from script with ID {}", containerEnvType, metadata.getId());
+                                return;
+                            }
+                            Script script = scriptFromContainer(man, container, containerEnvType);
+                            if (script == null) {
+                                Allium.LOGGER.error("Could not find entrypoint(s) for script with ID {}", metadata.getId());
+                                return;
+                            }
                             out.add(script);
-                        } else {
-                            Allium.LOGGER.error("Could not find entrypoint(s) for script with ID {}", metadata.getId());
                         }
                     }
-                } catch (ClassCastException e) { // Not an object...
-                    try { // Maybe the value is an array?
+                    case ARRAY -> {
                         CustomValue.CvArray value = metadata.getCustomValue(Allium.ID).getAsArray();
                         int i = 0; // Index for developer to debug their mistakes
                         for (CustomValue v : value) { // For each array value
-                            try { // test for object
+                            if (v.getType() == CustomValue.CvType.OBJECT) {
                                 CustomValue.CvObject obj = v.getAsObject();
                                 Manifest man = makeManifest(obj); // No optional arguments here.
-                                if (man.isComplete()) {
-                                    Script script = scriptFromContainer(man, container);
+                                if (!man.isComplete()) {
+                                    Script script = scriptFromContainer(man, container, containerEnvType);
                                     if (script != null) {
                                         out.add(script);
                                     }
                                 } else { // a value was missing. Be forgiving, and continue parsing
-                                    Allium.LOGGER.warn("Malformed manifest at index " + i + " of allium array block in " +
-                                            "fabric.mod.json of mod '" + metadata.getId() + "'");
+                                    Allium.LOGGER.warn("Malformed manifest at index {} of allium array block in fabric.mod.json of mod '{}'", i, metadata.getId());
                                 }
                                 i++;
-                            } catch (ClassCastException g) { // was not object. Be forgiving, and continue parsing
-                                Allium.LOGGER.warn("Expected object at index " + i + " of allium array block in " +
-                                        "fabric.mod.json of mod '" + metadata.getId() + "'");
+                            } else {
+                                Allium.LOGGER.warn("Expected object at index {} of allium array block in fabric.mod.json of mod '{}'", i, metadata.getId());
                             }
                         }
-                    } catch (ClassCastException f) { // Not an array...!? Someone messed up.
-                        Allium.LOGGER.error("allium block for mod '" + metadata.getId() + "' not of type JSON Object or Array");
                     }
+                    default -> Allium.LOGGER.error("allium block for mod '{}' not of type JSON Object or Array", metadata.getId());
                 }
             }
         });
         return out;
     }
 
-    private static Script scriptFromContainer( Manifest man, ModContainer container) {
-        final Script[] out = new Script[1];
+    private static Script scriptFromContainer(Manifest man, ModContainer container, ScriptRegistry.EnvType containerEnvType) {
+        AtomicReference<Script> out = new AtomicReference<>();
         container.getRootPaths().forEach((path) -> {
-            if (path.resolve(man.entrypoints().getStatic()).toFile().exists()) {
+            if (path.resolve(man.entrypoints().get(containerEnvType).get(Entrypoint.Type.STATIC)).toFile().exists()) {
                 // This has an incidental safeguard in the event that if multiple root paths have the same script
                 // the most recent script loaded will just *overwrite* previous ones.
-                out[0] = new Script(man, path);
+                out.set(new Script(man, path, containerEnvType));
             }
         });
-        return out[0];
+        return out.get();
     }
 
+    // TODO: Move this method and the one below to bouquet.
     public static JsonElement getConfig(Script script) throws IOException {
         Path path = FileHelper.CONFIG_DIR.resolve(script.getId() + ".json");
         if (Files.exists(path)) {
@@ -168,18 +180,29 @@ public class FileHelper {
     }
 
     private static Manifest makeManifest(CustomValue.CvObject value, String optId, String optVersion, String optName) {
-        String id; String version; String name; CustomValue.CvObject entrypoint;
+        String id = value.get("id") == null ? optId : value.get("id").getAsString();
+        String version = value.get("version") == null ? optVersion : value.get("version").getAsString();
+        String name = value.get("name") == null ? optName : value.get("name").getAsString();
+        CustomValue.CvObject entrypoints = value.get("entrypoints") == null ? null : value.get("entrypoints").getAsObject();
+        AlliumEntrypointContainer alliumEntrypointContainer = makeEntrypointContainer(entrypoints);
 
-        id = value.get("id") == null ? optId : value.get("id").getAsString();
-        version = value.get("version") == null ? optVersion : value.get("version").getAsString();
-        name = value.get("name") == null ? optName : value.get("name").getAsString();
-        entrypoint = value.get("entrypoints") == null ? null : value.get("entrypoints").getAsObject();
-        if (entrypoint != null && entrypoint.containsKey("static")) {
-            String eStatic = entrypoint.containsKey("static") ? entrypoint.get("static").getAsString() : null;
-            String eDynamic = entrypoint.containsKey("dynamic") ? entrypoint.get("dynamic").getAsString() : null;
-            return new Manifest(id, version, name, new Entrypoint(eStatic, eDynamic));
-        } else {
-            return null;
+        return new Manifest(id, version, name, alliumEntrypointContainer);
+    }
+
+    private static AlliumEntrypointContainer makeEntrypointContainer(CustomValue.CvObject entrypointsObject) {
+        Map<ScriptRegistry.EnvType, Entrypoint> entrypointsMap = new HashMap<>();
+        for (ScriptRegistry.EnvType envType : ScriptRegistry.EnvType.values()) {
+            if (entrypointsObject.containsKey(envType.getKey())) {
+                CustomValue.CvObject entrypointObject = entrypointsObject.get(envType.getKey()).getAsObject();
+                Map<Entrypoint.Type, String> entrypointMap = new HashMap<>();
+                for (Entrypoint.Type type : Entrypoint.Type.values()) {
+                    if (entrypointObject.containsKey(type.getKey())) {
+                        entrypointMap.put(type, entrypointObject.get(type.getKey()).getAsString());
+                    }
+                }
+                entrypointsMap.put(envType, new Entrypoint(entrypointMap));
+            }
         }
+        return new AlliumEntrypointContainer(entrypointsMap);
     }
 }

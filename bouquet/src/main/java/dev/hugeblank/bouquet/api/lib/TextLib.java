@@ -2,23 +2,27 @@ package dev.hugeblank.bouquet.api.lib;
 
 import dev.hugeblank.allium.api.WrappedLuaLibrary;
 import dev.hugeblank.allium.loader.type.annotation.LuaWrapped;
-import eu.pb4.placeholders.api.parsers.ParserBuilder;
+import eu.pb4.placeholders.api.ParserContext;
+import eu.pb4.placeholders.api.parsers.TagParser;
 import net.minecraft.registry.BuiltinRegistries;
 import net.minecraft.text.Text;
 
-@LuaWrapped(name = "texts")
+@LuaWrapped(name = "text")
 public class TextLib implements WrappedLuaLibrary {
+
     @LuaWrapped(name = "empty")
     public Text EMPTY = Text.empty();
 
+    // See https://placeholders.pb4.eu/dev/parsing-placeholders/#placeholder-context
+
     @LuaWrapped
     public Text format(String input) {
-        return ParserBuilder.of().legacyAll().build().parseNode(input).toText();
+        return TagParser.DEFAULT.parseText(input, ParserContext.of());
     }
 
     @LuaWrapped
     public Text formatSafe(String input) {
-        return ParserBuilder.of().legacyAll().requireSafe().build().parseNode(input).toText();
+        return TagParser.DEFAULT_SAFE.parseText(input, ParserContext.of());
     }
 
     @LuaWrapped

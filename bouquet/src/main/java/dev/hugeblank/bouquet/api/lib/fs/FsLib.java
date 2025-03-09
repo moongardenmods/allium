@@ -2,6 +2,7 @@ package dev.hugeblank.bouquet.api.lib.fs;
 
 import dev.hugeblank.allium.api.WrappedLuaLibrary;
 import dev.hugeblank.allium.loader.Script;
+import dev.hugeblank.allium.loader.ScriptRegistry;
 import dev.hugeblank.allium.loader.type.annotation.CoerceToNative;
 import dev.hugeblank.allium.loader.type.annotation.LuaWrapped;
 import dev.hugeblank.allium.util.FileHelper;
@@ -29,7 +30,7 @@ public class FsLib implements WrappedLuaLibrary {
 
     // Creates a persistent file storage outside of the script, since the scripts path could be in a mod or zip
     // Files cannot be created in mods/zips from what I can tell.
-    public FsLib(Script script) {
+    public FsLib(Script script, ScriptRegistry.EnvType envType) {
         this(script, FileHelper.PERSISTENCE_DIR.resolve(script.getId()));
     }
 

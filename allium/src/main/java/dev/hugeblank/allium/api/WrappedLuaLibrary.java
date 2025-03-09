@@ -1,6 +1,8 @@
 package dev.hugeblank.allium.api;
 
 
+import dev.hugeblank.allium.loader.Script;
+import dev.hugeblank.allium.loader.ScriptRegistry;
 import dev.hugeblank.allium.loader.type.UserdataFactory;
 import dev.hugeblank.allium.loader.type.annotation.LuaWrapped;
 import me.basiqueevangelist.enhancedreflection.api.EClass;

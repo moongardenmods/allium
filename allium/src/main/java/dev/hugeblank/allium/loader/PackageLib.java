@@ -18,13 +18,15 @@ import java.util.List;
 @LuaWrapped(name="package")
 public class PackageLib implements WrappedLuaLibrary {
     private final Script script;
+    private final ScriptRegistry.EnvType envType;
     @LuaWrapped public final LuaTable loaders;
     @LuaWrapped public final LuaTable preload;
     @LuaWrapped public final LuaTable loaded;
     @LuaWrapped public String path;
 
-    public PackageLib(Script script) {
+    public PackageLib(Script script, ScriptRegistry.EnvType envType) {
         this.script = script;
+        this.envType = envType;
         this.path = "./?.lua;./?/init.lua";
         this.preload = new LuaTable();
         this.loaded = new LuaTable();
@@ -58,12 +60,12 @@ public class PackageLib implements WrappedLuaLibrary {
 
     private Varargs pathLoader(LuaState state, DebugFrame frame, Varargs args) throws LuaError, UnwindThrowable {
         String modStr = args.arg(1).checkString();
-        Entrypoint entrypoint = script.getManifest().entrypoints();
+        Entrypoint entrypoint = script.getManifest().entrypoints().get(envType);
         for (Path path : getPathsFromModule(script, modStr)) {
             try {
                 if ( // If the script is requiring its own static entrypoint from the dynamic one, give the value.
-                        entrypoint.hasType(Entrypoint.Type.STATIC) &&
-                                Files.isSameFile( path, script.getPath().resolve(entrypoint.getStatic()))
+                        entrypoint.has(Entrypoint.Type.STATIC) &&
+                                Files.isSameFile( path, script.getPath().resolve(entrypoint.get(Entrypoint.Type.STATIC)))
                 ) return ValueFactory.varargsOf(script.getModule(), ValueFactory.valueOf(path.toString()));
             } catch (IOException ignored) {}
         }
@@ -72,7 +74,7 @@ public class PackageLib implements WrappedLuaLibrary {
 
     private Varargs externScriptLoader(LuaState state, DebugFrame frame, Varargs args) throws LuaError, UnwindThrowable {
         String[] path = args.arg(1).checkString().split("\\.");
-        Script candidate = Script.getFromID(path[0]);
+        Script candidate = ScriptRegistry.getInstance(envType).getScript(path[0]);
         if (candidate != null) {
             if (!candidate.isInitialized()) {
                 candidate.initialize();
@@ -107,13 +109,13 @@ public class PackageLib implements WrappedLuaLibrary {
             if (!Files.exists(path)) return Constants.NIL;
             try {
                 // Do not allow entrypoints to get loaded from the path.
-                Entrypoint entrypoint = script.getManifest().entrypoints();
+                Entrypoint entrypoint = script.getManifest().entrypoints().get(envType);
                 boolean loadingEntrypoint = (
-                        entrypoint.containsDynamic() &&
-                                Files.isSameFile(path, script.getPath().resolve(entrypoint.getDynamic()))
+                        entrypoint.has(Entrypoint.Type.DYNAMIC) &&
+                                Files.isSameFile(path, script.getPath().resolve(entrypoint.get(Entrypoint.Type.DYNAMIC)))
                 ) || (
-                        entrypoint.containsStatic() &&
-                                Files.isSameFile(path, script.getPath().resolve(entrypoint.getStatic()))
+                        entrypoint.has(Entrypoint.Type.STATIC) &&
+                                Files.isSameFile(path, script.getPath().resolve(entrypoint.get(Entrypoint.Type.STATIC)))
                 );
 
                 if (loadingEntrypoint) {

@@ -6,7 +6,7 @@ pluginManagement {
     }
 }
 
-rootProject.name = "月華"
+rootProject.name = "Allium Dev"
 
 include("allium")
 include("bouquet")

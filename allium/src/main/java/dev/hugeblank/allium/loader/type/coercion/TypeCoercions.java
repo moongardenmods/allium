@@ -251,6 +251,22 @@ public class TypeCoercions {
             };
         });
 
+        TypeCoercions.registerComplexJavaToLua(Set.class, use -> {
+            if (!use.hasAnnotation(CoerceToNative.class)) return null;
+
+            EClassUse<?> componentUse = use.typeVariableValues().get(0).upperBound();
+
+            return set -> {
+                LuaTable table = new LuaTable();
+                int i = 0;
+                for (Object o : set) {
+                    table.rawset(i + 1, toLuaValue(o, componentUse));
+                    i++;
+                }
+                return table;
+            };
+        });
+
         TypeCoercions.registerComplexJavaToLua(Map.class, use -> {
             if (!use.hasAnnotation(CoerceToNative.class)) return null;
 
@@ -298,6 +314,22 @@ public class TypeCoercions {
                 }
 
                 return list;
+            };
+        });
+
+        TypeCoercions.registerLuaToJava(Set.class, klass -> {
+            EClass<?> componentType = klass.typeVariableValues().get(0).upperBound();
+
+            return (state, value) -> {
+                LuaTable table = value.checkTable();
+                int length = table.length();
+                Set<Object> set = new HashSet<>(length);
+
+                for (int i = 0; i < length; i++) {
+                    set.add(TypeCoercions.toJava(state, table.rawget(i + 1), componentType));
+                }
+
+                return set;
             };
         });
 

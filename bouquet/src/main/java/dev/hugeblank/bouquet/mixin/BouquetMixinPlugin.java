@@ -10,7 +10,7 @@ import org.spongepowered.asm.mixin.extensibility.IMixinInfo;
 import java.util.List;
 import java.util.Set;
 
-public class AlliumMixinPlugin implements IMixinConfigPlugin {
+public class BouquetMixinPlugin implements IMixinConfigPlugin {
     public static final boolean QUILT_LOADED = FabricLoader.getInstance().isModLoaded("quilt_base");
     public static final Logger LOGGER = LoggerFactory.getLogger("AlliumMixinPlugin");
 

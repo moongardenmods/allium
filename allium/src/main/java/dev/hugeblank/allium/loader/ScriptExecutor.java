@@ -8,51 +8,59 @@ import org.squiddev.cobalt.function.LuaFunction;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.file.Files;
+import java.nio.file.Path;
 
 public class ScriptExecutor extends EnvironmentManager {
     protected final Script script;
+    protected final Path path;
+    protected final Entrypoint entrypoint;
 
-    public ScriptExecutor(Script script) {
+    public ScriptExecutor(Script script, Path path, ScriptRegistry.EnvType envType, Entrypoint entrypoint) {
+        super();
         this.script = script;
-        createEnvironment(script);
+        this.path = path;
+        this.entrypoint = entrypoint;
+        createEnvironment(script, envType);
     }
 
     public LuaState getState() {
         return state;
     }
 
-    public Varargs initialize(@Nullable InputStream sMain, @Nullable InputStream dMain) throws Throwable {
-        Entrypoint entrypoints = script.getManifest().entrypoints();
+    public Varargs initialize() throws Throwable {
         LuaFunction staticFunction;
         LuaFunction dynamicFunction;
-        switch (entrypoints.getType()) {
-            case STATIC -> {
-                staticFunction = this.load(sMain, script.getId());
-                return LuaThread.runMain(state, staticFunction);
-            }
-            case DYNAMIC -> {
-                dynamicFunction = this.load(dMain, script.getId());
-                return LuaThread.runMain(state, dynamicFunction);
-            }
-            case BOTH -> {
-                staticFunction = this.load(sMain, script.getId() + ":static");
-                dynamicFunction = this.load(dMain, script.getId() + ":dynamic");
-                Varargs out = LuaThread.runMain(state, staticFunction);
-                LuaThread.runMain(state, dynamicFunction);
-                return out;
-            }
+        if (entrypoint.has(Entrypoint.Type.STATIC) && entrypoint.has(Entrypoint.Type.DYNAMIC)) {
+            staticFunction = this.load(getInputStream(Entrypoint.Type.STATIC), script.getId() + ":static");
+            dynamicFunction = this.load(getInputStream(Entrypoint.Type.DYNAMIC), script.getId() + ":dynamic");
+            Varargs out = LuaThread.runMain(state, staticFunction);
+            LuaThread.runMain(state, dynamicFunction);
+            return out;
+        } else if (entrypoint.has(Entrypoint.Type.STATIC)) {
+            staticFunction = this.load(getInputStream(Entrypoint.Type.STATIC), script.getId());
+            return LuaThread.runMain(state, staticFunction);
+        } else if (entrypoint.has(Entrypoint.Type.DYNAMIC)) {
+            dynamicFunction = this.load(getInputStream(Entrypoint.Type.DYNAMIC), script.getId());
+            return LuaThread.runMain(state, dynamicFunction);
         }
         // This should be caught sooner, but who knows maybe a dev (hugeblank) will come along and mess something up
         throw new Exception("Expected either static or dynamic entrypoint, got none");
     }
 
-    public Varargs reload(InputStream dynamic) throws LuaError, CompileException, IOException {
-        Entrypoint entrypoint = script.getManifest().entrypoints();
-        if (entrypoint.hasType(Entrypoint.Type.DYNAMIC)) {
-            LuaFunction dynamicFunction = this.load(dynamic, script.getId());
+
+    public Varargs reload() throws LuaError, CompileException, IOException {
+        if (entrypoint.has(Entrypoint.Type.DYNAMIC)) {
+            LuaFunction dynamicFunction = this.load(getInputStream(Entrypoint.Type.DYNAMIC), script.getId());
             return LuaThread.runMain(state, dynamicFunction);
         }
         return null;
+    }
+
+    private InputStream getInputStream(Entrypoint.Type entrypointType) throws IOException {
+        return entrypoint.has(entrypointType) ?
+                Files.newInputStream(path.resolve(entrypoint.get(entrypointType))) :
+                null;
     }
 
     public LuaFunction load(InputStream stream, String name) throws CompileException, IOException, LuaError {

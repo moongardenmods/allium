@@ -23,10 +23,8 @@ events.common.BLOCK_INTERACT:register(script, function(state, world, pos, player
     local mainHandStack = player:getEquippedStack(EquipmentSlot.MAINHAND) -- Get the main hand itemstack of the player
     -- Check if the block name has 'concrete_powder' in it, then check if the main hand is holding a water bottle
     if concrete:find("concrete_powder") and mainHandStack:getOrDefault(DataComponentTypes.POTION_CONTENTS, PotionContentsComponent.DEFAULT):matches(Potions.WATER) then
-        -- Replace the powder block with the concrete variant
-        world:setBlockState(pos, Registries.BLOCK:get(Identifier.of("minecraft:"..concrete:gsub("_powder", ""))):getDefaultState())
-        -- Spawn some particles
-        if world:isClient() then
+        if not world:isClient() then
+            -- Spawn some particles
             world:spawnParticles(ParticleTypes.SPLASH,
                     pos:getX() + world.random:nextDouble(),
                     pos:getY() + world.random:nextDouble(),
@@ -34,6 +32,10 @@ events.common.BLOCK_INTERACT:register(script, function(state, world, pos, player
                     1, 0, 0, 0, 1
             )
         end
+
+        -- Replace the powder block with the concrete variant
+        world:setBlockState(pos, Registries.BLOCK:get(Identifier.of("minecraft:"..concrete:gsub("_powder", ""))):getDefaultState())
+
         -- Play sound effects
         world:playSound(nil, pos:getX(), pos:getY(), pos:getZ(), SoundEvents.ITEM_BOTTLE_EMPTY, SoundCategory.BLOCKS, 1, 1)
         world:playSound(nil, pos:getX(), pos:getY(), pos:getZ(), SoundEvents.ENTITY_GENERIC_SPLASH, SoundCategory.BLOCKS, 1, 1)

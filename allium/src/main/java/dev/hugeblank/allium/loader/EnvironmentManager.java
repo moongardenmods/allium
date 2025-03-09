@@ -23,7 +23,7 @@ public class EnvironmentManager {
         this.state = new LuaState();
     }
 
-    protected void createEnvironment(Script script) {
+    protected void createEnvironment(Script script, ScriptRegistry.EnvType envType) {
         LuaTable globals = state.globals();
         BaseLib.add(globals);
         try {
@@ -44,7 +44,7 @@ public class EnvironmentManager {
         globals.rawset( "print", new PrintMethod(script) );
         globals.rawset( "_HOST", ValueFactory.valueOf(Allium.ID + "_" + Allium.VERSION) );
 
-        INITIALIZERS.forEach(initializer -> loadLibrary(script, state, globals, initializer.init(script)));
+        INITIALIZERS.forEach(initializer -> loadLibrary(script, state, globals, initializer.init(script, envType)));
         LIBRARIES.forEach(library -> loadLibrary(script, state, globals, library));
     }
 

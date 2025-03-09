@@ -7,10 +7,7 @@ import dev.hugeblank.allium.util.ClassFieldBuilder;
 import org.objectweb.asm.ClassWriter;
 import org.objectweb.asm.Handle;
 import org.objectweb.asm.Type;
-import org.squiddev.cobalt.LuaState;
-import org.squiddev.cobalt.LuaValue;
-import org.squiddev.cobalt.ValueFactory;
-import org.squiddev.cobalt.Varargs;
+import org.squiddev.cobalt.*;
 import org.squiddev.cobalt.function.Dispatch;
 import org.squiddev.cobalt.function.LuaFunction;
 
@@ -113,8 +110,7 @@ public class ProxyGenerator {
         m.visitFieldInsn(GETFIELD, className, FUNCTION_FIELD_NAME, Type.getDescriptor(LuaFunction.class));
         m.visitVarInsn(ALOAD, varPrefix);
         m.visitMethodInsn(INVOKESTATIC, Type.getInternalName(ValueFactory.class), "varargsOf", "([Lorg/squiddev/cobalt/LuaValue;)Lorg/squiddev/cobalt/Varargs;", false);
-        m.visitMethodInsn(INVOKESTATIC, Type.getInternalName(Dispatch.class), "invoke", "(Lorg/squiddev/cobalt/LuaState;Lorg/squiddev/cobalt/LuaValue;Lorg/squiddev/cobalt/Varargs;)Lorg/squiddev/cobalt/Varargs;", false);
-
+        m.visitMethodInsn(INVOKESTATIC, Type.getInternalName(ProxyGenerator.class), "dispatch", "(Lorg/squiddev/cobalt/LuaState;Lorg/squiddev/cobalt/LuaValue;Lorg/squiddev/cobalt/Varargs;)Lorg/squiddev/cobalt/Varargs;", false);
         if (!isVoid) {
             m.visitMethodInsn(INVOKEVIRTUAL, Type.getInternalName(Varargs.class), "first", "()Lorg/squiddev/cobalt/LuaValue;", false);
             fields.storeAndGet(m, method.returnType().upperBound().wrapPrimitive(), EClass.class);
@@ -154,6 +150,12 @@ public class ProxyGenerator {
             return (BiFunction<LuaState, LuaFunction, Object>) klass.getMethod("getFactoryMethod").invoke(null);
         } catch (ReflectiveOperationException e) {
             throw new RuntimeException("Couldn't get factory method", e);
+        }
+    }
+
+    public static Varargs dispatch(LuaState state, LuaValue value, Varargs args) throws UnwindThrowable, LuaError {
+        synchronized (state) {
+            return Dispatch.invoke(state, value, args);
         }
     }
 }

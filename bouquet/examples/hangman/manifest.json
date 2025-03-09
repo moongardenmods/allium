@@ -3,6 +3,8 @@
   "version": "1.0.0",
   "name": "Hangman",
   "entrypoints": {
-    "static":"main.lua"
+    "common": {
+      "static":"main.lua"
+    }
   }
 }

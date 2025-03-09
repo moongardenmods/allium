@@ -3,6 +3,8 @@
   "version": "1.0.0",
   "name": "Wetworks",
   "entrypoints": {
-    "dynamic": "wetworks.lua"
+    "common": {
+      "dynamic": "wetworks.lua"
+    }
   }
 }
