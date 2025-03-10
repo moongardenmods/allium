@@ -1,6 +1,6 @@
 # <img src="logos/logo.png" alt="Allium Logo" width="300"/>
 
-[![Github Stars](https://img.shields.io/github/stars/hugeblank/allium?color=yellow&label=Stars&logo=github)](https://github.com/hugeblank/allium/stargazers) ![Modrinth Downloads](https://img.shields.io/modrinth/dt/allium?color=00AF5C&label=modrinth&style=flat&logo=modrinth) [![Gitpod ready-to-code](https://img.shields.io/badge/Gitpod-ready--to--code-908a85?logo=gitpod)](https://gitpod.io/#https://github.com/hugeblank/allium)
+[![Github Stars](https://img.shields.io/github/stars/hugeblank/allium?color=yellow&label=Stars&logo=github)](https://github.com/hugeblank/allium/stargazers) ![Modrinth Downloads](https://img.shields.io/modrinth/dt/allium?color=00AF5C&label=modrinth&style=flat&logo=modrinth)
 
 Lua script loader for Java Minecraft.
 
