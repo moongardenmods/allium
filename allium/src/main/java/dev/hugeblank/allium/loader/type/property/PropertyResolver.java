@@ -77,17 +77,24 @@ public final class PropertyResolver {
                     consumer.accept(method);
                 }
 
-                for (var clazz : sourceClass.allSuperclasses()) {
+                for (var clazz : sourceClass.allInterfaces()) {
                     mappedName = Allium.MAPPINGS.getYarn(Mappings.asMethod(clazz, method)).split("#")[1];
                     if (mappedName.equals(name) || mappedName.equals("m_" + methodName)) {
                         consumer.accept(method);
                     }
                 }
 
-                for (var clazz : sourceClass.allInterfaces()) {
+                for (var clazz : sourceClass.allSuperclasses()) {
                     mappedName = Allium.MAPPINGS.getYarn(Mappings.asMethod(clazz, method)).split("#")[1];
                     if (mappedName.equals(name) || mappedName.equals("m_" + methodName)) {
                         consumer.accept(method);
+                    }
+
+                    for (var iface : clazz.allInterfaces()) {
+                        mappedName = Allium.MAPPINGS.getYarn(Mappings.asMethod(iface, method)).split("#")[1];
+                        if (mappedName.equals(name) || mappedName.equals("m_" + methodName)) {
+                            consumer.accept(method);
+                        }
                     }
                 }
             }
