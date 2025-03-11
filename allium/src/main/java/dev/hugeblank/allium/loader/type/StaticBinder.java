@@ -29,7 +29,7 @@ public final class StaticBinder {
         LuaFunction getClassFunc = createGetClassFunction(clazz);
         LuaTable metatable = new LuaTable();
 
-        MetatableUtils.applyPairs(metatable, clazz, cachedProperties);
+        MetatableUtils.applyPairs(metatable, clazz, cachedProperties, false);
 
         metatable.rawset("__index", LibFunction.create((state, arg1, arg2) -> {
             if (arg2.isString()) {
@@ -51,7 +51,8 @@ public final class StaticBinder {
                     return cachedProperty.get(name, state, null, false);
             }
 
-            LuaValue output = MetatableUtils.getIndexMetamethod(clazz, state, arg1, arg2);
+            EMethod indexImpl = clazz.methods().stream().filter(x -> x.isStatic() && x.hasAnnotation(LuaIndex.class)).findAny().orElse(null);
+            LuaValue output = MetatableUtils.getIndexMetamethod(clazz, indexImpl, state, arg1, arg2);
             if (output != null) {
                 return output;
             }

@@ -11,6 +11,7 @@ import me.basiqueevangelist.enhancedreflection.api.EClass;
 import me.basiqueevangelist.enhancedreflection.api.EMember;
 import me.basiqueevangelist.enhancedreflection.api.EMethod;
 import me.basiqueevangelist.enhancedreflection.api.typeuse.EClassUse;
+import org.jetbrains.annotations.Nullable;
 import org.squiddev.cobalt.*;
 import org.squiddev.cobalt.function.LibFunction;
 import org.squiddev.cobalt.function.VarArgFunction;
@@ -18,12 +19,12 @@ import org.squiddev.cobalt.function.VarArgFunction;
 import java.lang.reflect.InvocationTargetException;
 import java.util.Iterator;
 import java.util.Map;
+import java.util.function.Supplier;
 import java.util.stream.Stream;
 
 
 public class MetatableUtils {
-    public static <T> LuaValue getIndexMetamethod(EClass<T> clazz, LuaState state, LuaValue table, LuaValue key) throws LuaError {
-        EMethod indexImpl = clazz.methods().stream().filter(x -> x.isStatic() && x.hasAnnotation(LuaIndex.class)).findAny().orElse(null);
+    public static <T> LuaValue getIndexMetamethod(EClass<T> clazz, @Nullable EMethod indexImpl, LuaState state, LuaValue table, LuaValue key) throws LuaError {
         if (indexImpl != null) {
             var parameters = indexImpl.parameters();
             try {
@@ -57,11 +58,21 @@ public class MetatableUtils {
         return null;
     }
 
-    public static <T> void applyPairs(LuaTable metatable, EClass<T> clazz, Map<String, PropertyData<? super T>> cachedProperties) {
-        metatable.rawset("__pairs", LibFunction.create((state) -> {
+    public static <T> void applyPairs(LuaTable metatable, EClass<T> clazz, Map<String, PropertyData<? super T>> cachedProperties, boolean isBound) {
+        metatable.rawset("__pairs", LibFunction.create((state, arg1) -> {
             Stream.Builder<EMember> memberBuilder = Stream.builder();
             clazz.methods().forEach(memberBuilder);
             clazz.fields().forEach(memberBuilder);
+            T instance;
+            if (isBound) {
+                try {
+                    instance = clazz.cast(TypeCoercions.toJava(state, arg1, clazz));
+                } catch (InvalidArgumentException e) {
+                    throw new LuaError(e);
+                }
+            } else {
+                instance = null;
+            }
             Stream<Varargs> valueStream = memberBuilder.build().filter((member)->
                     !clazz.hasAnnotation(LuaWrapped.class) ||
                             (
@@ -88,8 +99,8 @@ public class MetatableUtils {
                     return ValueFactory.varargsOf(LuaString.valueOf(memberName), propertyData.get(
                             memberName,
                             state,
-                            null,
-                            false
+                            instance,
+                            isBound
                     ));
                 } catch (LuaError e) {
                     // I have no idea how this could happen, so it'll be interesting if we get an issue

@@ -35,10 +35,12 @@ public class UserdataFactory<T> {
     private final EClass<T> clazz;
     private final LuaTable metatable;
     private @Nullable LuaTable boundMetatable;
+    private final @Nullable EMethod indexImpl;
     private final @Nullable EMethod newIndexImpl;
 
     protected UserdataFactory(EClass<T> clazz) {
         this.clazz = clazz;
+        this.indexImpl = tryFindOp(LuaIndex.class, 1, "get");
         this.newIndexImpl = tryFindOp(null, 2, "set", "put");
         this.metatable = createMetatable(false);
     }
@@ -87,7 +89,7 @@ public class UserdataFactory<T> {
             }
         });
 
-        MetatableUtils.applyPairs(metatable, clazz, cachedProperties);
+        MetatableUtils.applyPairs(metatable, clazz, cachedProperties, isBound);
 
         metatable.rawset("__index", new VarArgFunction() {
 
@@ -107,7 +109,7 @@ public class UserdataFactory<T> {
                     cachedProperties.put(name, cachedProperty);
                 }
                 if (cachedProperty == EmptyData.INSTANCE) {
-                    LuaValue output = MetatableUtils.getIndexMetamethod(clazz, state, args.arg(1), args.arg(2));
+                    LuaValue output = MetatableUtils.getIndexMetamethod(clazz, indexImpl, state, args.arg(1), args.arg(2));
                     if (output != null) {
                         return output;
                     }
