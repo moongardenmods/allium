@@ -24,7 +24,7 @@ public final class PropertyResolver {
 
         collectMethods(clazz, clazz.methods(), name, isStatic, foundMethods::add);
 
-        if (foundMethods.size() > 0)
+        if (!foundMethods.isEmpty())
             return new MethodData<>(clazz, foundMethods, name, isStatic);
 
         EMethod getter = findMethod(clazz, clazz.methods(), "get" + StringUtils.capitalize(name),
