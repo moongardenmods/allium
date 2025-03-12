@@ -1,0 +1,10 @@
+{
+  "id": "script_a",
+  "version": "1.0.0",
+  "name": "Script A",
+  "entrypoints": {
+    "common": {
+      "dynamic": "main.lua"
+    }
+  }
+}

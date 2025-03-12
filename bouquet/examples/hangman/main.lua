@@ -8,9 +8,10 @@ local words = require("words")
 local CommandManager = require("net.minecraft.server.command.CommandManager") -- We need the java command manager for creating commands.
 local arguments = command.arguments -- Create shortcut for command argument types
 
+local active = {}
+
 local leaderboard = {}
 
-local active = {}
 
 do -- Load the leaderboard from csv if present
     if fs.exists("leaderboard.csv") then
