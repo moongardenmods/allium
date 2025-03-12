@@ -1,6 +1,7 @@
 package dev.hugeblank.allium.loader;
 
 import com.google.common.collect.Sets;
+import org.squiddev.cobalt.LuaState;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -15,11 +16,13 @@ public class ScriptRegistry {
     private static final Map<net.fabricmc.api.EnvType, EnvType> TYPEMAP = new HashMap<>();
 
     private final EnvType envType;
-    private final Map<String, Script> scripts;
+    private final Map<String, Script> fromId;
+    private final Map<LuaState, Script> fromState;
 
     private ScriptRegistry(EnvType envType) {
         this.envType = envType;
-        this.scripts = new HashMap<>();
+        this.fromId = new HashMap<>();
+        this.fromState = new HashMap<>();
     }
 
     public void reloadAll() {
@@ -28,16 +31,17 @@ public class ScriptRegistry {
 
     public void registerScript(Script script) {
         String id = script.getId();
-        if (!scripts.containsKey(id)) {
-            scripts.put(id, script);
+        if (!fromId.containsKey(id)) {
+            fromId.put(id, script);
+            fromState.put(script.getExecutor().getState(), script);
         } else {
             throw new RuntimeException("Script with ID is already loaded!");
         }
     }
 
     public void unloadScript(String name) {
-        if (scripts.containsKey(name)) {
-            scripts.get(name).unload();
+        if (fromId.containsKey(name)) {
+            fromId.get(name).unload();
         }
     }
 
@@ -46,19 +50,27 @@ public class ScriptRegistry {
     }
 
     public boolean hasScript(String name) {
-        return scripts.containsKey(name);
+        return fromId.containsKey(name);
+    }
+
+    public boolean hasScript(LuaState state) {
+        return fromState.containsKey(state);
     }
 
     public Script getScript(String name) {
-        return scripts.get(name);
+        return fromId.get(name);
+    }
+
+    public Script getScript(LuaState state) {
+        return fromState.get(state);
     }
 
     public void forEach(Consumer<Script> callback) {
-        scripts.forEach((id, script) -> callback.accept(script));
+        fromId.forEach((id, script) -> callback.accept(script));
     }
 
     public Set<Script> getScripts() {
-        return Sets.newHashSet(scripts.values());
+        return Sets.newHashSet(fromId.values());
     }
 
     public static ScriptRegistry getInstance(EnvType type) {

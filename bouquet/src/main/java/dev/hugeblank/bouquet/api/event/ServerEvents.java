@@ -3,6 +3,7 @@ package dev.hugeblank.bouquet.api.event;
 import dev.hugeblank.allium.loader.type.annotation.LuaWrapped;
 import net.minecraft.util.Identifier;
 
+@LuaWrapped
 public class ServerEvents implements Events {
 
     @LuaWrapped public static final SimpleEventType<ServerEventHandlers.ChatMessage> CHAT_MESSAGE;

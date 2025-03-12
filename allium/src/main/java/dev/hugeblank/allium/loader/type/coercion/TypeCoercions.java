@@ -355,12 +355,6 @@ public class TypeCoercions {
                 return map;
             };
         });
-
-        TypeCoercions.registerLuaToJava(Identifier.class, (state, value) -> {
-            if (!value.isString()) return null;
-
-            return Identifier.of(value.checkString());
-        });
     }
 
     private static <T> T suppressError(SupplierThrowsLuaError<T> checkValue) {

@@ -1,5 +1,7 @@
 package dev.hugeblank.allium.loader.type;
 
+import dev.hugeblank.allium.Allium;
+import dev.hugeblank.allium.loader.ScriptRegistry;
 import dev.hugeblank.allium.loader.type.coercion.TypeCoercions;
 import dev.hugeblank.allium.util.ArgumentUtils;
 import dev.hugeblank.allium.util.JavaHelpers;
@@ -32,6 +34,13 @@ public final class UDFFunctions<T> extends VarArgFunction {
 
     @Override
     public Varargs invoke(LuaState state, Varargs args) throws LuaError {
+//        if (Allium.DEVELOPMENT) { // Output the script with which the invoking state belongs to (common scripts only)
+//            Allium.LOGGER.info("{} {}.{}",
+//                    ScriptRegistry.COMMON.hasScript(state) ? ScriptRegistry.COMMON.getScript(state).getId() : "ignore",
+//                    clazz.name(),
+//                    name
+//            );
+//        }
         List<String> paramList = new ArrayList<>(); // String for displaying errors more smartly
         StringBuilder error = new StringBuilder("Could not find parameter match for called function \"" +
             name + "\" for \"" + clazz.name() + "\"" +
