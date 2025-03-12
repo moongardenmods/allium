@@ -39,7 +39,7 @@ Allium's logos are under the same license as the rest of the project. Feel free 
 ## Contributing
 Allium is broken up into 2 gradle subprojects that each build into their own jars. When making a pull request please
 make sure to use the template that corresponds to which project you're contributing to (TODO). If you'd like to discuss
-contribution please feel free to join the #allium-dev channel of [hugeblank's discord](https://discord.gg/sYps2KU2P9).
+contribution please feel free to join the #allium-dev channel of [hugeblank's discord](https://discord.gg/rWSaP222G9).
 
 ### Allium
 Found in the `allium` directory, this is the bare-minimum necessary for a Lua script to be run in the game.
