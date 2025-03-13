@@ -58,15 +58,18 @@ public class PackageLib implements WrappedLuaLibrary {
         return Constants.NIL;
     }
 
+    private static boolean isSameFile(Path path, Script script, Entrypoint entrypoint, Entrypoint.Type type) throws IOException {
+        return entrypoint.has(type) && Files.isSameFile( path, script.getPath().resolve(entrypoint.get(type)));
+    }
+
     private Varargs pathLoader(LuaState state, DebugFrame frame, Varargs args) throws LuaError, UnwindThrowable {
         String modStr = args.arg(1).checkString();
         Entrypoint entrypoint = script.getManifest().entrypoints().get(envType);
         for (Path path : getPathsFromModule(script, modStr)) {
             try {
-                if ( // If the script is requiring its own static entrypoint from the dynamic one, give the value.
-                        entrypoint.has(Entrypoint.Type.STATIC) &&
-                                Files.isSameFile( path, script.getPath().resolve(entrypoint.get(Entrypoint.Type.STATIC)))
-                ) return ValueFactory.varargsOf(script.getModule(), ValueFactory.valueOf(path.toString()));
+                // If the script is requiring its own static entrypoint from the dynamic one, give the value.
+                if (isSameFile(path, script, entrypoint, Entrypoint.Type.STATIC))
+                    return ValueFactory.varargsOf(script.getModule(), ValueFactory.valueOf(path.toString()));
             } catch (IOException ignored) {}
         }
         return loadFromPaths(state, script, modStr);
@@ -110,13 +113,8 @@ public class PackageLib implements WrappedLuaLibrary {
             try {
                 // Do not allow entrypoints to get loaded from the path.
                 Entrypoint entrypoint = script.getManifest().entrypoints().get(envType);
-                boolean loadingEntrypoint = (
-                        entrypoint.has(Entrypoint.Type.DYNAMIC) &&
-                                Files.isSameFile(path, script.getPath().resolve(entrypoint.get(Entrypoint.Type.DYNAMIC)))
-                ) || (
-                        entrypoint.has(Entrypoint.Type.STATIC) &&
-                                Files.isSameFile(path, script.getPath().resolve(entrypoint.get(Entrypoint.Type.STATIC)))
-                );
+                boolean loadingEntrypoint = isSameFile(path, script, entrypoint, Entrypoint.Type.DYNAMIC) ||
+                        isSameFile(path, script, entrypoint, Entrypoint.Type.STATIC);
 
                 if (loadingEntrypoint) {
                     Allium.LOGGER.warn(

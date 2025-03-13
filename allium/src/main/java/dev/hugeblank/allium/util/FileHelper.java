@@ -11,16 +11,14 @@ import net.fabricmc.loader.api.FabricLoader;
 import net.fabricmc.loader.api.ModContainer;
 import net.fabricmc.loader.api.metadata.CustomValue;
 import net.fabricmc.loader.api.metadata.ModMetadata;
+import org.jetbrains.annotations.Nullable;
 
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.*;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Stream;
 
@@ -55,26 +53,13 @@ public class FileHelper {
         try {
             Stream<Path> files = Files.list(p);
             files.forEach((scriptDir) -> {
-                Path path;
                 if (Files.isDirectory(scriptDir)) {
-                    path = scriptDir;
+                    buildScript(out, scriptDir, containerEnvType);
                 } else {
                     try {
                         FileSystem fs = FileSystems.newFileSystem(scriptDir); // zip, tarball, whatever has a provider.
-                        path = fs.getPath("/");
-                        fs.close();
-                    } catch (IOException | ProviderNotFoundException e) {
-                        return; // Just a file we can't read, ignore it and move on.
-                    }
-                }
-                try {
-                    BufferedReader reader = Files.newBufferedReader(path.resolve(MANIFEST_FILE_NAME));
-                    Manifest manifest = new Gson().fromJson(reader, Manifest.class);
-                    if (manifest.isComplete() && manifest.entrypoints().has(containerEnvType)) {
-                        out.add(new Script(manifest, path, containerEnvType));
-                    }
-                } catch (IOException e) {
-                    Allium.LOGGER.error("Could not find " + MANIFEST_FILE_NAME  + " file on path " + scriptDir, e);
+                        buildScript(out, fs.getPath("/"), containerEnvType);
+                    } catch (IOException | ProviderNotFoundException ignored) {}
                 }
             });
             files.close();
@@ -82,6 +67,19 @@ public class FileHelper {
             Allium.LOGGER.error("Could not read from scripts directory", e);
         }
         return out;
+    }
+
+    private static void buildScript(Set<Script> scripts, Path path, ScriptRegistry.EnvType containerEnvType) {
+        try {
+            BufferedReader reader = Files.newBufferedReader(path.resolve(MANIFEST_FILE_NAME));
+            Manifest manifest = new Gson().fromJson(reader, Manifest.class);
+            if (manifest.isComplete() && manifest.entrypoints().has(containerEnvType)) {
+                scripts.add(new Script(manifest, path, containerEnvType));
+            }
+        } catch (IOException e) {
+            //noinspection StringConcatenationArgumentToLogCall
+            Allium.LOGGER.error("Could not find " + MANIFEST_FILE_NAME  + " file on path " + path, e);
+        }
     }
 
     // TODO: Test in prod
