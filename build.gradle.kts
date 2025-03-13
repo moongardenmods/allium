@@ -81,6 +81,24 @@ java {
     targetCompatibility = JavaVersion.VERSION_21
 }
 
+tasks {
+    processResources {
+        inputs.property("version", project.version)
+
+        filesMatching("fabric.mod.json") {
+            expand(mutableMapOf("version" to project.version))
+        }
+    }
+
+    loom {
+        runs {
+            named("client") {
+                programArgs("-username", "GradleDev")
+            }
+        }
+    }
+}
+
 publishing {
     publications {
         register("mavenJava", MavenPublication::class) {
