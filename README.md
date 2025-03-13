@@ -1,6 +1,8 @@
 # <img src="logos/logo.png" alt="Allium Logo" width="300"/>
 
-[![Github Stars](https://img.shields.io/github/stars/hugeblank/allium?color=yellow&label=Stars&logo=github)](https://github.com/hugeblank/allium/stargazers) ![Modrinth Downloads](https://img.shields.io/modrinth/dt/allium?color=00AF5C&label=modrinth&style=flat&logo=modrinth)
+[![Github Stars](https://img.shields.io/github/stars/moongardenmods/allium?color=blue&label=Stars&logo=github&style=flat)](https://github.com/moongardenmods/allium/stargazers) 
+[![Allium Modrinth Downloads](https://img.shields.io/modrinth/dt/allium?color=00AF5C&label=allium&style=flat&logo=modrinth)](https://modrinth.com/mod/allium)
+[![Bouquet Modrinth Downloads](https://img.shields.io/modrinth/dt/bouquet?color=00AF5C&label=bouquet&style=flat&logo=modrinth)](https://modrinth.com/mod/bouquet)
 
 Lua script loader for Java Minecraft.
 
@@ -8,10 +10,9 @@ Currently, only functioning and in development in Fabric, with the intent of sup
 road.
 
 ## Installing
-Allium installs just like any other Fabric mod. If you don't know how to do this, [this Tech Insider video](https://www.youtube.com/watch?v=vNz0z1Aht1U) does a 
-pretty good job of explaining how. Depending on the scripts you use, they may depend on Bouquet, an additional mod that 
-adds libraries to make scripting easier. Much like Fabric API, this mod is independent and not built into the loader
-side of Allium and must be downloaded individually.
+Allium installs just like any other Fabric mod. Depending on the scripts you use, they may depend on Bouquet, 
+an additional mod that adds libraries to make scripting easier. Much like Fabric API, this mod is independent and not 
+built into the loader side of Allium and must be downloaded individually.
 
 If you'd like to use Allium or Bouquet to extend functionality of your own Java mod, publications can be found on
 [hugeblank's maven](https://maven.hugeblank.dev/#/releases/dev/hugeblank).
@@ -32,6 +33,7 @@ can be found in [`bouquet/examples`](bouquet/examples).
 ## Logos
 Allium's logos are under the same license as the rest of the project. Feel free to use these in your own project.
 
+<!--suppress CheckImageSize -->
 <img src="logos/icon.png" alt="Allium Icon" height="100"/> 
 <img src="logos/logo.png" alt="Allium Logo" height="100"/> 
 <img src="logos/banner.png" alt="Powered by Allium" height="100"/>
