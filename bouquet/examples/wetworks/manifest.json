@@ -3,8 +3,7 @@
   "version": "1.0.0",
   "name": "Wetworks",
   "entrypoints": {
-    "common": {
-      "dynamic": "wetworks.lua"
-    }
-  }
+    "dynamic": "wetworks.lua"
+  },
+  "mappings": "yarn"
 }

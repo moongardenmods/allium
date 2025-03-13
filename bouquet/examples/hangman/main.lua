@@ -4,6 +4,8 @@
 -- Derived from the original !hangman command in alpha, for allium-cc
 -- Source: https://github.com/hugeblank/Alpha/blob/master/alpha.lua#L354
 
+if package.environment == "client" then return end
+
 local words = require("words")
 local CommandManager = require("net.minecraft.server.command.CommandManager") -- We need the java command manager for creating commands.
 local arguments = command.arguments -- Create shortcut for command argument types
@@ -98,7 +100,7 @@ do
         "<light_purple>um</light_purple> & <rainbow>Bouquet</rainbow></hover></url>. Run <gray>",
         "<cmd '/hangman start'><hover 'Click to suggest'>/hangman start</hover></cmd></gray> to start, ",
         "guess with <gray><cmd '/hangman guess'><hover 'Click to suggest'>/hangman guess <letter|word>",
-        "</hover></cmd></gray>. Check out the",
+        "</hover></cmd></gray>. Check out the ",
         "<url 'https://github.com/moongardenmods/allium/blob/main/bouquet/examples/hangman/main.lua'>",
         "<hover 'Click to view on GitHub'><blue>source code</blue></hover></url>!"
     }

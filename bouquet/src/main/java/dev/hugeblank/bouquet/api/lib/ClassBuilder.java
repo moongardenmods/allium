@@ -1,6 +1,7 @@
 package dev.hugeblank.bouquet.api.lib;
 
 import dev.hugeblank.allium.loader.type.StaticBinder;
+import dev.hugeblank.allium.loader.type.annotation.LuaStateArg;
 import dev.hugeblank.allium.loader.type.coercion.TypeCoercions;
 import dev.hugeblank.allium.loader.type.annotation.LuaWrapped;
 import dev.hugeblank.allium.loader.type.property.PropertyResolver;
@@ -12,10 +13,7 @@ import me.basiqueevangelist.enhancedreflection.api.EMethod;
 import me.basiqueevangelist.enhancedreflection.api.EParameter;
 import org.objectweb.asm.ClassWriter;
 import org.objectweb.asm.Type;
-import org.squiddev.cobalt.LuaState;
-import org.squiddev.cobalt.LuaValue;
-import org.squiddev.cobalt.ValueFactory;
-import org.squiddev.cobalt.Varargs;
+import org.squiddev.cobalt.*;
 import org.squiddev.cobalt.function.LuaFunction;
 
 import java.util.*;
@@ -79,10 +77,10 @@ public class ClassBuilder {
     }
 
     @LuaWrapped
-    public void overrideMethod(String methodName, EClass<?>[] parameters, LuaFunction func) {
+    public void overrideMethod(@LuaStateArg LuaState state, String methodName, EClass<?>[] parameters, LuaFunction func) throws LuaError {
         var methods = new ArrayList<EMethod>();
 
-        PropertyResolver.collectMethods(this.superClass, this.methods, methodName, false, methods::add);
+        PropertyResolver.collectMethods(state, this.superClass, this.methods, methodName, false, methods::add);
 
         for (var method : methods) {
             var methParams = method.parameters();

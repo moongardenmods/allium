@@ -19,7 +19,7 @@ public class BouquetAlliumExtension implements AlliumExtension {
         DefaultEventsLib.registerCategory("common", EClass.fromJava(CommonEvents.class));
         DefaultEventsLib.registerCategory("server", EClass.fromJava(ServerEvents.class));
 
-        EnvironmentManager.registerLibrary(AlliumLib::new);
+        EnvironmentManager.registerLibrary(new AlliumLib());
         EnvironmentManager.registerLibrary(new DefaultEventsLib());
         EnvironmentManager.registerLibrary(new FabricLib());
         EnvironmentManager.registerLibrary(new GameLib());

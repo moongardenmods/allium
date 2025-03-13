@@ -1,16 +1,12 @@
 package dev.hugeblank.bouquet.mixin.command;
 
 import com.mojang.brigadier.CommandDispatcher;
-import dev.hugeblank.bouquet.api.event.CommonEvents;
 import dev.hugeblank.bouquet.api.event.ServerEvents;
 import dev.hugeblank.bouquet.api.lib.AlliumLib;
-import dev.hugeblank.bouquet.api.lib.DefaultEventsLib;
 import dev.hugeblank.bouquet.api.lib.commands.CommandRegisterEntry;
-import dev.hugeblank.bouquet.util.DebugLoggerWrapper;
 import net.minecraft.command.CommandRegistryAccess;
 import net.minecraft.server.command.CommandManager;
 import net.minecraft.server.command.ServerCommandSource;
-import org.slf4j.Logger;
 import org.spongepowered.asm.mixin.*;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
@@ -44,7 +40,7 @@ public class CommandManagerMixin {
     @Unique
     private static void queueEvent(CommandRegisterEntry entry, boolean result) {
         ServerEvents.COMMAND_REGISTER.invoker().onCommandRegistration(
-                entry.script().getId(),
+                entry.script().getID(),
                 entry.builder().getLiteral(),
                 result
         );

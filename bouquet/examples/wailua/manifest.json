@@ -3,8 +3,7 @@
   "version": "1.0.0",
   "name": "WAILA in Lua",
   "entrypoints": {
-    "client": {
-      "dynamic": "main.lua"
-    }
-  }
+    "dynamic": "main.lua"
+  },
+  "mappings": "yarn"
 }

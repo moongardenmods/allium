@@ -3,8 +3,7 @@
   "version": "1.0.0",
   "name": "Script B",
   "entrypoints": {
-    "common": {
-      "dynamic": "main.lua"
-    }
-  }
+    "dynamic": "main.lua"
+  },
+  "mappings": "yarn"
 }

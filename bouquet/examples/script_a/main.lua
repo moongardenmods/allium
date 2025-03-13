@@ -18,7 +18,7 @@ end)
 -- Note that we could return anything here, beyond just a function.
 return function(otherScript, input)
     -- Print our ID, and the invoking script ID
-    print(script:getId(), otherScript:getId())
+    print(script:getID(), otherScript:getID())
     -- Create a text object to display on server start using a string given by the invoking script.
     text = Text.of(input)
 end
