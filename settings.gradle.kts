@@ -6,7 +6,4 @@ pluginManagement {
     }
 }
 
-rootProject.name = "Allium Dev"
-
-include("allium")
-include("bouquet")
+rootProject.name = "Allium"

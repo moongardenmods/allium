@@ -1,128 +1,102 @@
-import java.util.*
-
 plugins {
     id("maven-publish")
     id("fabric-loom") version "1.7-SNAPSHOT"
 }
-// Common Mod Properties
+
+repositories {
+    maven("https://maven.hugeblank.dev/releases") {
+        content {
+            includeGroup("dev.hugeblank")
+        }
+    }
+    maven("https://squiddev.cc/maven") {
+        content {
+            includeGroup("cc.tweaked")
+        }
+    }
+    maven("https://maven.nucleoid.xyz") {
+        content {
+            includeGroup("eu.pb4")
+        }
+    }
+    maven("https://basique.top/maven/releases") {
+        content {
+            includeGroup("me.basiqueevangelist")
+        }
+    }
+}
+
+// Mod Properties
 val mavenGroup: String by project
+val version: String by project
+val releaseCandidate: String by project
+val baseName: String by project
 
 // Fabric Properties
 val minecraftVersion: String by project
 val yarnMappings: String by project
 val loaderVersion: String by project
 
-// Common Dependencies
+// Dependencies
 val cobalt: String by project
 val tinyParser: String by project
 val enhancedReflections: String by project
 
-// Bouquet Dependencies
-val nettyHttp: String by project
-val placeholderApi: String by project
+var v = version
+if ("0" != releaseCandidate) {
+    v = "$v-rc$releaseCandidate"
+}
+
+project.version = v
+group = mavenGroup
+
+base {
+    archivesName.set(baseName)
+}
+
+loom {
+    splitEnvironmentSourceSets()
+    mods {
+        register("allium") {
+            sourceSet(sourceSets["main"])
+            sourceSet(sourceSets["client"])
+        }
+    }
+}
 
 dependencies {
-    minecraft("com.mojang", "minecraft", minecraftVersion)
-    mappings("net.fabricmc", "yarn", yarnMappings, null, "v2")
-//    mappings("net.fabricmc", "intermediary", "1.21.1", null, "v2")
+    minecraft("com.mojang:minecraft:$minecraftVersion")
+    mappings("net.fabricmc:yarn:$yarnMappings:v2")
+    modImplementation("net.fabricmc:fabric-loader:$loaderVersion")
+
+    modImplementation("cc.tweaked", "cobalt", cobalt)
+    modImplementation("me.basiqueevangelist", "enhanced-reflection", enhancedReflections)
+    modImplementation("net.fabricmc", "tiny-mappings-parser", tinyParser)
 }
 
-subprojects {
-    apply(plugin = "maven-publish")
-    apply(plugin = "fabric-loom")
+java {
+    withSourcesJar()
 
+    sourceCompatibility = JavaVersion.VERSION_21
+    targetCompatibility = JavaVersion.VERSION_21
+}
+
+publishing {
+    publications {
+        register("mavenJava", MavenPublication::class) {
+            from(components["java"])
+            groupId = mavenGroup
+            artifactId = baseName
+            version = version
+        }
+    }
     repositories {
-        maven("https://maven.hugeblank.dev/releases") {
-            content {
-                includeGroup("dev.hugeblank")
-            }
-        }
-        maven("https://squiddev.cc/maven") {
-            content {
-                includeGroup("cc.tweaked")
-            }
-        }
-        maven("https://maven.nucleoid.xyz") {
-            content {
-                includeGroup("eu.pb4")
-            }
-        }
-        maven("https://basique.top/maven/releases") {
-            content {
-                includeGroup("me.basiqueevangelist")
-            }
-        }
-    }
-
-    dependencies {
-        minecraft("com.mojang", "minecraft", minecraftVersion)
-        mappings("net.fabricmc", "yarn", yarnMappings, null, "v2")
-//        mappings("net.fabricmc", "intermediary", "1.21.1", null, "v2")
-        modImplementation("net.fabricmc", "fabric-loader", loaderVersion)
-    }
-
-    tasks {
-        processResources {
-            inputs.property("version", project.version)
-
-            filesMatching("fabric.mod.json") {
-                expand(mutableMapOf("version" to project.version))
-            }
-        }
-
-        jar {
-            from("LICENSE") {
-                rename { "${it}_${project.base.archivesName.get()}" }
-            }
-        }
-
-        loom {
-            val moduleName = project.name.replaceFirstChar {
-                if (it.isLowerCase()) it.titlecase(Locale.getDefault()) else it.toString()
-            }
-            runs {
-                named("client") {
-                    configName = "$moduleName Client"
-                    ideConfigGenerated(true)
-                    runDir("../run")
-                    programArgs("-username", "GradleDev")
-                }
-                named("server") {
-                    configName = "$moduleName Server"
-                    ideConfigGenerated(true)
-                    runDir("../run")
-                }
-            }
-        }
-    }
-
-    publishing {
-        repositories {
-            maven {
-                name = "hugeblankRepo"
-                url = uri("https://maven.hugeblank.dev/releases")
-                credentials(PasswordCredentials::class)
-                authentication {
-                    create<BasicAuthentication>("basic")
-                }
-            }
-        }
-    }
-}
-
-tasks {
-    register<GradleBuild>("buildAll") {
-        group = "build"
-        tasks = subprojects.map { ":${it.name}:build" }
-    }
-
-    loom {
-        runs {
-            named("client") {
-                ideConfigGenerated(false)
-            }
-            named("server") {
-                ideConfigGenerated(false)
+        maven {
+            name = "hugeblankRepo"
+            url = uri("https://maven.hugeblank.dev/releases")
+            credentials(PasswordCredentials::class)
+            authentication {
+                create<BasicAuthentication>("basic")
             }
         }
     }
