@@ -42,7 +42,7 @@ public final class StaticBinder {
                 PropertyData<? super T> cachedProperty = cachedProperties.get(name);
 
                 if (cachedProperty == null) {
-                    cachedProperty = PropertyResolver.resolveProperty(clazz, name, true);
+                    cachedProperty = PropertyResolver.resolveProperty(state, clazz, name, true);
 
                     cachedProperties.put(name, cachedProperty);
                 }
@@ -62,7 +62,7 @@ public final class StaticBinder {
                 EClass<?>[] typeArgs = new EClass[table.length()];
 
                 for (int i = 0; i < typeArgs.length; i++) {
-                    typeArgs[i] = JavaHelpers.asClass(table.rawget(i + 1));
+                    typeArgs[i] = JavaHelpers.asClass(state, table.rawget(i + 1));
                 }
 
                 try {
@@ -81,7 +81,7 @@ public final class StaticBinder {
             PropertyData<? super T> cachedProperty = cachedProperties.get(name);
 
             if (cachedProperty == null) {
-                cachedProperty = PropertyResolver.resolveProperty(clazz, name, false);
+                cachedProperty = PropertyResolver.resolveProperty(state, clazz, name, false);
 
                 cachedProperties.put(name, cachedProperty);
             }

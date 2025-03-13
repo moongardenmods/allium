@@ -1,6 +1,6 @@
 package dev.hugeblank.allium.loader;
 
-import org.jetbrains.annotations.Nullable;
+import dev.hugeblank.allium.Allium;
 import org.squiddev.cobalt.*;
 import org.squiddev.cobalt.compiler.CompileException;
 import org.squiddev.cobalt.compiler.LoadState;
@@ -16,7 +16,7 @@ public class ScriptExecutor extends EnvironmentManager {
     protected final Path path;
     protected final Entrypoint entrypoint;
 
-    public ScriptExecutor(Script script, Path path, ScriptRegistry.EnvType envType, Entrypoint entrypoint) {
+    public ScriptExecutor(Script script, Path path, Allium.EnvType envType, Entrypoint entrypoint) {
         super();
         this.script = script;
         this.path = path;
@@ -32,16 +32,16 @@ public class ScriptExecutor extends EnvironmentManager {
         LuaFunction staticFunction;
         LuaFunction dynamicFunction;
         if (entrypoint.has(Entrypoint.Type.STATIC) && entrypoint.has(Entrypoint.Type.DYNAMIC)) {
-            staticFunction = this.load(getInputStream(Entrypoint.Type.STATIC), script.getId() + ":static");
-            dynamicFunction = this.load(getInputStream(Entrypoint.Type.DYNAMIC), script.getId() + ":dynamic");
+            staticFunction = this.load(getInputStream(Entrypoint.Type.STATIC), script.getID() + ":static");
+            dynamicFunction = this.load(getInputStream(Entrypoint.Type.DYNAMIC), script.getID() + ":dynamic");
             Varargs out = LuaThread.runMain(state, staticFunction);
             LuaThread.runMain(state, dynamicFunction);
             return out;
         } else if (entrypoint.has(Entrypoint.Type.STATIC)) {
-            staticFunction = this.load(getInputStream(Entrypoint.Type.STATIC), script.getId());
+            staticFunction = this.load(getInputStream(Entrypoint.Type.STATIC), script.getID());
             return LuaThread.runMain(state, staticFunction);
         } else if (entrypoint.has(Entrypoint.Type.DYNAMIC)) {
-            dynamicFunction = this.load(getInputStream(Entrypoint.Type.DYNAMIC), script.getId());
+            dynamicFunction = this.load(getInputStream(Entrypoint.Type.DYNAMIC), script.getID());
             return LuaThread.runMain(state, dynamicFunction);
         }
         // This should be caught sooner, but who knows maybe a dev (hugeblank) will come along and mess something up
@@ -51,7 +51,7 @@ public class ScriptExecutor extends EnvironmentManager {
 
     public Varargs reload() throws LuaError, CompileException, IOException {
         if (entrypoint.has(Entrypoint.Type.DYNAMIC)) {
-            LuaFunction dynamicFunction = this.load(getInputStream(Entrypoint.Type.DYNAMIC), script.getId());
+            LuaFunction dynamicFunction = this.load(getInputStream(Entrypoint.Type.DYNAMIC), script.getID());
             return LuaThread.runMain(state, dynamicFunction);
         }
         return null;
@@ -64,7 +64,6 @@ public class ScriptExecutor extends EnvironmentManager {
     }
 
     public LuaFunction load(InputStream stream, String name) throws CompileException, IOException, LuaError {
-        // TODO: Replacing using globals here with an empty table. Does it work?
         return LoadState.load(
                 state,
                 stream,

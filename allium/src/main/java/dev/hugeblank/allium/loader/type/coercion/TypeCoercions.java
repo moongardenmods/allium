@@ -294,9 +294,9 @@ public class TypeCoercions {
         TypeCoercions.registerLuaToJava(boolean.class, (state, val) -> suppressError(val::checkBoolean));
         TypeCoercions.registerLuaToJava(String.class, (state, val) -> suppressError(val::checkString));
 
-        TypeCoercions.registerLuaToJava(EClass.class, (state, val) -> JavaHelpers.asClass(val));
+        TypeCoercions.registerLuaToJava(EClass.class, JavaHelpers::asClass);
         TypeCoercions.registerLuaToJava(Class.class, (state, val) -> {
-            EClass<?> klass = JavaHelpers.asClass(val);
+            EClass<?> klass = JavaHelpers.asClass(state, val);
             if (klass == null) return null;
             else return klass.raw();
         });

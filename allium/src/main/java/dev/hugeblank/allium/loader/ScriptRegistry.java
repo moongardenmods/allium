@@ -1,109 +1,64 @@
 package dev.hugeblank.allium.loader;
 
-import com.google.common.collect.Sets;
+import dev.hugeblank.allium.Allium;
+import dev.hugeblank.allium.util.Registry;
+import org.squiddev.cobalt.LuaError;
 import org.squiddev.cobalt.LuaState;
 
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Set;
-import java.util.function.Consumer;
 
-public class ScriptRegistry {
+public class ScriptRegistry extends Registry<Script> {
     public static final ScriptRegistry COMMON;
     public static final ScriptRegistry CLIENT;
-    public static final ScriptRegistry SERVER;
+    public static final ScriptRegistry DEDICATED;
 
-    private static final Map<net.fabricmc.api.EnvType, EnvType> TYPEMAP = new HashMap<>();
-
-    private final EnvType envType;
-    private final Map<String, Script> fromId;
     private final Map<LuaState, Script> fromState;
 
-    private ScriptRegistry(EnvType envType) {
-        this.envType = envType;
-        this.fromId = new HashMap<>();
+    public ScriptRegistry() {
         this.fromState = new HashMap<>();
     }
 
     public void reloadAll() {
-        getInstance(envType).forEach(Script::reload);
+        forEach(Script::reload);
     }
 
-    public void registerScript(Script script) {
-        String id = script.getId();
-        if (!fromId.containsKey(id)) {
-            fromId.put(id, script);
-            fromState.put(script.getExecutor().getState(), script);
-        } else {
-            throw new RuntimeException("Script with ID is already loaded!");
-        }
+    @Override
+    protected void onRegister(Script script) {
+        fromState.put(script.getExecutor().getState(), script);
     }
 
     public void unloadScript(String name) {
-        if (fromId.containsKey(name)) {
-            fromId.get(name).unload();
-        }
+        if (super.has(name)) super.get(name).unload();
     }
 
-    public EnvType getType() {
-        return envType;
-    }
-
-    public boolean hasScript(String name) {
-        return fromId.containsKey(name);
-    }
-
-    public boolean hasScript(LuaState state) {
+    public boolean has(LuaState state) {
         return fromState.containsKey(state);
     }
 
-    public Script getScript(String name) {
-        return fromId.get(name);
-    }
-
-    public Script getScript(LuaState state) {
+    public Script get(LuaState state) {
         return fromState.get(state);
     }
 
-    public void forEach(Consumer<Script> callback) {
-        fromId.forEach((id, script) -> callback.accept(script));
+    public static Script find(LuaState state) throws LuaError {
+        if (COMMON.has(state)) return COMMON.get(state);
+        if (CLIENT.has(state)) return CLIENT.get(state);
+        if (DEDICATED.has(state)) return DEDICATED.get(state);
+        throw new LuaError("Unregistered state!");
     }
 
-    public Set<Script> getScripts() {
-        return Sets.newHashSet(fromId.values());
-    }
-
-    public static ScriptRegistry getInstance(EnvType type) {
+    public static ScriptRegistry getInstance(Allium.EnvType type) {
         return switch (type) {
-            case SERVER -> SERVER;
+            case DEDICATED -> DEDICATED;
             case COMMON -> COMMON;
             case CLIENT -> CLIENT;
         };
     }
 
     static {
-        COMMON = new ScriptRegistry(EnvType.COMMON);
-        CLIENT = new ScriptRegistry(EnvType.CLIENT);
-        SERVER = new ScriptRegistry(EnvType.SERVER);
+        COMMON = new ScriptRegistry();
+        CLIENT = new ScriptRegistry();
+        DEDICATED = new ScriptRegistry();
     }
 
-    public enum EnvType {
-        COMMON("common", null), // common & server code
-        CLIENT("client", net.fabricmc.api.EnvType.CLIENT), // client code only
-        SERVER("server", net.fabricmc.api.EnvType.SERVER); // server code only
-
-        private final String key;
-        EnvType(String key, net.fabricmc.api.EnvType type) {
-            this.key = key;
-            TYPEMAP.put(type, this);
-        }
-
-        public String getKey() {
-            return key;
-        }
-
-        public static EnvType unwrap(net.fabricmc.api.EnvType type) {
-            return TYPEMAP.get(type);
-        }
-    }
 }

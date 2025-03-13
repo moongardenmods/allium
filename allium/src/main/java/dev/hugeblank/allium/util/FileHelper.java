@@ -4,7 +4,6 @@ import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonParser;
-import com.mojang.datafixers.TypeRewriteRule;
 import dev.hugeblank.allium.Allium;
 import dev.hugeblank.allium.loader.*;
 import net.fabricmc.loader.api.FabricLoader;
@@ -20,12 +19,13 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.*;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Function;
 import java.util.stream.Stream;
 
 public class FileHelper {
     /* Allium Script directory spec
       /allium
-        /<unique dir name> | unique file name, bonus point if using the namespace ID
+        /<unique dir name> | unique directory name, bonus point if using the namespace ID
           /<libs and stuff>
           manifest.json |  File containing key information about the script. ID, Name, Version, Entrypoint locations
     */
@@ -48,7 +48,7 @@ public class FileHelper {
         return SCRIPT_DIR;
     }
 
-    public static Set<Script> getValidDirScripts(Path p, ScriptRegistry.EnvType containerEnvType) {
+    public static Set<Script> getValidDirScripts(Path p, Allium.EnvType containerEnvType) {
         Set<Script> out = new HashSet<>();
         try {
             Stream<Path> files = Files.list(p);
@@ -69,12 +69,14 @@ public class FileHelper {
         return out;
     }
 
-    private static void buildScript(Set<Script> scripts, Path path, ScriptRegistry.EnvType containerEnvType) {
+    private static void buildScript(Set<Script> scripts, Path path, Allium.EnvType containerEnvType) {
         try {
             BufferedReader reader = Files.newBufferedReader(path.resolve(MANIFEST_FILE_NAME));
             Manifest manifest = new Gson().fromJson(reader, Manifest.class);
-            if (manifest.isComplete() && manifest.entrypoints().has(containerEnvType)) {
+            if (manifest.isComplete()) {
                 scripts.add(new Script(manifest, path, containerEnvType));
+            } else {
+                Allium.LOGGER.error("Incomplete manifest on path {}", path);
             }
         } catch (IOException e) {
             //noinspection StringConcatenationArgumentToLogCall
@@ -83,7 +85,7 @@ public class FileHelper {
     }
 
     // TODO: Test in prod
-    public static Set<Script> getValidModScripts(ScriptRegistry.EnvType containerEnvType) {
+    public static Set<Script> getValidModScripts(Allium.EnvType containerEnvType) {
         Set<Script> out = new HashSet<>();
         FabricLoader.getInstance().getAllMods().forEach((container) -> {
             ModMetadata metadata = container.getMetadata();
@@ -101,14 +103,14 @@ public class FileHelper {
                             Allium.LOGGER.error("Could not read manifest from script with ID {}", metadata.getId());
                             return;
                         }
-                        if (!man.entrypoints().has(containerEnvType)) {
-                            if (!man.entrypoints().get(containerEnvType).valid()) {
-                                Allium.LOGGER.error("Invalid {} entrypoint from script with ID {}", containerEnvType, metadata.getId());
+                        if (man.entrypoints() != null) {
+                            if (!man.entrypoints().valid()) {
+                                Allium.LOGGER.error("Invalid entrypoints from script with ID {}", metadata.getId());
                                 return;
                             }
                             Script script = scriptFromContainer(man, container, containerEnvType);
                             if (script == null) {
-                                Allium.LOGGER.error("Could not find entrypoint(s) for script with ID {}", metadata.getId());
+                                Allium.LOGGER.error("Could not find entrypoints for script with ID {}", metadata.getId());
                                 return;
                             }
                             out.add(script);
@@ -142,10 +144,11 @@ public class FileHelper {
         return out;
     }
 
-    private static Script scriptFromContainer(Manifest man, ModContainer container, ScriptRegistry.EnvType containerEnvType) {
+    private static Script scriptFromContainer(Manifest man, ModContainer container, Allium.EnvType containerEnvType) {
         AtomicReference<Script> out = new AtomicReference<>();
         container.getRootPaths().forEach((path) -> {
-            if (path.resolve(man.entrypoints().get(containerEnvType).get(Entrypoint.Type.STATIC)).toFile().exists()) {
+            Entrypoint entrypoints = man.entrypoints();
+            if (exists(entrypoints, path, Entrypoint.Type.STATIC) || exists(entrypoints, path, Entrypoint.Type.DYNAMIC)) {
                 // This has an incidental safeguard in the event that if multiple root paths have the same script
                 // the most recent script loaded will just *overwrite* previous ones.
                 out.set(new Script(man, path, containerEnvType));
@@ -154,9 +157,13 @@ public class FileHelper {
         return out.get();
     }
 
+    private static boolean exists(Entrypoint entrypoints, Path path, Entrypoint.Type type) {
+        return entrypoints.has(type) && path.resolve(entrypoints.get(type)).toFile().exists();
+    }
+
     // TODO: Move this method and the one below to bouquet.
     public static JsonElement getConfig(Script script) throws IOException {
-        Path path = FileHelper.CONFIG_DIR.resolve(script.getId() + ".json");
+        Path path = FileHelper.CONFIG_DIR.resolve(script.getID() + ".json");
         if (Files.exists(path)) {
             return JsonParser.parseReader(Files.newBufferedReader(path));
         }
@@ -164,7 +171,7 @@ public class FileHelper {
     }
 
     public static void saveConfig(Script script, JsonElement element) throws IOException {
-        Path path = FileHelper.CONFIG_DIR.resolve(script.getId() + ".json");
+        Path path = FileHelper.CONFIG_DIR.resolve(script.getID() + ".json");
         Files.deleteIfExists(path);
         OutputStream outputStream = Files.newOutputStream(path);
         String jstr = new GsonBuilder().setPrettyPrinting().disableHtmlEscaping().create().toJson(element);
@@ -177,30 +184,32 @@ public class FileHelper {
         return makeManifest(value, null, null, null);
     }
 
-    private static Manifest makeManifest(CustomValue.CvObject value, String optId, String optVersion, String optName) {
-        String id = value.get("id") == null ? optId : value.get("id").getAsString();
-        String version = value.get("version") == null ? optVersion : value.get("version").getAsString();
-        String name = value.get("name") == null ? optName : value.get("name").getAsString();
-        CustomValue.CvObject entrypoints = value.get("entrypoints") == null ? null : value.get("entrypoints").getAsObject();
-        AlliumEntrypointContainer alliumEntrypointContainer = makeEntrypointContainer(entrypoints);
-
-        return new Manifest(id, version, name, alliumEntrypointContainer);
+    private static Manifest makeManifest(
+            CustomValue.CvObject value,
+            @Nullable String optId,
+            @Nullable String optVersion,
+            @Nullable String optName
+    ) {
+        return new Manifest(
+                getOrDefault(value, "id", optId, CustomValue::getAsString),
+                getOrDefault(value, "version", optVersion, CustomValue::getAsString),
+                getOrDefault(value, "name", optName, CustomValue::getAsString),
+                getOrDefault(value, "mappings", null, CustomValue::getAsString),
+                makeEntrypointContainer(getOrDefault(value, "entrypoints", null, CustomValue::getAsObject))
+        );
     }
 
-    private static AlliumEntrypointContainer makeEntrypointContainer(CustomValue.CvObject entrypointsObject) {
-        Map<ScriptRegistry.EnvType, Entrypoint> entrypointsMap = new HashMap<>();
-        for (ScriptRegistry.EnvType envType : ScriptRegistry.EnvType.values()) {
-            if (entrypointsObject.containsKey(envType.getKey())) {
-                CustomValue.CvObject entrypointObject = entrypointsObject.get(envType.getKey()).getAsObject();
-                Map<Entrypoint.Type, String> entrypointMap = new HashMap<>();
-                for (Entrypoint.Type type : Entrypoint.Type.values()) {
-                    if (entrypointObject.containsKey(type.getKey())) {
-                        entrypointMap.put(type, entrypointObject.get(type.getKey()).getAsString());
-                    }
-                }
-                entrypointsMap.put(envType, new Entrypoint(entrypointMap));
+    private static <T> T getOrDefault(CustomValue.CvObject source, String key, T def, Function<CustomValue, T> getAs) {
+        return source.get(key).getType() == CustomValue.CvType.STRING ? getAs.apply(source.get(key)) : def;
+    }
+
+    private static Entrypoint makeEntrypointContainer(CustomValue.CvObject entrypointsObject) {
+        Map<Entrypoint.Type, String> entrypointMap = new HashMap<>();
+        for (Entrypoint.Type type : Entrypoint.Type.values()) {
+            if (entrypointsObject.containsKey(type.getKey())) {
+                entrypointMap.put(type, entrypointsObject.get(type.getKey()).getAsString());
             }
         }
-        return new AlliumEntrypointContainer(entrypointsMap);
+        return new Entrypoint(entrypointMap);
     }
 }

@@ -3,6 +3,8 @@ package dev.hugeblank.allium.loader;
 import dev.hugeblank.allium.Allium;
 import dev.hugeblank.allium.api.ScriptResource;
 import dev.hugeblank.allium.loader.type.annotation.LuaWrapped;
+import dev.hugeblank.allium.mappings.Mappings;
+import dev.hugeblank.allium.util.Identifiable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.squiddev.cobalt.LuaError;
@@ -20,27 +22,27 @@ import java.nio.file.Path;
 import java.util.*;
 
 @LuaWrapped()
-public class Script {
+public class Script implements Identifiable {
 
     private final Manifest manifest;
     private final Path path;
-    private final ScriptRegistry.EnvType envType;
+    private final Allium.EnvType envType;
     private final Logger logger;
     private final ScriptExecutor executor;
     // Whether this script was able to execute (isolated by environment)
-    private final Set<ScriptRegistry.EnvType> initialized = new HashSet<>();
+    private final Set<Allium.EnvType> initialized = new HashSet<>();
     // Resources are stored in a weak set so that if a resource is abandoned, it gets destroyed.
     private final Set<ScriptResource> resources = Collections.newSetFromMap(new WeakHashMap<>());
     private boolean destroyingResources = false;
 
     protected LuaValue module;
 
-    public Script(Manifest manifest, Path path, ScriptRegistry.EnvType envType) {
+    public Script(Manifest manifest, Path path, Allium.EnvType envType) {
         this.manifest = manifest;
         this.path = path;
         this.envType = envType;
-        this.executor = new ScriptExecutor(this, path, envType, manifest.entrypoints().get(envType));
-        this.logger = LoggerFactory.getLogger('@' + manifest.id());
+        this.executor = new ScriptExecutor(this, path, envType, manifest.entrypoints());
+        this.logger = LoggerFactory.getLogger('@' + getID());
     }
 
     // TODO: Move to Bouquet
@@ -48,12 +50,12 @@ public class Script {
         destroyAllResources();
         try {
             // Reload and set the module if all that's provided is a dynamic script
-            this.module = manifest.entrypoints().get(envType).has(Entrypoint.Type.DYNAMIC) ?
+            this.module = manifest.entrypoints().has(Entrypoint.Type.DYNAMIC) ?
                     executor.reload().arg(1) :
                     this.module;
         } catch (Throwable e) {
             //noinspection StringConcatenationArgumentToLogCall
-            getLogger().error("Could not reload allium script " + getId(), e);
+            getLogger().error("Could not reload allium script " + getID(), e);
             unload();
         }
 
@@ -115,7 +117,8 @@ public class Script {
             this.module = getExecutor().initialize().arg(1);
             this.initialized.add(envType); // If all these steps are successful, we can set initialized to true
         } catch (Throwable e) {
-            getLogger().error("Could not initialize allium script " + getId(), e);
+            //noinspection StringConcatenationArgumentToLogCall
+            getLogger().error("Could not initialize allium script " + getID(), e);
             unload();
         }
     }
@@ -144,6 +147,7 @@ public class Script {
         return module;
     }
 
+    public Allium.EnvType getEnvironment() { return envType; }
 
     public Manifest getManifest() {
         return manifest;
@@ -154,7 +158,7 @@ public class Script {
     }
 
     @LuaWrapped
-    public String getId() {
+    public String getID() {
         return manifest.id();
     }
 
@@ -166,6 +170,10 @@ public class Script {
     @LuaWrapped
     public String getName() {
         return manifest.name();
+    }
+
+    public Mappings getMappings() {
+        return Mappings.REGISTRY.get(manifest.mappings());
     }
 
     public Logger getLogger() {
@@ -181,5 +189,4 @@ public class Script {
         return manifest.name();
     }
 
-    //  if ( i % 2 == 0) break;
 }

@@ -5,6 +5,7 @@ import dev.hugeblank.allium.loader.type.StaticBinder;
 import dev.hugeblank.allium.api.WrappedLuaLibrary;
 import dev.hugeblank.allium.loader.type.annotation.LuaWrapped;
 import dev.hugeblank.allium.util.JavaHelpers;
+import org.jetbrains.annotations.Nullable;
 import org.squiddev.cobalt.*;
 import org.squiddev.cobalt.debug.DebugFrame;
 import org.squiddev.cobalt.function.*;
@@ -18,15 +19,17 @@ import java.util.List;
 @LuaWrapped(name="package")
 public class PackageLib implements WrappedLuaLibrary {
     private final Script script;
-    private final ScriptRegistry.EnvType envType;
+    private final Allium.EnvType envType;
+    @LuaWrapped @Nullable public final String environment;
     @LuaWrapped public final LuaTable loaders;
     @LuaWrapped public final LuaTable preload;
     @LuaWrapped public final LuaTable loaded;
     @LuaWrapped public String path;
 
-    public PackageLib(Script script, ScriptRegistry.EnvType envType) {
+    public PackageLib(Script script, Allium.EnvType envType) {
         this.script = script;
         this.envType = envType;
+        this.environment = envType == Allium.EnvType.COMMON ? null : envType.getKey();
         this.path = "./?.lua;./?/init.lua";
         this.preload = new LuaTable();
         this.loaded = new LuaTable();
@@ -64,7 +67,7 @@ public class PackageLib implements WrappedLuaLibrary {
 
     private Varargs pathLoader(LuaState state, DebugFrame frame, Varargs args) throws LuaError, UnwindThrowable {
         String modStr = args.arg(1).checkString();
-        Entrypoint entrypoint = script.getManifest().entrypoints().get(envType);
+        Entrypoint entrypoint = script.getManifest().entrypoints();
         for (Path path : getPathsFromModule(script, modStr)) {
             try {
                 // If the script is requiring its own static entrypoint from the dynamic one, give the value.
@@ -77,7 +80,7 @@ public class PackageLib implements WrappedLuaLibrary {
 
     private Varargs externScriptLoader(LuaState state, DebugFrame frame, Varargs args) throws LuaError, UnwindThrowable {
         String[] path = args.arg(1).checkString().split("\\.");
-        Script candidate = ScriptRegistry.getInstance(envType).getScript(path[0]);
+        Script candidate = ScriptRegistry.getInstance(envType).get(path[0]);
         if (candidate != null) {
             if (!candidate.isInitialized()) {
                 candidate.initialize();
@@ -92,7 +95,7 @@ public class PackageLib implements WrappedLuaLibrary {
     }
 
     public LuaValue javaLoader(LuaState state, LuaValue arg) throws LuaError {
-        return StaticBinder.bindClass(JavaHelpers.asClass(arg));
+        return StaticBinder.bindClass(JavaHelpers.asClass(state, arg));
     }
 
     private static String toPath(String[] arr) {
@@ -112,7 +115,7 @@ public class PackageLib implements WrappedLuaLibrary {
             if (!Files.exists(path)) return Constants.NIL;
             try {
                 // Do not allow entrypoints to get loaded from the path.
-                Entrypoint entrypoint = script.getManifest().entrypoints().get(envType);
+                Entrypoint entrypoint = script.getManifest().entrypoints();
                 boolean loadingEntrypoint = isSameFile(path, script, entrypoint, Entrypoint.Type.DYNAMIC) ||
                         isSameFile(path, script, entrypoint, Entrypoint.Type.STATIC);
 
@@ -120,7 +123,7 @@ public class PackageLib implements WrappedLuaLibrary {
                     Allium.LOGGER.warn(
                             "Attempted to require an entrypoint of script '{}'." +
                             " Use require(\"{}\") if you'd like to get the value loaded by the entrypoint script.",
-                            script.getId(), script.getId()
+                            script.getID(), script.getID()
                     ); // Slap on the wrist. Allium has already handled loading of the script.
                     return Constants.NIL;
                 }

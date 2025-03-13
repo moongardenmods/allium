@@ -1,5 +1,8 @@
 package dev.hugeblank.allium;
 
+import dev.hugeblank.allium.mappings.Mappings;
+import dev.hugeblank.allium.mappings.YarnLoader;
+import dev.hugeblank.allium.util.SetupHelpers;
 import net.fabricmc.loader.api.entrypoint.PreLaunchEntrypoint;
 
 import java.io.IOException;
@@ -12,10 +15,9 @@ import java.nio.file.attribute.BasicFileAttributes;
 public class AlliumPreLaunch implements PreLaunchEntrypoint {
 
     @Override
-    public void onPreLaunch() {}
-
-    static {
+    public void onPreLaunch() {
         clearDumpDirectory();
+        Mappings.LOADERS.register(new YarnLoader());
     }
 
     private static void clearDumpDirectory() {

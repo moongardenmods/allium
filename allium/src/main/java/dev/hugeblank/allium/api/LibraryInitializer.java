@@ -1,7 +1,7 @@
 package dev.hugeblank.allium.api;
 
+import dev.hugeblank.allium.Allium;
 import dev.hugeblank.allium.loader.Script;
-import dev.hugeblank.allium.loader.ScriptRegistry;
 
 /**
  * Functional Tnterface for libraries that depend on the script to function.
@@ -11,5 +11,5 @@ import dev.hugeblank.allium.loader.ScriptRegistry;
   */
 @FunctionalInterface
 public interface LibraryInitializer {
-    WrappedLuaLibrary init(Script script, ScriptRegistry.EnvType envType);
+    WrappedLuaLibrary init(Script script, Allium.EnvType envType);
 }

@@ -1,8 +1,8 @@
 package dev.hugeblank.allium.util;
 
 import dev.hugeblank.allium.Allium;
+import dev.hugeblank.allium.loader.ScriptRegistry;
 import dev.hugeblank.allium.loader.type.InvalidArgumentException;
-import dev.hugeblank.allium.loader.type.annotation.LuaIndex;
 import dev.hugeblank.allium.loader.type.annotation.LuaWrapped;
 import dev.hugeblank.allium.loader.type.coercion.TypeCoercions;
 import dev.hugeblank.allium.loader.type.property.PropertyData;
@@ -17,9 +17,10 @@ import org.squiddev.cobalt.function.LibFunction;
 import org.squiddev.cobalt.function.VarArgFunction;
 
 import java.lang.reflect.InvocationTargetException;
+import java.util.ArrayList;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
-import java.util.function.Supplier;
 import java.util.stream.Stream;
 
 
@@ -73,13 +74,15 @@ public class MetatableUtils {
             } else {
                 instance = null;
             }
-            Stream<Varargs> valueStream = memberBuilder.build().filter((member)->
+            List<EMember> members = memberBuilder.build().filter((member)->
                     !clazz.hasAnnotation(LuaWrapped.class) ||
                             (
                                     clazz.hasAnnotation(LuaWrapped.class) &&
                                             member.hasAnnotation(LuaWrapped.class)
                             )
-            ).map((member)-> {
+            ).toList();
+            List<Varargs> varargs = new ArrayList<>();
+            for (EMember member : members) {
                 String memberName = member.name();
                 if (member.hasAnnotation(LuaWrapped.class)) {
                     String[] names = AnnotationUtils.findNames(member);
@@ -90,30 +93,23 @@ public class MetatableUtils {
                 PropertyData<? super T> propertyData = cachedProperties.get(memberName);
 
                 if (propertyData == null) { // caching
-                    propertyData = PropertyResolver.resolveProperty(clazz, memberName, member.isStatic());
+                    propertyData = PropertyResolver.resolveProperty(state, clazz, memberName, member.isStatic());
                     cachedProperties.put(memberName, propertyData);
                 }
 
-                if (!Allium.DEVELOPMENT) memberName = Allium.MAPPINGS.getYarn(memberName);
-                try {
-                    return ValueFactory.varargsOf(LuaString.valueOf(memberName), propertyData.get(
-                            memberName,
-                            state,
-                            instance,
-                            isBound
-                    ));
-                } catch (LuaError e) {
-                    // I have no idea how this could happen, so it'll be interesting if we get an issue
-                    // report in the future with it...
-                    //noinspection StringConcatenationArgumentToLogCall
-                    Allium.LOGGER.warn("Could not get property data for " + memberName, e);
-                    return Constants.NIL;
-                }
-            });
+                if (!Allium.DEVELOPMENT) memberName = ScriptRegistry.find(state).getMappings().getMapped(memberName);
 
-            Iterator<Varargs> iterator = valueStream.iterator();
+                varargs.add(ValueFactory.varargsOf(LuaString.valueOf(memberName), propertyData.get(
+                        memberName,
+                        state,
+                        instance,
+                        isBound
+                )));
+            }
+            Iterator<Varargs> iterator = varargs.listIterator();
+
             return new VarArgFunction() { // next
-                public Varargs invoke(LuaState state, Varargs varargs) throws LuaError, UnwindThrowable {
+                public Varargs invoke(LuaState state, Varargs varargs) {
                     if (!iterator.hasNext()) return Constants.NIL;
                     return iterator.next();
                 }

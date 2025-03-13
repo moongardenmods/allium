@@ -23,7 +23,7 @@ public class EnvironmentManager {
         this.state = new LuaState();
     }
 
-    protected void createEnvironment(Script script, ScriptRegistry.EnvType envType) {
+    protected void createEnvironment(Script script, Allium.EnvType envType) {
         LuaTable globals = state.globals();
         BaseLib.add(globals);
         try {

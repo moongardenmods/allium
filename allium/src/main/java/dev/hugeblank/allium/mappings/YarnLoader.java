@@ -2,11 +2,13 @@
 // https://github.com/natanfudge/Not-Enough-Crashes/blob/b5119154d9b7ba8f08656b82e87158860f0e5489/fabric/src/main/java/fudge/notenoughcrashes/fabric/YarnVersion.java
 //  and https://github.com/natanfudge/Not-Enough-Crashes/blob/b5119154d9b7ba8f08656b82e87158860f0e5489/fabric/src/main/java/fudge/notenoughcrashes/fabric/StacktraceDeobfuscator.java
 // Nathanfudge has the entirety of my heart and I owe them my life for this
-package dev.hugeblank.allium.util;
+package dev.hugeblank.allium.mappings;
 
 import com.google.common.net.UrlEscapers;
 import com.google.gson.Gson;
 import dev.hugeblank.allium.Allium;
+import dev.hugeblank.allium.api.MappingsLoader;
+import dev.hugeblank.allium.util.FileHelper;
 import net.fabricmc.mapping.reader.v2.MappingGetter;
 import net.fabricmc.mapping.reader.v2.TinyMetadata;
 import net.fabricmc.mapping.reader.v2.TinyV2Factory;
@@ -21,7 +23,7 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.*;
 import java.util.*;
 
-public class YarnLoader {
+public class YarnLoader implements MappingsLoader {
 
     private static final String MAPPINGS_JAR_LOCATION = "mappings/mappings.tiny";
     private static final Path CACHED_MAPPINGS = FileHelper.MAPPINGS_CFG_DIR.resolve("mappings-" +  MinecraftVersion.create().getName() + ".tiny");
@@ -30,7 +32,8 @@ public class YarnLoader {
     private static final String NAMESPACE_FROM = "intermediary";
     private static final String NAMESPACE_TO = "named";
 
-    public static Mappings init() {
+    public Map<String, String> load() {
+        Allium.LOGGER.info("Loading NathanFudge's Yarn Remapper");
         try {
             return loadOrCreateMappings();
         } catch (Exception e) {
@@ -39,8 +42,13 @@ public class YarnLoader {
         }
     }
 
-    private static Mappings loadOrCreateMappings() throws IOException {
-        // Unlike NEC, it's imperative that allium has these mappings otherwise all methods
+    @Override
+    public String getID() {
+        return "yarn";
+    }
+
+    private static Map<String, String> loadOrCreateMappings() throws IOException {
+        // It's imperative that allium has these mappings otherwise all methods
         // will be intermediary names. not good.
         if (!Files.exists(CACHED_MAPPINGS)) {
             String yarnVersion = YarnVersion.getLatestBuildForCurrentVersion();
@@ -63,7 +71,7 @@ public class YarnLoader {
             try {
                 FileUtils.copyURLToFile(new URL(artifactUrl), jarFile);
             } catch (IOException e) {
-                Allium.LOGGER.error("Failed to downloads mappings!");
+                Allium.LOGGER.error("Failed to download mappings!");
                 throw e;
             }
 
@@ -123,7 +131,7 @@ public class YarnLoader {
             throw e;
         }
 
-        return Mappings.of(mappings);
+        return mappings;
     }
 
     private static class YarnVersion {

@@ -1,12 +1,15 @@
 package dev.hugeblank.allium.loader.type.property;
 
 import dev.hugeblank.allium.Allium;
+import dev.hugeblank.allium.loader.ScriptRegistry;
 import dev.hugeblank.allium.util.AnnotationUtils;
 import me.basiqueevangelist.enhancedreflection.api.EClass;
 import me.basiqueevangelist.enhancedreflection.api.EField;
 import me.basiqueevangelist.enhancedreflection.api.EMethod;
-import dev.hugeblank.allium.util.Mappings;
+import dev.hugeblank.allium.mappings.Mappings;
 import org.apache.commons.lang3.StringUtils;
+import org.squiddev.cobalt.LuaError;
+import org.squiddev.cobalt.LuaState;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -19,25 +22,25 @@ public final class PropertyResolver {
 
     }
 
-    public static <T> PropertyData<? super T> resolveProperty(EClass<T> clazz, String name, boolean isStatic) {
+    public static <T> PropertyData<? super T> resolveProperty(LuaState state, EClass<T> clazz, String name, boolean isStatic) throws LuaError {
         List<EMethod> foundMethods = new ArrayList<>();
 
-        collectMethods(clazz, clazz.methods(), name, isStatic, foundMethods::add);
+        collectMethods(state, clazz, clazz.methods(), name, isStatic, foundMethods::add);
 
         if (!foundMethods.isEmpty())
             return new MethodData<>(clazz, foundMethods, name, isStatic);
 
-        EMethod getter = findMethod(clazz, clazz.methods(), "get" + StringUtils.capitalize(name),
+        EMethod getter = findMethod(state, clazz, clazz.methods(), "get" + StringUtils.capitalize(name),
             method -> AnnotationUtils.countLuaArguments(method) == 0 && (!isStatic || method.isStatic()));
 
         if (getter != null) {
-            EMethod setter = findMethod(clazz, clazz.methods(), "set" + StringUtils.capitalize(name),
+            EMethod setter = findMethod(state, clazz, clazz.methods(), "set" + StringUtils.capitalize(name),
                 method -> AnnotationUtils.countLuaArguments(method) == 1 && (!isStatic || method.isStatic()));
 
             return new PropertyMethodData<>(getter, setter);
         }
 
-        EField field = findField(clazz, clazz.fields(), name, isStatic);
+        EField field = findField(state, clazz, clazz.fields(), name, isStatic);
 
         if (field != null)
             return new FieldData<>(field);
@@ -45,10 +48,10 @@ public final class PropertyResolver {
         return EmptyData.INSTANCE;
     }
 
-    public static void collectMethods(EClass<?> sourceClass, Collection<EMethod> methods, String name, boolean staticOnly, Consumer<EMethod> consumer) {
-        methods.forEach((method -> {
-            if (AnnotationUtils.isHiddenFromLua(method)) return;
-            if (staticOnly && !method.isStatic()) return;
+    public static void collectMethods(LuaState state, EClass<?> sourceClass, Collection<EMethod> methods, String name, boolean staticOnly, Consumer<EMethod> consumer) throws LuaError {
+        for (EMethod method : methods) {
+            if (AnnotationUtils.isHiddenFromLua(method)) continue;
+            if (staticOnly && !method.isStatic()) continue;
 
             String[] altNames = AnnotationUtils.findNames(method);
             if (altNames != null) {
@@ -58,7 +61,7 @@ public final class PropertyResolver {
                     }
                 }
 
-                return;
+                continue;
             }
 
             var methodName = method.name();
@@ -68,40 +71,43 @@ public final class PropertyResolver {
             }
 
             if (methodName.startsWith("allium_private$")) {
-                return;
+                continue;
             }
 
+
             if (!Allium.DEVELOPMENT) {
-                var mappedName = Allium.MAPPINGS.getYarn(Mappings.asMethod(sourceClass, method)).split("#")[1];
+                Mappings mappings = ScriptRegistry.find(state).getMappings();
+
+                var mappedName = mappings.getMapped(Mappings.asMethod(sourceClass, method)).split("#")[1];
                 if (mappedName.equals(name) || mappedName.equals("m_" + methodName)) {
                     consumer.accept(method);
                 }
 
                 for (var clazz : sourceClass.allInterfaces()) {
-                    mappedName = Allium.MAPPINGS.getYarn(Mappings.asMethod(clazz, method)).split("#")[1];
+                    mappedName = mappings.getMapped(Mappings.asMethod(clazz, method)).split("#")[1];
                     if (mappedName.equals(name) || mappedName.equals("m_" + methodName)) {
                         consumer.accept(method);
                     }
                 }
 
                 for (var clazz : sourceClass.allSuperclasses()) {
-                    mappedName = Allium.MAPPINGS.getYarn(Mappings.asMethod(clazz, method)).split("#")[1];
+                    mappedName = mappings.getMapped(Mappings.asMethod(clazz, method)).split("#")[1];
                     if (mappedName.equals(name) || mappedName.equals("m_" + methodName)) {
                         consumer.accept(method);
                     }
 
                     for (var iface : clazz.allInterfaces()) {
-                        mappedName = Allium.MAPPINGS.getYarn(Mappings.asMethod(iface, method)).split("#")[1];
+                        mappedName = mappings.getMapped(Mappings.asMethod(iface, method)).split("#")[1];
                         if (mappedName.equals(name) || mappedName.equals("m_" + methodName)) {
                             consumer.accept(method);
                         }
                     }
                 }
             }
-        }));
+        }
     }
 
-    public static EMethod findMethod(EClass<?> sourceClass, List<EMethod> methods, String name, Predicate<EMethod> filter) {
+    public static EMethod findMethod(LuaState state, EClass<?> sourceClass, List<EMethod> methods, String name, Predicate<EMethod> filter) throws LuaError {
         for (EMethod method : methods) {
             if (AnnotationUtils.isHiddenFromLua(method)) continue;
             if (!filter.test(method)) continue;
@@ -128,20 +134,22 @@ public final class PropertyResolver {
             }
 
             if (!Allium.DEVELOPMENT) {
-                var mappedName = Allium.MAPPINGS.getYarn(Mappings.asMethod(sourceClass, method)).split("#")[1];
+                Mappings mappings = ScriptRegistry.find(state).getMappings();
+
+                var mappedName = mappings.getMapped(Mappings.asMethod(sourceClass, method)).split("#")[1];
                 if (mappedName.equals(name) || mappedName.equals("m_" + methodName)) {
                     return method;
                 }
 
                 for (var clazz : sourceClass.allSuperclasses()) {
-                    mappedName = Allium.MAPPINGS.getYarn(Mappings.asMethod(clazz, method)).split("#")[1];
+                    mappedName = mappings.getMapped(Mappings.asMethod(clazz, method)).split("#")[1];
                     if (mappedName.equals(name) || mappedName.equals("m_" + methodName)) {
                         return method;
                     }
                 }
 
                 for (var clazz : sourceClass.allInterfaces()) {
-                    mappedName = Allium.MAPPINGS.getYarn(Mappings.asMethod(clazz, method)).split("#")[1];
+                    mappedName = mappings.getMapped(Mappings.asMethod(clazz, method)).split("#")[1];
                     if (mappedName.equals(name) || mappedName.equals("m_" + methodName)) {
                         return method;
                     }
@@ -152,7 +160,7 @@ public final class PropertyResolver {
         return null;
     }
 
-    public static EField findField(EClass<?> sourceClass, Collection<EField> fields, String name, boolean staticOnly) {
+    public static EField findField(LuaState state, EClass<?> sourceClass, Collection<EField> fields, String name, boolean staticOnly) throws LuaError {
         for (var field : fields) {
             if (AnnotationUtils.isHiddenFromLua(field)) continue;
             if (staticOnly && !field.isStatic()) continue;
@@ -173,12 +181,14 @@ public final class PropertyResolver {
                     return field;
                 }
             } else {
-                if (Allium.MAPPINGS.getYarn(Mappings.asMethod(sourceClass, field)).split("#")[1].equals(name)) {
+                Mappings mappings = ScriptRegistry.find(state).getMappings();
+
+                if (mappings.getMapped(Mappings.asMethod(sourceClass, field)).split("#")[1].equals(name)) {
                     return field;
                 }
 
                 for (var clazz : sourceClass.allSuperclasses()) {
-                    if (Allium.MAPPINGS.getYarn(Mappings.asMethod(clazz, field)).split("#")[1].equals(name)) {
+                    if (mappings.getMapped(Mappings.asMethod(clazz, field)).split("#")[1].equals(name)) {
                         return field;
                     }
                 }
