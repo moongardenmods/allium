@@ -1,9 +1,0 @@
-{
-  "id": "script_b",
-  "version": "1.0.0",
-  "name": "Script B",
-  "entrypoints": {
-    "dynamic": "main.lua"
-  },
-  "mappings": "yarn"
-}

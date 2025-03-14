@@ -15,8 +15,7 @@ jobs:
           21,    # Current Java LTS
         ]
         mod: [
-          "allium",
-          "bouquet"
+          "allium"
         ]
     runs-on: ubuntu-22.04
     steps:
@@ -32,9 +31,9 @@ jobs:
       - name: make gradle wrapper executable
         run: chmod +x ./gradlew
       - name: build ${{ matrix.mod }}
-        run: ./gradlew :${{ matrix.mod }}:build
+        run: ./gradlew build
       - name: capture ${{ matrix.mod }} build artifacts
         uses: actions/upload-artifact@v4
         with:
           name: ${{ matrix.mod }}
-          path: ${{ matrix.mod }}/build/libs/
+          path: build/libs/

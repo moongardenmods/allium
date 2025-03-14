@@ -1,0 +1,39 @@
+{
+  "schemaVersion": 1,
+  "id": "allium",
+  "version": "${version}",
+
+  "name": "Allium Loader",
+  "description": "Lua Script loader for Minecraft",
+  "authors": [
+    "hugeblank"
+  ],
+  "contact": {
+    "homepage": "https://allium.hugeblank.dev/",
+    "sources": "https://github.com/hugeblank/allium"
+  },
+
+  "license": "CC0-1.0",
+  "icon": "assets/allium/icon.png",
+
+  "environment": "*",
+  "entrypoints": {
+    "main": [
+      "dev.hugeblank.allium.fabric.AlliumFabric"
+    ],
+    "client": [
+      "dev.hugeblank.allium.fabric.AlliumClient"
+    ],
+    "server": [
+      "dev.hugeblank.allium.fabric.AlliumServer"
+    ]
+  },
+  "mixins": [],
+
+  "depends": {
+    "minecraft": ">=1.19.4",
+    "java": ">=17",
+    "fabricloader": ">=0.11.3",
+    "architectury": ">=13.0.8"
+  }
+}

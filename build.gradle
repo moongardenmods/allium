@@ -1,0 +1,96 @@
+plugins {
+    id("dev.architectury.loom") version "1.9-SNAPSHOT" apply false
+    id("architectury-plugin") version "3.4-SNAPSHOT"
+    id("com.github.johnrengelman.shadow") version "8.1.1" apply false
+}
+
+var v = version
+if ("0" != releaseCandidate) {
+    v = "$v-rc$releaseCandidate"
+}
+
+architectury {
+    minecraft = minecraftVersion
+}
+
+allprojects {
+    project.version = v
+    group = mavenGroup
+}
+
+subprojects {
+    apply plugin: "dev.architectury.loom"
+    apply plugin: "architectury-plugin"
+    apply plugin: "maven-publish"
+
+    base {
+        archivesName.set("$baseName-${project.name}")
+    }
+
+    repositories {
+        maven() {
+            url = "https://maven.hugeblank.dev/releases"
+            content {
+                includeGroup("dev.hugeblank")
+            }
+        }
+        maven() {
+            url = "https://squiddev.cc/maven"
+            content {
+                includeGroup("cc.tweaked")
+            }
+        }
+        maven() {
+            url = "https://maven.nucleoid.xyz"
+            content {
+                includeGroup("eu.pb4")
+            }
+        }
+        maven() {
+            url = "https://basique.top/maven/releases"
+            content {
+                includeGroup("me.basiqueevangelist")
+            }
+        }
+    }
+
+    dependencies {
+        minecraft("com.mojang:minecraft:$minecraftVersion")
+        mappings(loom.layered {
+            mappings("net.fabricmc:yarn:$yarnMappings:v2")
+            mappings("dev.architectury:yarn-mappings-patch-neoforge:$yarnMappingsNeoforge")
+        })
+
+        modImplementation("cc.tweaked:cobalt:$rootProject.cobalt")
+        modImplementation("me.basiqueevangelist:enhanced-reflection:$rootProject.enhancedReflections")
+        modImplementation("net.fabricmc:tiny-mappings-parser:$rootProject.tinyParser")
+    }
+
+    java {
+        withSourcesJar()
+
+        sourceCompatibility = JavaVersion.VERSION_21
+        targetCompatibility = JavaVersion.VERSION_21
+    }
+
+    publishing {
+        publications {
+            mavenJava(MavenPublication) {
+                from components.java
+                groupId = mavenGroup
+                artifactId = base.archivesName.get()
+                version = version
+            }
+        }
+        repositories {
+            maven {
+                name = "hugeblankRepo"
+                url = uri("https://maven.hugeblank.dev/releases")
+                credentials(PasswordCredentials)
+                authentication {
+                    create("basic", BasicAuthentication)
+                }
+            }
+        }
+    }
+}
