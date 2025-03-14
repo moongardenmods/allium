@@ -1,5 +1,6 @@
 package dev.hugeblank.bouquet.api.lib;
 
+import dev.hugeblank.allium.Allium;
 import dev.hugeblank.allium.loader.Script;
 import dev.hugeblank.allium.api.WrappedLuaLibrary;
 import dev.hugeblank.allium.loader.ScriptRegistry;
@@ -22,16 +23,20 @@ public class AlliumLib implements WrappedLuaLibrary {
 
     @LuaWrapped
     public boolean isScriptLoaded(@LuaStateArg LuaState state, String id) throws LuaError {
-        return ScriptRegistry.getInstance(ScriptRegistry.find(state).getEnvironment()).has(id);
+        return getRegistry(state).has(id);
     }
 
     @LuaWrapped
     public @CoerceToNative Set<Script> getAllScripts(@LuaStateArg LuaState state) throws LuaError {
-        return ScriptRegistry.getInstance(ScriptRegistry.find(state).getEnvironment()).getAll();
+        return getRegistry(state).getAll();
     }
 
     @LuaWrapped
     public @Nullable Script getScript(@LuaStateArg LuaState state, String id) throws LuaError {
-        return ScriptRegistry.getInstance(ScriptRegistry.find(state).getEnvironment()).get(id);
+        return getRegistry(state).get(id);
+    }
+
+    private static ScriptRegistry getRegistry(LuaState state) throws LuaError {
+        return ScriptRegistry.getInstance(ScriptRegistry.scriptFromState(state).getEnvironment());
     }
 }

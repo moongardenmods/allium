@@ -1,6 +1,5 @@
 package dev.hugeblank.bouquet.api.lib;
 
-import dev.hugeblank.allium.Allium;
 import dev.hugeblank.allium.api.WrappedLuaLibrary;
 import dev.hugeblank.allium.loader.ScriptRegistry;
 import dev.hugeblank.allium.loader.type.*;
@@ -9,6 +8,7 @@ import dev.hugeblank.allium.loader.type.annotation.LuaStateArg;
 import dev.hugeblank.allium.loader.type.annotation.LuaWrapped;
 import dev.hugeblank.allium.loader.type.annotation.OptionalArg;
 import dev.hugeblank.allium.loader.type.coercion.TypeCoercions;
+import dev.hugeblank.allium.mappings.Mappings;
 import dev.hugeblank.allium.util.JavaHelpers;
 import me.basiqueevangelist.enhancedreflection.api.EClass;
 import org.squiddev.cobalt.*;
@@ -20,12 +20,16 @@ public class JavaLib implements WrappedLuaLibrary {
 
     @LuaWrapped
     public static String toMappings(@LuaStateArg LuaState state, String string) throws LuaError {
-        return ScriptRegistry.find(state).getMappings().getMapped(string);
+        return getMappings(state).getMapped(string);
     }
 
     @LuaWrapped
     public static @CoerceToNative List<String> fromMappings(@LuaStateArg LuaState state, String string) throws LuaError {
-        return ScriptRegistry.find(state).getMappings().getUnmapped(string);
+        return getMappings(state).getUnmapped(string);
+    }
+
+    private static Mappings getMappings(LuaState state) throws LuaError {
+        return ScriptRegistry.scriptFromState(state).getMappings();
     }
 
     @LuaWrapped
