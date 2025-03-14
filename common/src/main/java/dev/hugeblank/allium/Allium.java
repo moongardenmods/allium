@@ -2,11 +2,10 @@ package dev.hugeblank.allium;
 
 import dev.architectury.platform.Platform;
 import dev.hugeblank.allium.loader.ScriptRegistry;
+import dev.hugeblank.allium.mappings.Mappings;
+import dev.hugeblank.allium.mappings.YarnLoader;
 import dev.hugeblank.allium.util.FileHelper;
-import dev.hugeblank.allium.util.Mappings;
 import dev.hugeblank.allium.util.SetupHelpers;
-import dev.hugeblank.allium.util.YarnLoader;
-import net.fabricmc.api.EnvType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -23,11 +22,13 @@ public class Allium {
     public static final boolean DEVELOPMENT = Platform.isDevelopmentEnvironment();
     public static final Path DUMP_DIRECTORY = Platform.getGameFolder().resolve("allium-dump");
     public static final String VERSION = Platform.getMod(ID).getVersion();
-    public static Mappings MAPPINGS;
+
+    public static void preLaunch() {
+        clearDumpDirectory();
+        Mappings.LOADERS.register(new YarnLoader());
+    }
 
     public static void init() {
-        clearDumpDirectory();
-        
         try {
             if (!Files.exists(FileHelper.PERSISTENCE_DIR)) Files.createDirectory(FileHelper.PERSISTENCE_DIR);
             if (!Files.exists(FileHelper.CONFIG_DIR)) Files.createDirectory(FileHelper.CONFIG_DIR);
@@ -35,24 +36,15 @@ public class Allium {
             throw new RuntimeException("Couldn't create config directory", e);
         }
 
-        LOGGER.info("Loading NathanFudge's Yarn Remapper");
-        MAPPINGS = YarnLoader.init();
-
-        SetupHelpers.initializeExtensions(null);
-        SetupHelpers.collectScripts(ScriptRegistry.EnvType.COMMON);
-        SetupHelpers.initializeScripts(ScriptRegistry.EnvType.COMMON);
+        SetupHelpers.initializeEnvironment(EnvType.COMMON);
     }
 
     public static void initClient() {
-        SetupHelpers.initializeExtensions(EnvType.CLIENT);
-        SetupHelpers.collectScripts(ScriptRegistry.EnvType.CLIENT);
-        SetupHelpers.initializeScripts(ScriptRegistry.EnvType.CLIENT);
+        SetupHelpers.initializeEnvironment(EnvType.CLIENT);
     }
 
     public static void initServer() {
-        SetupHelpers.initializeExtensions(EnvType.SERVER);
-        SetupHelpers.collectScripts(ScriptRegistry.EnvType.SERVER);
-        SetupHelpers.initializeScripts(ScriptRegistry.EnvType.SERVER);
+        SetupHelpers.initializeEnvironment(EnvType.DEDICATED);
     }
 
     private static void clearDumpDirectory() {
@@ -85,6 +77,21 @@ public class Allium {
             } catch (IOException e) {
                 throw new RuntimeException("Couldn't delete dump directory", e);
             }
+        }
+    }
+
+    public enum EnvType {
+        COMMON("common"), // common & server code
+        CLIENT("client"), // client code only
+        DEDICATED("dedicated"); // server code only
+
+        private final String key;
+        EnvType(String key) {
+            this.key = key;
+        }
+
+        public String getKey() {
+            return key;
         }
     }
 }
