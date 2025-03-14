@@ -97,7 +97,7 @@ public class MetatableUtils {
                     cachedProperties.put(memberName, propertyData);
                 }
 
-                if (!Allium.DEVELOPMENT) memberName = ScriptRegistry.find(state).getMappings().getMapped(memberName);
+                if (!Allium.DEVELOPMENT) memberName = ScriptRegistry.scriptFromState(state).getMappings().getMapped(memberName);
 
                 varargs.add(ValueFactory.varargsOf(LuaString.valueOf(memberName), propertyData.get(
                         memberName,

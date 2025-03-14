@@ -1,16 +1,9 @@
 package dev.hugeblank.allium.util;
 
-import dev.hugeblank.allium.Allium;
-import dev.hugeblank.allium.loader.Script;
 import dev.hugeblank.allium.loader.ScriptRegistry;
 import dev.hugeblank.allium.loader.type.AlliumUserdata;
 import me.basiqueevangelist.enhancedreflection.api.EClass;
-import net.fabricmc.loader.api.FabricLoader;
 import org.squiddev.cobalt.*;
-
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Set;
 
 public class JavaHelpers {
 
@@ -28,17 +21,13 @@ public class JavaHelpers {
 
     public static EClass<?> getRawClass(LuaState state, String className) throws LuaError {
             try {
-                className = ScriptRegistry.find(state).getMappings().getUnmapped(className).get(0);
+                className = ScriptRegistry.scriptFromState(state).getMappings().getUnmapped(className).get(0);
                 return EClass.fromJava(Class.forName(className));
-            } catch (ClassNotFoundException ignored) {
-
-            }
+            } catch (ClassNotFoundException ignored) {}
 
             try {
                 return EClass.fromJava(Class.forName(className));
-            } catch (ClassNotFoundException ignored) {
-
-            }
+            } catch (ClassNotFoundException ignored) {}
 
         throw new LuaError("Couldn't find class \"" + className + "\"");
     }

@@ -8,13 +8,16 @@ import me.basiqueevangelist.enhancedreflection.api.EField;
 import me.basiqueevangelist.enhancedreflection.api.EMethod;
 import dev.hugeblank.allium.mappings.Mappings;
 import org.apache.commons.lang3.StringUtils;
+import org.jetbrains.annotations.Nullable;
 import org.squiddev.cobalt.LuaError;
 import org.squiddev.cobalt.LuaState;
 
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
+import java.util.function.Function;
 import java.util.function.Predicate;
 
 public final class PropertyResolver {
@@ -74,36 +77,7 @@ public final class PropertyResolver {
                 continue;
             }
 
-
-            if (!Allium.DEVELOPMENT) {
-                Mappings mappings = ScriptRegistry.find(state).getMappings();
-
-                var mappedName = mappings.getMapped(Mappings.asMethod(sourceClass, method)).split("#")[1];
-                if (mappedName.equals(name) || mappedName.equals("m_" + methodName)) {
-                    consumer.accept(method);
-                }
-
-                for (var clazz : sourceClass.allInterfaces()) {
-                    mappedName = mappings.getMapped(Mappings.asMethod(clazz, method)).split("#")[1];
-                    if (mappedName.equals(name) || mappedName.equals("m_" + methodName)) {
-                        consumer.accept(method);
-                    }
-                }
-
-                for (var clazz : sourceClass.allSuperclasses()) {
-                    mappedName = mappings.getMapped(Mappings.asMethod(clazz, method)).split("#")[1];
-                    if (mappedName.equals(name) || mappedName.equals("m_" + methodName)) {
-                        consumer.accept(method);
-                    }
-
-                    for (var iface : clazz.allInterfaces()) {
-                        mappedName = mappings.getMapped(Mappings.asMethod(iface, method)).split("#")[1];
-                        if (mappedName.equals(name) || mappedName.equals("m_" + methodName)) {
-                            consumer.accept(method);
-                        }
-                    }
-                }
-            }
+            if (!Allium.DEVELOPMENT) resolveMethods(state, sourceClass, method, name, consumer);
         }
     }
 
@@ -115,9 +89,7 @@ public final class PropertyResolver {
             String[] altNames = AnnotationUtils.findNames(method);
             if (altNames != null) {
                 for (String altName : altNames) {
-                    if (altName.equals(name)) {
-                        return method;
-                    }
+                    if (altName.equals(name)) return method;
                 }
 
                 continue;
@@ -133,31 +105,60 @@ public final class PropertyResolver {
                 continue;
             }
 
-            if (!Allium.DEVELOPMENT) {
-                Mappings mappings = ScriptRegistry.find(state).getMappings();
-
-                var mappedName = mappings.getMapped(Mappings.asMethod(sourceClass, method)).split("#")[1];
-                if (mappedName.equals(name) || mappedName.equals("m_" + methodName)) {
-                    return method;
-                }
-
-                for (var clazz : sourceClass.allSuperclasses()) {
-                    mappedName = mappings.getMapped(Mappings.asMethod(clazz, method)).split("#")[1];
-                    if (mappedName.equals(name) || mappedName.equals("m_" + methodName)) {
-                        return method;
-                    }
-                }
-
-                for (var clazz : sourceClass.allInterfaces()) {
-                    mappedName = mappings.getMapped(Mappings.asMethod(clazz, method)).split("#")[1];
-                    if (mappedName.equals(name) || mappedName.equals("m_" + methodName)) {
-                        return method;
-                    }
-                }
+            if (!Allium.DEVELOPMENT && resolveMethods(state, sourceClass, method, name, null)) {
+                return method;
             }
         }
 
         return null;
+    }
+
+    private static boolean resolveMethods(LuaState state, EClass<?> sourceClass, EMethod method, String targetName, @Nullable Consumer<EMethod> consumer) throws LuaError {
+        String methodName = method.name();
+        Mappings mappings = ScriptRegistry.scriptFromState(state).getMappings();
+
+        var mappedName = mappings.getMapped(Mappings.asMethod(sourceClass, method)).split("#")[1];
+        if (mappedName.equals(targetName) || mappedName.equals("m_" + methodName)) {
+            if (consumer == null) {
+                return true;
+            } else {
+                consumer.accept(method);
+            }
+        }
+
+        for (var clazz : sourceClass.allInterfaces()) {
+            mappedName = mappings.getMapped(Mappings.asMethod(clazz, method)).split("#")[1];
+            if (mappedName.equals(targetName) || mappedName.equals("m_" + methodName)) {
+                if (consumer == null) {
+                    return true;
+                } else {
+                    consumer.accept(method);
+                }
+            }
+        }
+
+        for (var clazz : sourceClass.allSuperclasses()) {
+            mappedName = mappings.getMapped(Mappings.asMethod(clazz, method)).split("#")[1];
+            if (mappedName.equals(targetName) || mappedName.equals("m_" + methodName)) {
+                if (consumer == null) {
+                    return true;
+                } else {
+                    consumer.accept(method);
+                }
+            }
+
+            for (var iface : clazz.allInterfaces()) {
+                mappedName = mappings.getMapped(Mappings.asMethod(iface, method)).split("#")[1];
+                if (mappedName.equals(targetName) || mappedName.equals("m_" + methodName)) {
+                    if (consumer == null) {
+                        return true;
+                    } else {
+                        consumer.accept(method);
+                    }
+                }
+            }
+        }
+        return false;
     }
 
     public static EField findField(LuaState state, EClass<?> sourceClass, Collection<EField> fields, String name, boolean staticOnly) throws LuaError {
@@ -181,7 +182,7 @@ public final class PropertyResolver {
                     return field;
                 }
             } else {
-                Mappings mappings = ScriptRegistry.find(state).getMappings();
+                Mappings mappings = ScriptRegistry.scriptFromState(state).getMappings();
 
                 if (mappings.getMapped(Mappings.asMethod(sourceClass, field)).split("#")[1].equals(name)) {
                     return field;
