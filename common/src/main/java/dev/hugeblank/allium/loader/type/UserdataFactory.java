@@ -12,7 +12,6 @@ import dev.hugeblank.allium.util.JavaHelpers;
 import dev.hugeblank.allium.util.MetatableUtils;
 import me.basiqueevangelist.enhancedreflection.api.EClass;
 import me.basiqueevangelist.enhancedreflection.api.EMethod;
-import me.basiqueevangelist.enhancedreflection.api.typeuse.EClassUse;
 import dev.hugeblank.allium.loader.type.annotation.LuaIndex;
 import dev.hugeblank.allium.loader.type.property.EmptyData;
 import dev.hugeblank.allium.loader.type.property.PropertyResolver;

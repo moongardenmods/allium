@@ -4,23 +4,6 @@ plugins {
     id("com.github.johnrengelman.shadow") version "8.1.1" apply false
 }
 
-// Mod Properties
-val mavenGroup: String by project
-val version: String by project
-val releaseCandidate: String by project
-val baseName: String by project
-
-// Fabric Properties
-val minecraftVersion: String by project
-val yarnMappings: String by project
-val yarnMappingsNeoforge: String by project
-val loaderVersion: String by project
-
-// Dependencies
-val cobalt: String by project
-val tinyParser: String by project
-val enhancedReflections: String by project
-
 var v = version
 if ("0" != releaseCandidate) {
     v = "$v-rc$releaseCandidate"
@@ -36,31 +19,35 @@ allprojects {
 }
 
 subprojects {
-    apply(plugin = "dev.architectury.loom")
-    apply(plugin = "architectury-plugin")
-    apply(plugin = "maven-publish")
+    apply plugin: "dev.architectury.loom"
+    apply plugin: "architectury-plugin"
+    apply plugin: "maven-publish"
 
     base {
         archivesName.set("$baseName-${project.name}")
     }
 
     repositories {
-        maven("https://maven.hugeblank.dev/releases") {
+        maven() {
+            url = "https://maven.hugeblank.dev/releases"
             content {
                 includeGroup("dev.hugeblank")
             }
         }
-        maven("https://squiddev.cc/maven") {
+        maven() {
+            url = "https://squiddev.cc/maven"
             content {
                 includeGroup("cc.tweaked")
             }
         }
-        maven("https://maven.nucleoid.xyz") {
+        maven() {
+            url = "https://maven.nucleoid.xyz"
             content {
                 includeGroup("eu.pb4")
             }
         }
-        maven("https://basique.top/maven/releases") {
+        maven() {
+            url = "https://basique.top/maven/releases"
             content {
                 includeGroup("me.basiqueevangelist")
             }
@@ -74,10 +61,9 @@ subprojects {
             mappings("dev.architectury:yarn-mappings-patch-neoforge:$yarnMappingsNeoforge")
         })
 
-
-        modImplementation("cc.tweaked", "cobalt", cobalt)
-        modImplementation("me.basiqueevangelist", "enhanced-reflection", enhancedReflections)
-        modImplementation("net.fabricmc", "tiny-mappings-parser", tinyParser)
+        modImplementation("cc.tweaked:cobalt:$rootProject.cobalt")
+        modImplementation("me.basiqueevangelist:enhanced-reflection:$rootProject.enhancedReflections")
+        modImplementation("net.fabricmc:tiny-mappings-parser:$rootProject.tinyParser")
     }
 
     java {
@@ -89,8 +75,8 @@ subprojects {
 
     publishing {
         publications {
-            register("mavenJava", MavenPublication::class) {
-                from(components["java"])
+            mavenJava(MavenPublication) {
+                from components.java
                 groupId = mavenGroup
                 artifactId = base.archivesName.get()
                 version = version
@@ -100,9 +86,9 @@ subprojects {
             maven {
                 name = "hugeblankRepo"
                 url = uri("https://maven.hugeblank.dev/releases")
-                credentials(PasswordCredentials::class)
+                credentials(PasswordCredentials)
                 authentication {
-                    create<BasicAuthentication>("basic")
+                    create("basic", BasicAuthentication)
                 }
             }
         }
