@@ -34,3 +34,10 @@ dependencies {
     shadowBundle project(path: ':common', configuration: 'transformProductionFabric')
 }
 
+processResources {
+    inputs.property("version", rootProject.version)
+
+    filesMatching("fabric.mod.json") {
+        expand("version": rootProject.version)
+    }
+}
