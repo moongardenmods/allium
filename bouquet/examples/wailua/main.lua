@@ -16,6 +16,7 @@ events.client.GUI_RENDER_TAIL:register(script, function(client, context, hud)
         context:drawCenteredTextWithShadow(hud:getTextRenderer(), renderText, context:getScaledWindowWidth()/2, 5, 0xffffff)
         -- The position 5 was arbitrarily chosen, and was the first value I picked just to test. It worked perfectly.
         -- Exercise for the reader - Create a background frame behind the text, so it can be viewed on white backgrounds.
+        -- Note that while text rendering uses RGB, background rendering uses ARGB.
     end
 end)
 
