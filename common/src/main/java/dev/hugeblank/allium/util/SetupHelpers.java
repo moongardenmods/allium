@@ -1,44 +1,22 @@
 package dev.hugeblank.allium.util;
 
 import com.google.common.collect.ImmutableSet;
+import dev.architectury.injectables.annotations.ExpectPlatform;
 import dev.hugeblank.allium.Allium;
-import dev.hugeblank.allium.api.AlliumExtension;
 import dev.hugeblank.allium.loader.Script;
 import dev.hugeblank.allium.loader.ScriptRegistry;
 import dev.hugeblank.allium.mappings.Mappings;
-import net.fabricmc.loader.api.FabricLoader;
-import net.fabricmc.loader.api.ModContainer;
-import net.fabricmc.loader.api.entrypoint.EntrypointContainer;
 
 import java.util.Collection;
-import java.util.HashSet;
-import java.util.List;
 import java.util.Set;
 import java.util.function.BiConsumer;
 
 public class SetupHelpers {
-    public static void initializeEnvironment(Allium.EnvType containerEnvType) {
-
-        // INITIALIZE EXTENSIONS
-        Set<ModContainer> mods = new HashSet<>();
-        FabricLoader instance = FabricLoader.getInstance();
-        List<EntrypointContainer<AlliumExtension>> containers = switch (containerEnvType) {
-            case COMMON -> instance.getEntrypointContainers(Allium.ID, AlliumExtension.class);
-            case CLIENT -> instance.getEntrypointContainers(Allium.ID+"-client", AlliumExtension.class);
-            case DEDICATED -> instance.getEntrypointContainers(Allium.ID+"-dedicated", AlliumExtension.class);
-        };
-        containers.forEach((initializer) -> {
-            initializer.getEntrypoint().onInitialize();
-            mods.add(initializer.getProvider());
-        });
-        list(mods, containerEnvType, "Initialized " + mods.size() + " extensions:\n",
-                (builder, mod) -> builder.append(mod.getMetadata().getId())
-        );
-
+    public static void initializeScripts(Allium.EnvType containerEnvType) {
         // COLLECT SCRIPTS
         ImmutableSet.Builder<Script> setBuilder = ImmutableSet.builder();
         setBuilder.addAll(FileHelper.getValidDirScripts(FileHelper.getScriptsDirectory(), containerEnvType));
-        setBuilder.addAll(FileHelper.getValidModScripts(containerEnvType));
+        // setBuilder.addAll(FileHelper.getValidModScripts(containerEnvType));
         Set<Script> scripts = setBuilder.build();
 
         if (scripts.isEmpty()) {
@@ -79,5 +57,10 @@ public class SetupHelpers {
             builder.append("\n");
         });
         Allium.LOGGER.info(builder.substring(0, builder.length()-1));
+    }
+
+    @ExpectPlatform
+    public static void initializeExtensions(Allium.EnvType containerEnvType) {
+        throw new AssertionError();
     }
 }

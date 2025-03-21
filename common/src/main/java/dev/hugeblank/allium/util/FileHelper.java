@@ -4,6 +4,7 @@ import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonParser;
+import dev.architectury.platform.Platform;
 import dev.hugeblank.allium.Allium;
 import dev.hugeblank.allium.loader.*;
 import net.fabricmc.loader.api.FabricLoader;
@@ -30,10 +31,10 @@ public class FileHelper {
           manifest.json |  File containing key information about the script. ID, Name, Version, Entrypoint locations
     */
 
-    public static final Path SCRIPT_DIR = FabricLoader.getInstance().getGameDir().resolve(Allium.ID);
-    public static final Path CONFIG_DIR = FabricLoader.getInstance().getConfigDir().resolve(Allium.ID);
-    public static final Path PERSISTENCE_DIR = FabricLoader.getInstance().getConfigDir().resolve(Allium.ID + "_persistence");
-    public static final Path MAPPINGS_CFG_DIR = FabricLoader.getInstance().getConfigDir().resolve(Allium.ID + "_mappings");
+    public static final Path SCRIPT_DIR = Platform.getGameFolder().resolve(Allium.ID);
+    public static final Path CONFIG_DIR = Platform.getConfigFolder().resolve(Allium.ID);
+    public static final Path PERSISTENCE_DIR = Platform.getConfigFolder().resolve(Allium.ID + "_persistence");
+    public static final Path MAPPINGS_CFG_DIR = Platform.getConfigFolder().resolve(Allium.ID + "_mappings");
     public static final String MANIFEST_FILE_NAME = "manifest.json";
 
     public static Path getScriptsDirectory() {
@@ -85,7 +86,7 @@ public class FileHelper {
     }
 
     // TODO: Test in prod
-    public static Set<Script> getValidModScripts(Allium.EnvType containerEnvType) {
+    /*public static Set<Script> getValidModScripts(Allium.EnvType containerEnvType) {
         Set<Script> out = new HashSet<>();
         FabricLoader.getInstance().getAllMods().forEach((container) -> {
             ModMetadata metadata = container.getMetadata();
@@ -155,7 +156,7 @@ public class FileHelper {
             }
         });
         return out.get();
-    }
+    }*/
 
     private static boolean exists(Entrypoint entrypoints, Path path, Entrypoint.Type type) {
         return entrypoints.has(type) && path.resolve(entrypoints.get(type)).toFile().exists();
@@ -180,7 +181,7 @@ public class FileHelper {
         outputStream.close();
     }
 
-    private static Manifest makeManifest(CustomValue.CvObject value) {
+    /*private static Manifest makeManifest(CustomValue.CvObject value) {
         return makeManifest(value, null, null, null);
     }
 
@@ -211,5 +212,5 @@ public class FileHelper {
             }
         }
         return new Entrypoint(entrypointMap);
-    }
+    }*/
 }

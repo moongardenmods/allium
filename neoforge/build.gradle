@@ -35,6 +35,9 @@ dependencies {
     neoForge "net.neoforged:neoforge:$rootProject.neoforgeVersion"
 
     modImplementation "dev.architectury:architectury-neoforge:$rootProject.architecturyApi"
+    include("cc.tweaked:cobalt:$rootProject.cobalt")
+    include("me.basiqueevangelist:enhanced-reflection:$rootProject.enhancedReflections")
+    include("net.fabricmc:tiny-mappings-parser:$rootProject.tinyParser")
 
     common(project(path: ':common', configuration: 'namedElements')) { transitive false }
     shadowBundle project(path: ':common', configuration: 'transformProductionNeoForge')

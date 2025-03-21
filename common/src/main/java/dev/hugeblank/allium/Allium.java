@@ -1,7 +1,6 @@
 package dev.hugeblank.allium;
 
 import dev.architectury.platform.Platform;
-import dev.hugeblank.allium.loader.ScriptRegistry;
 import dev.hugeblank.allium.mappings.Mappings;
 import dev.hugeblank.allium.mappings.YarnLoader;
 import dev.hugeblank.allium.util.FileHelper;
@@ -23,12 +22,10 @@ public class Allium {
     public static final Path DUMP_DIRECTORY = Platform.getGameFolder().resolve("allium-dump");
     public static final String VERSION = Platform.getMod(ID).getVersion();
 
-    public static void preLaunch() {
+    public static void init() {
         clearDumpDirectory();
         Mappings.LOADERS.register(new YarnLoader());
-    }
 
-    public static void init() {
         try {
             if (!Files.exists(FileHelper.PERSISTENCE_DIR)) Files.createDirectory(FileHelper.PERSISTENCE_DIR);
             if (!Files.exists(FileHelper.CONFIG_DIR)) Files.createDirectory(FileHelper.CONFIG_DIR);
@@ -36,15 +33,15 @@ public class Allium {
             throw new RuntimeException("Couldn't create config directory", e);
         }
 
-        SetupHelpers.initializeEnvironment(EnvType.COMMON);
+        SetupHelpers.initializeScripts(EnvType.COMMON);
     }
 
     public static void initClient() {
-        SetupHelpers.initializeEnvironment(EnvType.CLIENT);
+        SetupHelpers.initializeScripts(EnvType.CLIENT);
     }
 
     public static void initServer() {
-        SetupHelpers.initializeEnvironment(EnvType.DEDICATED);
+        SetupHelpers.initializeScripts(EnvType.DEDICATED);
     }
 
     private static void clearDumpDirectory() {

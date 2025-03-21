@@ -29,6 +29,9 @@ dependencies {
 
     modImplementation "dev.architectury:architectury-fabric:$rootProject.architecturyApi"
     modRuntimeOnly("net.fabricmc.fabric-api:fabric-api:0.115.1+1.21.1")
+    include("cc.tweaked:cobalt:$rootProject.cobalt")
+    include("me.basiqueevangelist:enhanced-reflection:$rootProject.enhancedReflections")
+    include("net.fabricmc:tiny-mappings-parser:$rootProject.tinyParser")
 
     common(project(path: ':common', configuration: 'namedElements')) { transitive false }
     shadowBundle project(path: ':common', configuration: 'transformProductionFabric')
