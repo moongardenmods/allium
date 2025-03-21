@@ -6,6 +6,7 @@ import dev.hugeblank.allium.loader.Script;
 import dev.hugeblank.allium.loader.type.annotation.CoerceToNative;
 import dev.hugeblank.allium.loader.type.annotation.LuaWrapped;
 import dev.hugeblank.allium.util.FileHelper;
+import net.fabricmc.api.EnvType;
 import org.squiddev.cobalt.LuaError;
 import org.squiddev.cobalt.LuaTable;
 import org.squiddev.cobalt.LuaValue;
@@ -30,7 +31,7 @@ public class FsLib implements WrappedLuaLibrary {
 
     // Creates a persistent file storage outside of the script, since the scripts path could be in a mod or zip
     // Files cannot be created in mods/zips from what I can tell.
-    public FsLib(Script script, Allium.EnvType envType) {
+    public FsLib(Script script) {
         this(script, FileHelper.PERSISTENCE_DIR.resolve(script.getID()));
     }
 

@@ -1,8 +1,7 @@
 package dev.hugeblank.allium.api;
 
 
-import dev.hugeblank.allium.loader.Script;
-import dev.hugeblank.allium.loader.ScriptRegistry;
+import dev.hugeblank.allium.loader.lib.PackageLib;
 import dev.hugeblank.allium.loader.type.UserdataFactory;
 import dev.hugeblank.allium.loader.type.annotation.LuaWrapped;
 import me.basiqueevangelist.enhancedreflection.api.EClass;
@@ -12,7 +11,7 @@ import org.squiddev.cobalt.function.LibFunction;
 /**
  * Interface for lua libraries that take advantage of the LuaWrapped annotation
  *
- * @see dev.hugeblank.allium.loader.PackageLib
+ * @see PackageLib
  */
 public interface WrappedLuaLibrary {
 
@@ -25,7 +24,7 @@ public interface WrappedLuaLibrary {
             throw new IllegalStateException("WrappedLuaLibrary must have a @LuaWrapped annotation with a name!");
 
         for (String name : wrapped.name()) {
-            LibFunction.setGlobalLibrary(state, globals, name, lib);
+            LibFunction.setGlobalLibrary(state, state.globals(), name, lib);
         }
 
         return lib;

@@ -2,13 +2,11 @@ package dev.hugeblank.bouquet.api.lib;
 
 import dev.hugeblank.allium.api.WrappedLuaLibrary;
 import dev.hugeblank.allium.loader.type.StaticBinder;
-import dev.hugeblank.allium.loader.type.UserdataFactory;
 import dev.hugeblank.allium.loader.type.annotation.LuaIndex;
-import dev.hugeblank.bouquet.api.event.Events;
-import dev.hugeblank.bouquet.api.event.SimpleEventType;
 import dev.hugeblank.allium.loader.type.annotation.LuaWrapped;
+import dev.hugeblank.bouquet.api.event.Events;
 import me.basiqueevangelist.enhancedreflection.api.EClass;
-import net.minecraft.registry.Registries;
+import org.squiddev.cobalt.LuaError;
 import org.squiddev.cobalt.LuaUserdata;
 
 import java.util.HashMap;
@@ -19,7 +17,7 @@ public class DefaultEventsLib implements WrappedLuaLibrary {
     private static final Map<String, EClass<? extends Events>> MAP;
 
     @LuaIndex
-    public LuaUserdata index(String key) {
+    public LuaUserdata index(String key) throws LuaError {
         return StaticBinder.bindClass(MAP.get(key));
     }
 

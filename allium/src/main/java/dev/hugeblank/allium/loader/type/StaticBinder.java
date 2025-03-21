@@ -24,7 +24,9 @@ public final class StaticBinder {
 
     }
 
-    public static <T> LuaUserdata bindClass(EClass<T> clazz) {
+    public static <T> LuaUserdata bindClass(EClass<T> clazz) throws LuaError {
+        if (clazz == null) throw new LuaError("Cannot bind to null class");
+
         Map<String, PropertyData<? super T>> cachedProperties = new HashMap<>();
         LuaFunction getClassFunc = createGetClassFunction(clazz);
         LuaTable metatable = new LuaTable();
@@ -125,7 +127,7 @@ public final class StaticBinder {
                     throw new LuaError(e);
                 }
             } catch (InvalidArgumentException e) {
-                paramList.add(ArgumentUtils.paramsToPrettyString(parameters));
+                paramList.add(ArgumentUtils.paramsToPrettyString(state, parameters));
             }
         }
 

@@ -1,0 +1,10 @@
+{
+  "id": "cactallium",
+  "version": "1.0.0",
+  "name": "Cactus Flower",
+  "entrypoints": {
+    "dynamic": "main.lua",
+    "mixin": "mixin.lua"
+  },
+  "mappings": "yarn"
+}

@@ -5,7 +5,6 @@ import dev.hugeblank.allium.loader.type.StaticBinder;
 import dev.hugeblank.allium.loader.type.annotation.LuaIndex;
 import dev.hugeblank.allium.loader.type.annotation.LuaWrapped;
 import me.basiqueevangelist.enhancedreflection.api.EClass;
-import dev.hugeblank.bouquet.api.lib.JavaLib;
 import org.squiddev.cobalt.LuaError;
 import org.squiddev.cobalt.LuaValue;
 

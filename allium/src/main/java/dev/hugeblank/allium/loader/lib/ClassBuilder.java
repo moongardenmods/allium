@@ -1,12 +1,12 @@
-package dev.hugeblank.bouquet.api.lib;
+package dev.hugeblank.allium.loader.lib;
 
 import dev.hugeblank.allium.loader.type.StaticBinder;
 import dev.hugeblank.allium.loader.type.annotation.LuaStateArg;
 import dev.hugeblank.allium.loader.type.coercion.TypeCoercions;
 import dev.hugeblank.allium.loader.type.annotation.LuaWrapped;
 import dev.hugeblank.allium.loader.type.property.PropertyResolver;
-import dev.hugeblank.bouquet.util.AsmUtil;
-import dev.hugeblank.bouquet.util.ClassFieldBuilder;
+import dev.hugeblank.allium.util.asm.AsmUtil;
+import dev.hugeblank.allium.util.ClassFieldBuilder;
 import me.basiqueevangelist.enhancedreflection.api.EClass;
 import me.basiqueevangelist.enhancedreflection.api.EConstructor;
 import me.basiqueevangelist.enhancedreflection.api.EMethod;
@@ -200,7 +200,7 @@ public class ClassBuilder {
     }
 
     @LuaWrapped
-    public LuaValue build() {
+    public LuaValue build() throws LuaError {
         byte[] classBytes = c.toByteArray();
 
         Class<?> klass = AsmUtil.defineClass(className, classBytes);

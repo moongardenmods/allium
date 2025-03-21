@@ -9,11 +9,12 @@ import com.google.gson.Gson;
 import dev.hugeblank.allium.Allium;
 import dev.hugeblank.allium.api.MappingsLoader;
 import dev.hugeblank.allium.util.FileHelper;
+import net.fabricmc.loader.api.FabricLoader;
+import net.fabricmc.loader.api.ModContainer;
 import net.fabricmc.mapping.reader.v2.MappingGetter;
 import net.fabricmc.mapping.reader.v2.TinyMetadata;
 import net.fabricmc.mapping.reader.v2.TinyV2Factory;
 import net.fabricmc.mapping.reader.v2.TinyVisitor;
-import net.minecraft.MinecraftVersion;
 import org.apache.commons.io.FileUtils;
 
 import java.io.*;
@@ -21,16 +22,22 @@ import java.net.URL;
 import java.net.URLConnection;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.*;
+import java.nio.file.FileSystem;
 import java.util.*;
 
 public class YarnLoader implements MappingsLoader {
-
     private static final String MAPPINGS_JAR_LOCATION = "mappings/mappings.tiny";
-    private static final Path CACHED_MAPPINGS = FileHelper.MAPPINGS_CFG_DIR.resolve("mappings-" +  MinecraftVersion.create().getName() + ".tiny");
+    private static final Path CACHED_MAPPINGS = FileHelper.MAPPINGS_CFG_DIR.resolve("mappings-" +  getGameVersion() + ".tiny");
     private static final Path VERSION_FILE = FileHelper.MAPPINGS_CFG_DIR.resolve("yarn-version.txt");
 
     private static final String NAMESPACE_FROM = "intermediary";
     private static final String NAMESPACE_TO = "named";
+
+    private static String getGameVersion() {
+        Optional<ModContainer> gameContainer = FabricLoader.getInstance().getModContainer("minecraft");
+        if (gameContainer.isEmpty()) throw new IllegalStateException("Missing 'minecraft' mod container");
+        return gameContainer.get().getMetadata().getVersion().getFriendlyString();
+    }
 
     public Map<String, String> load() {
         Allium.LOGGER.info("Loading NathanFudge's Yarn Remapper");
@@ -135,7 +142,7 @@ public class YarnLoader implements MappingsLoader {
     }
 
     private static class YarnVersion {
-        private static final String YARN_API_ENTRYPOINT = "https://meta.fabricmc.net/v2/versions/yarn/" + MinecraftVersion.create().getName();
+        private static final String YARN_API_ENTRYPOINT = "https://meta.fabricmc.net/v2/versions/yarn/" + getGameVersion();
         private static String versionMemCache = null;
         public int build;
         public String version;

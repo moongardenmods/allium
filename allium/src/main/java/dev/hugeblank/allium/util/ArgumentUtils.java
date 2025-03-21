@@ -1,15 +1,15 @@
 package dev.hugeblank.allium.util;
 
+import dev.hugeblank.allium.Allium;
+import dev.hugeblank.allium.loader.ScriptRegistry;
 import dev.hugeblank.allium.loader.type.InvalidArgumentException;
-import dev.hugeblank.allium.loader.type.annotation.OptionalArg;
-import dev.hugeblank.allium.loader.type.coercion.TypeCoercions;
-import me.basiqueevangelist.enhancedreflection.api.EParameter;
 import dev.hugeblank.allium.loader.type.annotation.LuaArgs;
 import dev.hugeblank.allium.loader.type.annotation.LuaStateArg;
-import org.squiddev.cobalt.LuaError;
-import org.squiddev.cobalt.LuaState;
-import org.squiddev.cobalt.LuaTable;
-import org.squiddev.cobalt.Varargs;
+import dev.hugeblank.allium.loader.type.annotation.OptionalArg;
+import dev.hugeblank.allium.loader.type.coercion.TypeCoercions;
+import dev.hugeblank.allium.mappings.Mappings;
+import me.basiqueevangelist.enhancedreflection.api.EParameter;
+import org.squiddev.cobalt.*;
 
 import java.util.List;
 
@@ -22,7 +22,7 @@ public class ArgumentUtils {
         for (EParameter param : parameters) { // For each parameter in the matched call
             if (param.hasAnnotation(LuaStateArg.class)) {
                 if (!param.parameterType().upperBound().raw().equals(LuaState.class))
-                    throw new InvalidArgumentException("@ProvideLuaState parameter must take LuaState!");
+                    throw new InvalidArgumentException("@LuaStateArg parameter must take LuaState!");
 
                 arguments[filledJavaArguments] = state;
             } else if (param.hasAnnotation(LuaArgs.class)) {
@@ -67,7 +67,7 @@ public class ArgumentUtils {
         return arguments;
     }
 
-    public static String paramsToPrettyString(List<EParameter> parameters) {
+    public static String paramsToPrettyString(LuaState state, List<EParameter> parameters) throws LuaError {
         var sb = new StringBuilder();
         boolean isFirst = true;
         boolean optionalsStarted = false;
@@ -90,7 +90,7 @@ public class ArgumentUtils {
                     optionalsStarted = true;
                 }
 
-                sb.append(param);
+                sb.append(Allium.DEVELOPMENT ? param : ScriptRegistry.scriptFromState(state).getMappings().getMapped(Mappings.asClass(param.rawParameterType())));
             }
 
         }

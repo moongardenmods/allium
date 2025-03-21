@@ -18,9 +18,6 @@
 		"main": [
           "dev.hugeblank.bouquet.BouquetModInitializer"
 		],
-		"client": [
-			"dev.hugeblank.bouquet.BouquetClient"
-		],
 		"allium": [
 			"dev.hugeblank.bouquet.BouquetAlliumExtension"
 		],

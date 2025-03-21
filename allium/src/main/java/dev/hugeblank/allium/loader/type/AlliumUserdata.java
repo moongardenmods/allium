@@ -41,4 +41,9 @@ public class AlliumUserdata<T> extends LuaUserdata {
     public T toUserdata() {
         return clazz.cast(instance);
     }
+
+    @Override
+    public String toString() {
+        return "AlliumUserData<" + clazz.name().replace(clazz.packageName() + ".", "") + ">[" + (super.instance == null ? "null" : super.instance.toString()) + "]";
+    }
 }

@@ -9,7 +9,6 @@ import dev.hugeblank.allium.loader.type.annotation.CoerceToNative;
 import dev.hugeblank.allium.util.JavaHelpers;
 import me.basiqueevangelist.enhancedreflection.api.*;
 import me.basiqueevangelist.enhancedreflection.api.typeuse.EClassUse;
-import net.minecraft.util.Identifier;
 import org.squiddev.cobalt.*;
 import org.squiddev.cobalt.function.LuaFunction;
 

@@ -1,0 +1,10 @@
+{
+  "id": "luckbrew",
+  "version": "1.0.0",
+  "name": "Lucky Brew",
+  "entrypoints": {
+    "static": "main.lua",
+    "mixin": "mixin.lua"
+  },
+  "mappings": "yarn"
+}

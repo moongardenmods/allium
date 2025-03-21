@@ -5,6 +5,8 @@ import dev.hugeblank.allium.api.ScriptResource;
 import dev.hugeblank.allium.loader.type.annotation.LuaWrapped;
 import dev.hugeblank.allium.mappings.Mappings;
 import dev.hugeblank.allium.util.Identifiable;
+import dev.hugeblank.allium.util.MixinConfigUtil;
+import net.fabricmc.api.EnvType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.squiddev.cobalt.LuaError;
@@ -19,33 +21,33 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.*;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.Set;
+import java.util.WeakHashMap;
 
 @LuaWrapped()
 public class Script implements Identifiable {
 
     private final Manifest manifest;
     private final Path path;
-    private final Allium.EnvType envType;
     private final Logger logger;
     private final ScriptExecutor executor;
     // Whether this script was able to execute (isolated by environment)
-    private final Set<Allium.EnvType> initialized = new HashSet<>();
+    private boolean initialized = false;
     // Resources are stored in a weak set so that if a resource is abandoned, it gets destroyed.
     private final Set<ScriptResource> resources = Collections.newSetFromMap(new WeakHashMap<>());
     private boolean destroyingResources = false;
 
     protected LuaValue module;
 
-    public Script(Manifest manifest, Path path, Allium.EnvType envType) {
-        this.manifest = manifest;
-        this.path = path;
-        this.envType = envType;
-        this.executor = new ScriptExecutor(this, path, envType, manifest.entrypoints());
+    public Script(Reference reference) {
+        this.manifest = reference.manifest();
+        this.path = reference.path();
+        this.executor = new ScriptExecutor(this, path, manifest.entrypoints());
         this.logger = LoggerFactory.getLogger('@' + getID());
     }
 
-    // TODO: Move to Bouquet
     public void reload() {
         destroyAllResources();
         try {
@@ -107,6 +109,19 @@ public class Script implements Identifiable {
         destroyAllResources();
     }
 
+    public void preInitialize() {
+        if (MixinConfigUtil.isComplete()) {
+            getLogger().error("Attempted to pre-initialize after mixin configuration was loaded.");
+            return;
+        }
+        try {
+            getExecutor().preInitialize();
+        } catch (Throwable e) {
+            //noinspection StringConcatenationArgumentToLogCall
+            getLogger().error("Could not pre-initialize allium script " + getID(), e);
+        }
+    }
+
     public void initialize() {
         if (isInitialized()) {
             getLogger().warn("Attempted to initialize while already active!");
@@ -115,7 +130,7 @@ public class Script implements Identifiable {
         try {
             // Initialize and set module used by require
             this.module = getExecutor().initialize().arg(1);
-            this.initialized.add(envType); // If all these steps are successful, we can set initialized to true
+            this.initialized = true; // If all these steps are successful, we can set initialized to true
         } catch (Throwable e) {
             //noinspection StringConcatenationArgumentToLogCall
             getLogger().error("Could not initialize allium script " + getID(), e);
@@ -124,7 +139,7 @@ public class Script implements Identifiable {
     }
 
     public boolean isInitialized() {
-        return initialized.contains(envType);
+        return initialized;
     }
 
     // return null if file isn't contained within Scripts path, or if it doesn't exist.
@@ -146,8 +161,6 @@ public class Script implements Identifiable {
     public LuaValue getModule() {
         return module;
     }
-
-    public Allium.EnvType getEnvironment() { return envType; }
 
     public Manifest getManifest() {
         return manifest;
@@ -187,6 +200,14 @@ public class Script implements Identifiable {
     @Override
     public String toString() {
         return manifest.name();
+    }
+
+    public record Reference(Manifest manifest, Path path) implements Identifiable {
+
+        @Override
+        public String getID() {
+            return manifest().id();
+        }
     }
 
 }
