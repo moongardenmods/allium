@@ -2,6 +2,7 @@ package dev.hugeblank.bouquet.api.lib;
 
 import dev.hugeblank.allium.loader.type.StaticBinder;
 import dev.hugeblank.allium.loader.type.annotation.LuaStateArg;
+import dev.hugeblank.allium.loader.type.coercion.ProxyGenerator;
 import dev.hugeblank.allium.loader.type.coercion.TypeCoercions;
 import dev.hugeblank.allium.loader.type.annotation.LuaWrapped;
 import dev.hugeblank.allium.loader.type.property.PropertyResolver;
@@ -172,11 +173,10 @@ public class ClassBuilder {
 
         fields.storeAndGet(m, state, LuaState.class);
         if (!isVoid) m.visitInsn(DUP);
-        fields.storeAndGet(m, func, LuaFunction.class);
-        m.visitInsn(SWAP);
+        fields.storeAndGet(m, func, LuaValue.class);
         m.visitVarInsn(ALOAD, varPrefix);
         m.visitMethodInsn(INVOKESTATIC, Type.getInternalName(ValueFactory.class), "varargsOf", "([Lorg/squiddev/cobalt/LuaValue;)Lorg/squiddev/cobalt/Varargs;", false);
-        m.visitMethodInsn(INVOKEVIRTUAL, Type.getInternalName(LuaFunction.class), "invoke", "(Lorg/squiddev/cobalt/LuaState;Lorg/squiddev/cobalt/Varargs;)Lorg/squiddev/cobalt/Varargs;", false);
+        m.visitMethodInsn(INVOKESTATIC, Type.getInternalName(ProxyGenerator.class), "dispatch", "(Lorg/squiddev/cobalt/LuaState;Lorg/squiddev/cobalt/LuaValue;Lorg/squiddev/cobalt/Varargs;)Lorg/squiddev/cobalt/Varargs;", false);
 
         if (!isVoid) {
             m.visitMethodInsn(INVOKEVIRTUAL, Type.getInternalName(Varargs.class), "first", "()Lorg/squiddev/cobalt/LuaValue;", false);
