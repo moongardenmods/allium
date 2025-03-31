@@ -127,7 +127,7 @@ local function getTopPlayers()
         lb[#lb+1] = v
     end
     table.sort(lb, function(a, b)
-        return a.wins/(a.wins+a.losses) > b.wins/(b.wins+b.losses)
+        return a.wins-a.losses > b.wins-b.losses
     end)
     return lb
 end
@@ -164,7 +164,7 @@ builder:m_then(CommandManager.literal("start"):executes(function(context) -- The
             guessed = {}, -- Create a table to mark guessed characters in the word
             word = {}
         }
-        local target = words[math.random(1, #words)]
+        local target = words[math.random(1, #words)]:lower()
         for i = 1, target:len() do
             game.word[i] = target:sub(i,i)
             game.guessed[i] = false
@@ -193,7 +193,7 @@ builder:m_then(CommandManager.literal("guess"):m_then(CommandManager.argument("g
     -- The part of the command that handles guesses
     local player = context:getSource():getPlayer()
     local game = active[player]
-    local str = arguments.string.getString(context, "guess") -- Get the guess from the command context
+    local str = arguments.string.getString(context, "guess"):lower() -- Get the guess from the command context
     if game then -- If theres a game running
         sendMessage(context, "You guessed <bold>"..str.."</bold>")
         if #str == 1 then -- If the guess is a letter
