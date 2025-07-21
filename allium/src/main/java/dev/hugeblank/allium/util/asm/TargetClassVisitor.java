@@ -73,7 +73,7 @@ public class TargetClassVisitor extends ClassVisitor {
         if (visitor.instance.superName() != null) inheritanceNames.add(visitor.instance.superName());
         inheritanceNames.addAll(List.of(visitor.instance.interfaces()));
         for (String name : inheritanceNames) {
-            visitor.instance.addInheritance(parseUnmappedTarget(state, Mappings.toDottedClasspath(name)));
+            visitor.instance.addInheritance(parseUnmappedTarget(state, name));
         }
         if (visitor.getError() != null) throw visitor.getError();
         return visitor.instance;

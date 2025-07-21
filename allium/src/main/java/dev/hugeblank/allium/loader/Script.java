@@ -11,10 +11,7 @@ import net.fabricmc.api.EnvType;
 import net.fabricmc.mappingio.tree.VisitableMappingTree;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.squiddev.cobalt.LuaError;
-import org.squiddev.cobalt.LuaState;
-import org.squiddev.cobalt.LuaValue;
-import org.squiddev.cobalt.UnwindThrowable;
+import org.squiddev.cobalt.*;
 import org.squiddev.cobalt.compiler.CompileException;
 import org.squiddev.cobalt.function.Dispatch;
 import org.squiddev.cobalt.function.LuaFunction;
@@ -161,7 +158,7 @@ public class Script implements Identifiable {
 
     @LuaWrapped
     public LuaValue getModule() {
-        return module;
+        return module != null ? module : Constants.NIL;
     }
 
     public Manifest getManifest() {

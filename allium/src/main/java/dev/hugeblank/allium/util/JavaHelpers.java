@@ -1,5 +1,6 @@
 package dev.hugeblank.allium.util;
 
+import dev.hugeblank.allium.Allium;
 import dev.hugeblank.allium.loader.ScriptRegistry;
 import dev.hugeblank.allium.loader.type.AlliumClassUserdata;
 import dev.hugeblank.allium.loader.type.AlliumObjectUserdata;
@@ -24,8 +25,10 @@ public class JavaHelpers {
 
     public static EClass<?> getRawClass(LuaState state, String className) throws LuaError {
         try {
-            className = ScriptRegistry.scriptFromState(state).getMappings()
-                    .toUnmappedClassName(Mappings.toSlashedClasspath(className));
+            if (!Allium.DEVELOPMENT)
+                className = ScriptRegistry.scriptFromState(state).getMappings()
+                        .toUnmappedClassName(Mappings.toSlashedClasspath(className));
+
             if (className != null) return EClass.fromJava(Class.forName(Mappings.toDottedClasspath(className)));
         } catch (NoSuchMappingException e) {
             // TODO: Warn if not in dev

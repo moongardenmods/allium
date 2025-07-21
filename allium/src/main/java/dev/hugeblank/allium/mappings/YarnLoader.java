@@ -25,7 +25,6 @@ public class YarnLoader implements MappingsLoader {
 
     @Override
     public void load(MappingVisitor visitor) {
-        Allium.LOGGER.info("Loading NathanFudge's Yarn Remapper");
         try {
             // It's imperative that allium has these mappings otherwise all methods
             // in production will be intermediary names. not good.

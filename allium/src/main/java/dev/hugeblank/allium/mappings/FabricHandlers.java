@@ -35,7 +35,7 @@ public class FabricHandlers {
             VisitableMappingTree yarn = new MemoryMappingTree(true);
             PlatformMappings.getLoader(mapping).load(yarn);
             VisitableMappingTree reverseYarn = new MemoryMappingTree(true);
-            reverseYarn.accept(new MappingSourceNsSwitch(yarn, "named"));
+            yarn.accept(new MappingSourceNsSwitch(reverseYarn, "named"));
             return reverseYarn;
         }
 

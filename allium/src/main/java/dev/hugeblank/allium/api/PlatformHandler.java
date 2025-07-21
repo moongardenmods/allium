@@ -11,8 +11,10 @@ public abstract class PlatformHandler implements Identifiable {
     private static final Registry<MappingReference> REGISTRY = new Registry<>();
 
     public final Mappings getOrCreate() throws IOException {
-        Mappings mappings = new Mappings(createMappingTree(), getDestNS());
-        if (!REGISTRY.has(getID())) REGISTRY.register(new MappingReference(getID(), mappings));
+        if (!REGISTRY.has(getID())) {
+            Mappings mappings = new Mappings(createMappingTree(), getDestNS());
+            REGISTRY.register(new MappingReference(getID(), mappings));
+        }
         return REGISTRY.get(getID()).mappings();
     }
 

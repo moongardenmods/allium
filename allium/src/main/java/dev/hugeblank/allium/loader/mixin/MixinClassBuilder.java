@@ -8,6 +8,7 @@ import dev.hugeblank.allium.loader.type.InvalidArgumentException;
 import dev.hugeblank.allium.loader.type.InvalidMixinException;
 import dev.hugeblank.allium.loader.type.annotation.LuaWrapped;
 import dev.hugeblank.allium.loader.type.annotation.OptionalArg;
+import dev.hugeblank.allium.mappings.Mappings;
 import dev.hugeblank.allium.util.MixinConfigUtil;
 import dev.hugeblank.allium.util.Registry;
 import dev.hugeblank.allium.util.asm.*;
@@ -59,7 +60,7 @@ public class MixinClassBuilder {
         this.targetEnvironment = targetEnvironment;
         this.duck = duck;
         LuaState state = script.getExecutor().getState();
-        this.visitedClass = VisitedClass.ofClass(state, target);
+        this.visitedClass = VisitedClass.ofClass(state, Mappings.toSlashedClasspath(target));
 
         EClass<?> superClass = EClass.fromJava(Object.class);
         this.c.visit(
