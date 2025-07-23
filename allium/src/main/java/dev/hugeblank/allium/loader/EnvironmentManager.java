@@ -37,6 +37,7 @@ public class EnvironmentManager {
             LibFunction.setGlobalLibrary(state, globals, "script",
                     TypeCoercions.toLuaValue(script, EClass.fromJava(Script.class))
             );
+            loadLibrary(script, state, globals, new JavaLib());
         } catch (LuaError error) {
             script.getLogger().error("Error loading library:", error);
         }

@@ -82,7 +82,7 @@ public final class UDFFunctions<T> extends VarArgFunction {
                             if (e.getTargetException() instanceof LuaError err)
                                 throw err;
 
-                            throw new LuaError(e.getTargetException());
+                            throw new RethrowException(e.getTargetException());
                         }
                     }
                 } catch (InvalidArgumentException e) {
