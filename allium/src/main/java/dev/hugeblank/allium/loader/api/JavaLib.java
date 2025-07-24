@@ -11,6 +11,7 @@ import me.basiqueevangelist.enhancedreflection.api.EClass;
 import org.squiddev.cobalt.*;
 
 import java.util.List;
+import java.util.Map;
 
 @LuaWrapped(name = "java")
 public class JavaLib implements WrappedLuaLibrary {
@@ -61,9 +62,9 @@ public class JavaLib implements WrappedLuaLibrary {
     }
 
     @LuaWrapped
-    public static ClassBuilder extendClass(@LuaStateArg LuaState state, EClass<?> superclass, @OptionalArg List<EClass<?>> interfaces) {
+    public static ClassBuilder extendClass(@LuaStateArg LuaState state, EClass<?> superclass, @OptionalArg List<EClass<?>> interfaces, Map<String, Boolean> access) {
         if (interfaces == null) interfaces = List.of();
-        return new ClassBuilder(superclass, interfaces, state);
+        return new ClassBuilder(superclass, interfaces, access, state);
     }
 
     @LuaWrapped
