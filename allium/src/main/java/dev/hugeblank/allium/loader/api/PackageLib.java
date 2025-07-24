@@ -1,6 +1,9 @@
-package dev.hugeblank.allium.loader;
+package dev.hugeblank.allium.loader.api;
 
 import dev.hugeblank.allium.Allium;
+import dev.hugeblank.allium.loader.Entrypoint;
+import dev.hugeblank.allium.loader.Script;
+import dev.hugeblank.allium.loader.ScriptRegistry;
 import dev.hugeblank.allium.loader.type.StaticBinder;
 import dev.hugeblank.allium.api.WrappedLuaLibrary;
 import dev.hugeblank.allium.loader.type.annotation.LuaWrapped;

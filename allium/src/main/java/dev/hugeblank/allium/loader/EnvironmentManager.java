@@ -2,6 +2,8 @@ package dev.hugeblank.allium.loader;
 
 import dev.hugeblank.allium.Allium;
 import dev.hugeblank.allium.api.LibraryInitializer;
+import dev.hugeblank.allium.loader.api.JavaLib;
+import dev.hugeblank.allium.loader.api.PackageLib;
 import dev.hugeblank.allium.loader.type.coercion.TypeCoercions;
 import dev.hugeblank.allium.api.WrappedLuaLibrary;
 import me.basiqueevangelist.enhancedreflection.api.EClass;

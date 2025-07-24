@@ -1,8 +1,7 @@
 package dev.hugeblank.allium.api;
 
 
-import dev.hugeblank.allium.loader.Script;
-import dev.hugeblank.allium.loader.ScriptRegistry;
+import dev.hugeblank.allium.loader.api.PackageLib;
 import dev.hugeblank.allium.loader.type.UserdataFactory;
 import dev.hugeblank.allium.loader.type.annotation.LuaWrapped;
 import me.basiqueevangelist.enhancedreflection.api.EClass;
@@ -12,7 +11,7 @@ import org.squiddev.cobalt.function.LibFunction;
 /**
  * Interface for lua libraries that take advantage of the LuaWrapped annotation
  *
- * @see dev.hugeblank.allium.loader.PackageLib
+ * @see PackageLib
  */
 public interface WrappedLuaLibrary {
 
