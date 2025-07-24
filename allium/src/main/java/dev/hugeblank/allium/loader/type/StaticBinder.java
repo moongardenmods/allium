@@ -24,7 +24,7 @@ public final class StaticBinder {
 
     }
 
-    public static <T> LuaUserdata bindClass(EClass<T> clazz) {
+    public static <T> AlliumUserdata<EClass<T>> bindClass(EClass<T> clazz) {
         Map<String, PropertyData<? super T>> cachedProperties = new HashMap<>();
         LuaFunction getClassFunc = createGetClassFunction(clazz);
         LuaTable metatable = new LuaTable();
@@ -102,7 +102,8 @@ public final class StaticBinder {
             }
         });
 
-        return new LuaUserdata(clazz, metatable);
+        //noinspection unchecked
+        return new AlliumUserdata<>(clazz, metatable, (EClass<EClass<T>>) EClass.fromJava(clazz.getClass()));
     }
 
     private static Varargs createInstance(EClass<?> clazz, LuaState state, Varargs args) throws LuaError {

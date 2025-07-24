@@ -7,12 +7,12 @@ import org.squiddev.cobalt.LuaUserdata;
 public class AlliumUserdata<T> extends LuaUserdata {
     private final EClass<T> clazz;
 
-    AlliumUserdata(Object obj, LuaTable metatable, EClass<T> clazz) {
+     AlliumUserdata(T obj, LuaTable metatable, EClass<T> clazz) {
         super(obj, metatable);
         this.clazz = clazz;
     }
 
-    AlliumUserdata(Object obj, LuaTable metatable, Class<T> clazz) {
+    AlliumUserdata(T obj, LuaTable metatable, Class<T> clazz) {
         this(obj, metatable, EClass.fromJava(clazz));
     }
 

@@ -12,7 +12,6 @@ import dev.hugeblank.allium.util.JavaHelpers;
 import dev.hugeblank.allium.util.MetatableUtils;
 import me.basiqueevangelist.enhancedreflection.api.EClass;
 import me.basiqueevangelist.enhancedreflection.api.EMethod;
-import me.basiqueevangelist.enhancedreflection.api.typeuse.EClassUse;
 import dev.hugeblank.allium.loader.type.annotation.LuaIndex;
 import dev.hugeblank.allium.loader.type.property.EmptyData;
 import dev.hugeblank.allium.loader.type.property.PropertyResolver;
@@ -177,19 +176,21 @@ public class UserdataFactory<T> {
     }
 
     @SuppressWarnings("unchecked")
-    public static <T> AlliumUserdata<T> getUserData(T instance) {
+    public static <T> AlliumUserdata<T> getUserData(Object instance) {
         return (AlliumUserdata<T>) FACTORIES.computeIfAbsent(EClass.fromJava(instance.getClass()), UserdataFactory::new).create(instance);
     }
 
     public AlliumUserdata<T> create(Object instance) {
-        return new AlliumUserdata<>(instance, metatable, clazz);
+        //noinspection unchecked
+        return new AlliumUserdata<>((T) instance, metatable, clazz);
     }
 
     public AlliumUserdata<T> createBound(Object instance) {
         if (boundMetatable == null)
             boundMetatable = createMetatable(true);
 
-        return new AlliumUserdata<>(instance, boundMetatable, clazz);
+        //noinspection unchecked
+        return new AlliumUserdata<>((T) instance, boundMetatable, clazz);
     }
 
 
