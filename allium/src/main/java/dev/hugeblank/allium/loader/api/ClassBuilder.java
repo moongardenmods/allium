@@ -50,29 +50,31 @@ public class ClassBuilder {
                 interfaces.stream().map(x -> x.name().replace('.', '/')).toArray(String[]::new)
         );
 
-        for (EConstructor<?> superCtor : superClass.constructors()) {
-            if (!superCtor.isPublic()) continue;
+        if (!access.getOrDefault("interface", false)){
+            for (EConstructor<?> superCtor : superClass.constructors()) {
+                if (!superCtor.isPublic()) continue;
 
-            var desc = Type.getConstructorDescriptor(superCtor.raw());
-            var m = c.visitMethod(superCtor.modifiers(), "<init>", desc, null, null);
-            m.visitCode();
-            var args = Type.getArgumentTypes(desc);
+                var desc = Type.getConstructorDescriptor(superCtor.raw());
+                var m = c.visitMethod(superCtor.modifiers(), "<init>", desc, null, null);
+                m.visitCode();
+                var args = Type.getArgumentTypes(desc);
 
-            m.visitVarInsn(ALOAD, 0);
+                m.visitVarInsn(ALOAD, 0);
 
-            int argIndex = 1;
+                int argIndex = 1;
 
-            for (Type arg : args) {
-                m.visitVarInsn(arg.getOpcode(ILOAD), argIndex);
+                for (Type arg : args) {
+                    m.visitVarInsn(arg.getOpcode(ILOAD), argIndex);
 
-                argIndex += arg.getSize();
+                    argIndex += arg.getSize();
+                }
+
+                m.visitMethodInsn(INVOKESPECIAL, Type.getInternalName(superClass.raw()), "<init>", desc, false);
+                m.visitInsn(RETURN);
+
+                m.visitMaxs(0, 0);
+                m.visitEnd();
             }
-
-            m.visitMethodInsn(INVOKESPECIAL, Type.getInternalName(superClass.raw()), "<init>", desc, false);
-            m.visitInsn(RETURN);
-
-            m.visitMaxs(0, 0);
-            m.visitEnd();
         }
 
         this.superClass = superClass;

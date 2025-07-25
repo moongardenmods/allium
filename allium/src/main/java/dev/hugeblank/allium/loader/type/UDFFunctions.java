@@ -10,6 +10,7 @@ import me.basiqueevangelist.enhancedreflection.api.EMethod;
 import me.basiqueevangelist.enhancedreflection.api.typeuse.EClassUse;
 import org.squiddev.cobalt.LuaError;
 import org.squiddev.cobalt.LuaState;
+import org.squiddev.cobalt.LuaValue;
 import org.squiddev.cobalt.Varargs;
 import org.squiddev.cobalt.function.VarArgFunction;
 
@@ -101,6 +102,17 @@ public final class UDFFunctions<T> extends VarArgFunction {
         for (String headers : paramList) {
             error.append(headers).append("\n");
         }
+        error.append("got: \n");
+        for (int i = 0; i < args.count(); i++) {
+            LuaValue val = args.arg(i);
+            if (val instanceof AlliumUserdata<?> userdata) {
+                error.append(userdata.instanceClass().name());
+            } else {
+                error.append(val.luaTypeName());
+            }
+            if (i == args.count()-1) error.append(", ");
+        }
+        error.append('\n');
 
         throw new LuaError(error.toString());
     }
