@@ -72,6 +72,8 @@ public class ArgumentUtils {
         boolean isFirst = true;
         boolean optionalsStarted = false;
 
+        sb.append("(").append(parameters.size()).append(" arguments) ");
+
         for (var param : parameters) {
             if (param.hasAnnotation(LuaStateArg.class)) {
                 continue;

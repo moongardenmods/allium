@@ -100,17 +100,17 @@ public final class UDFFunctions<T> extends VarArgFunction {
         }
 
         for (String headers : paramList) {
-            error.append(headers).append("\n");
+            error.append("  - ").append(headers).append("\n");
         }
-        error.append("got: \n");
-        for (int i = 0; i < args.count(); i++) {
+        error.append("got ").append(args.count()-(!isStatic ? 1 : 0)).append(" arguments: \n");
+        for (int i = !isStatic ? 2 : 1; i <= args.count(); i++) {
             LuaValue val = args.arg(i);
             if (val instanceof AlliumUserdata<?> userdata) {
                 error.append(userdata.instanceClass().name());
             } else {
                 error.append(val.luaTypeName());
             }
-            if (i == args.count()-1) error.append(", ");
+            if (i < args.count()) error.append(", ");
         }
         error.append('\n');
 
