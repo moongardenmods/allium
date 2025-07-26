@@ -17,6 +17,7 @@ import org.jetbrains.annotations.Nullable;
 import org.objectweb.asm.ClassWriter;
 import org.objectweb.asm.Type;
 import org.squiddev.cobalt.*;
+import org.squiddev.cobalt.function.Dispatch;
 import org.squiddev.cobalt.function.LuaFunction;
 
 import java.util.ArrayList;
@@ -187,22 +188,23 @@ public class ClassBuilder {
 
             var isVoid = returnClass == null || returnType.getSort() == Type.VOID;
 
-            fields.storeAndGet(m, state, LuaState.class);
-            if (!isVoid) m.visitInsn(DUP);
-            fields.storeAndGet(m, func, LuaFunction.class);
-            m.visitInsn(SWAP);
-            m.visitVarInsn(ALOAD, varPrefix);
-            m.visitMethodInsn(INVOKESTATIC, Type.getInternalName(ValueFactory.class), "varargsOf", "([Lorg/squiddev/cobalt/LuaValue;)Lorg/squiddev/cobalt/Varargs;", false);
-            m.visitMethodInsn(INVOKEVIRTUAL, Type.getInternalName(LuaFunction.class), "invoke", "(Lorg/squiddev/cobalt/LuaState;Lorg/squiddev/cobalt/Varargs;)Lorg/squiddev/cobalt/Varargs;", false);
+            fields.storeAndGet(m, state, LuaState.class); // state
+            if (!isVoid) m.visitInsn(DUP); // state, state?
+            fields.storeAndGet(m, func, LuaFunction.class); // state, state?, function
+//            m.visitInsn(SWAP);
+            m.visitVarInsn(ALOAD, varPrefix); // state, state, function, luavalue[]
+            m.visitMethodInsn(INVOKESTATIC, Type.getInternalName(ValueFactory.class), "varargsOf", "([Lorg/squiddev/cobalt/LuaValue;)Lorg/squiddev/cobalt/Varargs;", false); // state, state?, function, varargs
+//            m.visitMethodInsn(INVOKEVIRTUAL, Type.getInternalName(LuaFunction.class), "invoke", "(Lorg/squiddev/cobalt/LuaState;Lorg/squiddev/cobalt/Varargs;)Lorg/squiddev/cobalt/Varargs;", false);
+            m.visitMethodInsn(INVOKESTATIC, Type.getInternalName(Dispatch.class), "invoke", "(Lorg/squiddev/cobalt/LuaState;Lorg/squiddev/cobalt/LuaValue;Lorg/squiddev/cobalt/Varargs;)Lorg/squiddev/cobalt/Varargs;", false); // state?, varargs
 
             if (!isVoid) {
-                m.visitMethodInsn(INVOKEVIRTUAL, Type.getInternalName(Varargs.class), "first", "()Lorg/squiddev/cobalt/LuaValue;", false);
-                fields.storeAndGet(m, returnClass.real.wrapPrimitive(), EClass.class);
-                m.visitMethodInsn(INVOKESTATIC, Type.getInternalName(TypeCoercions.class), "toJava", "(Lorg/squiddev/cobalt/LuaState;Lorg/squiddev/cobalt/LuaValue;Lme/basiqueevangelist/enhancedreflection/api/EClass;)Ljava/lang/Object;", false);
-                m.visitTypeInsn(CHECKCAST, Type.getInternalName(returnClass.real.wrapPrimitive().raw()));
+                m.visitMethodInsn(INVOKEVIRTUAL, Type.getInternalName(Varargs.class), "first", "()Lorg/squiddev/cobalt/LuaValue;", false); // state? luavalue
+                fields.storeAndGet(m, returnClass.real.wrapPrimitive(), EClass.class); // state?, luavalue, eclass
+                m.visitMethodInsn(INVOKESTATIC, Type.getInternalName(TypeCoercions.class), "toJava", "(Lorg/squiddev/cobalt/LuaState;Lorg/squiddev/cobalt/LuaValue;Lme/basiqueevangelist/enhancedreflection/api/EClass;)Ljava/lang/Object;", false); // object
+                m.visitTypeInsn(CHECKCAST, Type.getInternalName(returnClass.real.wrapPrimitive().raw())); // object(return type)
 
                 if (returnType.getSort() != Type.ARRAY && returnType.getSort() != Type.OBJECT) {
-                    AsmUtil.unwrapPrimitive(m, returnType);
+                    AsmUtil.unwrapPrimitive(m, returnType); // primitive
                 }
             }
 
