@@ -88,17 +88,13 @@ public class UserdataFactory<T> {
             }
         });
 
-        MetatableUtils.applyPairs(metatable, clazz, cachedProperties, isBound);
+        MetatableUtils.applyPairs(metatable, clazz, cachedProperties, isBound, false);
 
         metatable.rawset("__index", new VarArgFunction() {
 
             @Override
             public LuaValue invoke(LuaState state, Varargs args) throws LuaError {
                 String name = args.arg(2).checkString(); // mapped name
-
-                if (name.equals("allium_java_class")) {
-                    return UserdataFactory.of(EClass.fromJava(EClass.class)).create(clazz);
-                }
 
                 PropertyData<? super T> cachedProperty = cachedProperties.get(name);
 

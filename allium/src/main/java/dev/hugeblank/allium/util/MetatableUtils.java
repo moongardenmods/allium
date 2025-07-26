@@ -59,7 +59,7 @@ public class MetatableUtils {
         return null;
     }
 
-    public static <T> void applyPairs(LuaTable metatable, EClass<T> clazz, Map<String, PropertyData<? super T>> cachedProperties, boolean isBound) {
+    public static <T> void applyPairs(LuaTable metatable, EClass<T> clazz, Map<String, PropertyData<? super T>> cachedProperties, boolean isBound, boolean forceStatic) {
         metatable.rawset("__pairs", LibFunction.create((state, arg1) -> {
             Stream.Builder<EMember> memberBuilder = Stream.builder();
             clazz.methods().forEach(memberBuilder);
@@ -83,28 +83,31 @@ public class MetatableUtils {
             ).toList();
             List<Varargs> varargs = new ArrayList<>();
             for (EMember member : members) {
-                String memberName = member.name();
-                if (member.hasAnnotation(LuaWrapped.class)) {
-                    String[] names = AnnotationUtils.findNames(member);
-                    if (names != null && names.length > 0) {
-                        memberName = names[0];
+                if (!forceStatic || member.isStatic()) {
+                    String memberName = member.name();
+                    if (member.hasAnnotation(LuaWrapped.class)) {
+                        String[] names = AnnotationUtils.findNames(member);
+                        if (names != null && names.length > 0) {
+                            memberName = names[0];
+                        }
                     }
+                    PropertyData<? super T> propertyData = cachedProperties.get(memberName);
+
+                    if (propertyData == null) { // caching
+                        propertyData = PropertyResolver.resolveProperty(state, clazz, memberName, member.isStatic());
+                        cachedProperties.put(memberName, propertyData);
+                    }
+
+                    if (!Allium.DEVELOPMENT)
+                        memberName = ScriptRegistry.scriptFromState(state).getMappings().getMapped(memberName);
+
+                    varargs.add(ValueFactory.varargsOf(LuaString.valueOf(memberName), propertyData.get(
+                            memberName,
+                            state,
+                            instance,
+                            isBound
+                    )));
                 }
-                PropertyData<? super T> propertyData = cachedProperties.get(memberName);
-
-                if (propertyData == null) { // caching
-                    propertyData = PropertyResolver.resolveProperty(state, clazz, memberName, member.isStatic());
-                    cachedProperties.put(memberName, propertyData);
-                }
-
-                if (!Allium.DEVELOPMENT) memberName = ScriptRegistry.scriptFromState(state).getMappings().getMapped(memberName);
-
-                varargs.add(ValueFactory.varargsOf(LuaString.valueOf(memberName), propertyData.get(
-                        memberName,
-                        state,
-                        instance,
-                        isBound
-                )));
             }
             Iterator<Varargs> iterator = varargs.listIterator();
 

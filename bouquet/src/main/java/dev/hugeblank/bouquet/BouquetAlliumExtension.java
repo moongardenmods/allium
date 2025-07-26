@@ -23,7 +23,6 @@ public class BouquetAlliumExtension implements AlliumExtension {
         EnvironmentManager.registerLibrary(new DefaultEventsLib());
         EnvironmentManager.registerLibrary(new FabricLib());
         EnvironmentManager.registerLibrary(new GameLib());
-        EnvironmentManager.registerLibrary(new JavaLib());
         EnvironmentManager.registerLibrary(new JsonLib());
         EnvironmentManager.registerLibrary(new NbtLib());
         EnvironmentManager.registerLibrary(new TextLib());

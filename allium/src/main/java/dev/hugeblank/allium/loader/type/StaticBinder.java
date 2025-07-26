@@ -26,18 +26,13 @@ public final class StaticBinder {
 
     public static <T> AlliumClassUserdata<T> bindClass(EClass<T> clazz) {
         Map<String, PropertyData<? super T>> cachedProperties = new HashMap<>();
-        LuaFunction getClassFunc = createGetClassFunction(clazz);
         LuaTable metatable = new LuaTable();
 
-        MetatableUtils.applyPairs(metatable, clazz, cachedProperties, false);
+        MetatableUtils.applyPairs(metatable, clazz, cachedProperties, false, true);
 
         metatable.rawset("__index", LibFunction.create((state, arg1, arg2) -> {
             if (arg2.isString()) {
                 String name = arg2.checkString(); // mapped name
-
-                if (name.equals("getClass")) {
-                    return getClassFunc;
-                }
 
                 PropertyData<? super T> cachedProperty = cachedProperties.get(name);
 
@@ -139,11 +134,5 @@ public final class StaticBinder {
         }
 
         throw new LuaError(error.toString());
-    }
-
-    private static LuaFunction createGetClassFunction(EClass<?> clazz) {
-        return LibFunction.create((state) -> TypeCoercions
-                .toLuaValue(clazz, EClass.fromJava(EClass.class).instantiateWith(List.of(clazz)))
-        );
     }
 }

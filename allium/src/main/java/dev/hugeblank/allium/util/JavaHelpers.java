@@ -41,8 +41,6 @@ public class JavaHelpers {
             return getRawClass(state, value.checkString());
         } else if (value.isNil()) {
             return null;
-        } else if (value instanceof LuaTable table && table.rawget("allium_java_class") instanceof AlliumInstanceUserdata<?> userdata) {
-            return userdata.toUserdata(EClass.class);
         } else if (value instanceof AlliumClassUserdata<?> userdata) {
             return userdata.toUserdata();
         }
