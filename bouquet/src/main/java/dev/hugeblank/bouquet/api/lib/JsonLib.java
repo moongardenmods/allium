@@ -2,7 +2,7 @@ package dev.hugeblank.bouquet.api.lib;
 
 import com.google.gson.*;
 import dev.hugeblank.allium.api.WrappedLuaLibrary;
-import dev.hugeblank.allium.loader.type.AlliumUserdata;
+import dev.hugeblank.allium.loader.type.AlliumInstanceUserdata;
 import dev.hugeblank.allium.loader.type.annotation.LuaWrapped;
 import dev.hugeblank.allium.loader.type.annotation.OptionalArg;
 import dev.hugeblank.bouquet.util.TableHelpers;
@@ -67,7 +67,7 @@ public class JsonLib implements WrappedLuaLibrary {
     private static JsonElement toJsonElementInternal(LuaValue value, Set<LuaValue> seenValues) throws LuaError {
         if (seenValues.contains(value)) return JsonNull.INSTANCE;
 
-        if (value instanceof AlliumUserdata<?> userdata && userdata.instanceOf(JsonElement.class)) {
+        if (value instanceof AlliumInstanceUserdata<?> userdata && userdata.instanceOf(JsonElement.class)) {
             return userdata.toUserdata(JsonElement.class);
         } else if (value instanceof LuaTable table) {
             if (TableHelpers.isArray(table)) {

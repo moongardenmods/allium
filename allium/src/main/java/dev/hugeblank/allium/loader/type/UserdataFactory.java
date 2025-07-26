@@ -176,21 +176,21 @@ public class UserdataFactory<T> {
     }
 
     @SuppressWarnings("unchecked")
-    public static <T> AlliumUserdata<T> getUserData(Object instance) {
-        return (AlliumUserdata<T>) FACTORIES.computeIfAbsent(EClass.fromJava(instance.getClass()), UserdataFactory::new).create(instance);
+    public static <T> AlliumInstanceUserdata<T> getUserData(Object instance) {
+        return (AlliumInstanceUserdata<T>) FACTORIES.computeIfAbsent(EClass.fromJava(instance.getClass()), UserdataFactory::new).create(instance);
     }
 
-    public AlliumUserdata<T> create(Object instance) {
+    public AlliumInstanceUserdata<T> create(Object instance) {
         //noinspection unchecked
-        return new AlliumUserdata<>((T) instance, metatable, clazz);
+        return new AlliumInstanceUserdata<>((T) instance, metatable, clazz);
     }
 
-    public AlliumUserdata<T> createBound(Object instance) {
+    public AlliumInstanceUserdata<T> createBound(Object instance) {
         if (boundMetatable == null)
             boundMetatable = createMetatable(true);
 
         //noinspection unchecked
-        return new AlliumUserdata<>((T) instance, boundMetatable, clazz);
+        return new AlliumInstanceUserdata<>((T) instance, boundMetatable, clazz);
     }
 
 

@@ -1,7 +1,5 @@
 package dev.hugeblank.allium.loader.type;
 
-import dev.hugeblank.allium.Allium;
-import dev.hugeblank.allium.loader.ScriptRegistry;
 import dev.hugeblank.allium.loader.type.coercion.TypeCoercions;
 import dev.hugeblank.allium.util.ArgumentUtils;
 import dev.hugeblank.allium.util.JavaHelpers;
@@ -105,8 +103,10 @@ public final class UDFFunctions<T> extends VarArgFunction {
         error.append("got ").append(args.count()-(!isStatic ? 1 : 0)).append(" arguments: \n");
         for (int i = !isStatic ? 2 : 1; i <= args.count(); i++) {
             LuaValue val = args.arg(i);
-            if (val instanceof AlliumUserdata<?> userdata) {
+            if (val instanceof AlliumInstanceUserdata<?> userdata) {
                 error.append(userdata.instanceClass().name());
+            } else if (val instanceof AlliumClassUserdata<?> userdata) {
+                error.append("<class> ").append(userdata.toUserdata().name());
             } else {
                 error.append(val.luaTypeName());
             }

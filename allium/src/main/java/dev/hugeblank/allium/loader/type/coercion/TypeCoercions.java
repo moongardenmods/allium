@@ -1,15 +1,11 @@
 package dev.hugeblank.allium.loader.type.coercion;
 
-import dev.hugeblank.allium.loader.type.AlliumUserdata;
-import dev.hugeblank.allium.loader.type.InvalidArgumentException;
-import dev.hugeblank.allium.loader.type.UDFFunctions;
-import dev.hugeblank.allium.loader.type.UserdataFactory;
+import dev.hugeblank.allium.loader.type.*;
 import dev.hugeblank.allium.loader.type.annotation.CoerceToBound;
 import dev.hugeblank.allium.loader.type.annotation.CoerceToNative;
 import dev.hugeblank.allium.util.JavaHelpers;
 import me.basiqueevangelist.enhancedreflection.api.*;
 import me.basiqueevangelist.enhancedreflection.api.typeuse.EClassUse;
-import net.minecraft.util.Identifier;
 import org.squiddev.cobalt.*;
 import org.squiddev.cobalt.function.LuaFunction;
 
@@ -55,12 +51,15 @@ public class TypeCoercions {
         if (value.isNil())
             return null;
         
-        if (value instanceof AlliumUserdata<?> userdata)
+        if (value instanceof AlliumInstanceUserdata<?> userdata) {
             try {
                 return userdata.toUserdata(clatz.wrapPrimitive());
             } catch (ClassCastException e) {
                 throw new InvalidArgumentException(e);
             }
+        } else if (value instanceof AlliumClassUserdata<?> userdata) {
+            return userdata.toUserdata();
+        }
 
         clatz = clatz.unwrapPrimitive();
 
