@@ -97,8 +97,11 @@ public class PackageLib implements WrappedLuaLibrary {
         return Constants.NIL;
     }
 
-    public LuaValue javaLoader(LuaState state, LuaValue arg) throws LuaError {
-        return StaticBinder.bindClass(JavaHelpers.asClass(state, arg));
+    public LuaValue javaLoader(LuaState state, LuaValue arg) {
+        try {
+            return StaticBinder.bindClass(JavaHelpers.asClass(state, arg));
+        } catch (LuaError ignored) {}
+        return Constants.NIL;
     }
 
     private static String toPath(String[] arr) {
