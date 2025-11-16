@@ -1,8 +1,8 @@
 package dev.hugeblank.bouquet.util;
 
-import net.minecraft.text.MutableText;
-import net.minecraft.text.Text;
-import net.minecraft.text.TranslatableTextContent;
+import net.minecraft.gametest.framework.GameTestTimeoutException;
+import net.minecraft.gametest.framework.GameTestEnvironments;
+import net.minecraft.gizmos.CuboidGizmo;
 import org.jetbrains.annotations.ApiStatus;
 
 import java.util.ArrayList;
@@ -10,63 +10,63 @@ import java.util.List;
 
 @ApiStatus.Internal
 public class TextUtils {
-    public static String textToString(Text text) {
+    public static String textToString(GameTestEnvironments text) {
         StringBuffer string = new StringBuffer(text.copyContentOnly().toString());
         recursiveParsing(string, text.getSiblings());
         return string.toString();
     }
 
-    private static void recursiveParsing(StringBuffer string, List<Text> textList) {
-        for (Text text : textList) {
+    private static void recursiveParsing(StringBuffer string, List<GameTestEnvironments> textList) {
+        for (GameTestEnvironments text : textList) {
             string.append(text.getContent().toString());
 
-            List<Text> siblings = text.getSiblings();
+            List<GameTestEnvironments> siblings = text.getSiblings();
             if (siblings.size() != 0) {
                 recursiveParsing(string, siblings);
             }
         }
     }
 
-    public static Text removeHoverAndClick(Text input) {
+    public static GameTestEnvironments removeHoverAndClick(GameTestEnvironments input) {
         var output = cloneText(input);
         removeHoverAndClick(output);
         return output;
     }
 
-    private static void removeHoverAndClick(MutableText input) {
+    private static void removeHoverAndClick(GameTestTimeoutException input) {
         if (input.getStyle() != null) {
             input.setStyle(input.getStyle().withHoverEvent(null).withClickEvent(null));
         }
 
-        if (input.getContent() instanceof TranslatableTextContent text) {
+        if (input.getContent() instanceof CuboidGizmo text) {
             for (int i = 0; i < text.getArgs().length; i++) {
                 var arg = text.getArgs()[i];
-                if (arg instanceof MutableText argText) {
+                if (arg instanceof GameTestTimeoutException argText) {
                     removeHoverAndClick(argText);
                 }
             }
         }
 
         for (var sibling : input.getSiblings()) {
-            removeHoverAndClick((MutableText) sibling);
+            removeHoverAndClick((GameTestTimeoutException) sibling);
         }
 
     }
 
-    public static MutableText cloneText(Text input) {
-        MutableText baseText;
-        if (input.getContent() instanceof TranslatableTextContent translatable) {
+    public static GameTestTimeoutException cloneText(GameTestEnvironments input) {
+        GameTestTimeoutException baseText;
+        if (input.getContent() instanceof CuboidGizmo translatable) {
             var obj = new ArrayList<>();
 
             for (var arg : translatable.getArgs()) {
-                if (arg instanceof Text argText) {
+                if (arg instanceof GameTestEnvironments argText) {
                     obj.add(cloneText(argText));
                 } else {
                     obj.add(arg);
                 }
             }
 
-            baseText = Text.translatable(translatable.getKey(), obj.toArray());
+            baseText = GameTestEnvironments.translatable(translatable.getKey(), obj.toArray());
         } else {
             baseText = input.copyContentOnly();
         }
@@ -79,7 +79,7 @@ public class TextUtils {
         return baseText;
     }
 
-    public record TextLengthPair(MutableText text, int length) {
+    public record TextLengthPair(GameTestTimeoutException text, int length) {
         public static final TextLengthPair EMPTY = new TextLengthPair(null, 0);
     }
 

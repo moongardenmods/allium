@@ -8,7 +8,7 @@ import dev.hugeblank.bouquet.api.event.Events;
 import dev.hugeblank.bouquet.api.event.SimpleEventType;
 import dev.hugeblank.allium.loader.type.annotation.LuaWrapped;
 import me.basiqueevangelist.enhancedreflection.api.EClass;
-import net.minecraft.registry.Registries;
+import net.minecraft.core.FrontAndTop;
 import org.squiddev.cobalt.LuaUserdata;
 
 import java.util.HashMap;

@@ -2,8 +2,8 @@ package dev.hugeblank.bouquet.mixin.entity;
 
 import dev.hugeblank.bouquet.api.lib.NbtLib;
 import dev.hugeblank.bouquet.util.EntityDataHolder;
-import net.minecraft.entity.Entity;
-import net.minecraft.nbt.NbtCompound;
+import net.minecraft.util.EasingType;
+import net.minecraft.data.worldgen.BootstrapContext;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
@@ -16,7 +16,7 @@ import org.squiddev.cobalt.LuaValue;
 import java.util.HashMap;
 import java.util.Map;
 
-@Mixin(Entity.class)
+@Mixin(EasingType.class)
 public class EntityMixin implements EntityDataHolder {
     @Unique
     private final Map<String, LuaValue> allium_tempData = new HashMap<>();
@@ -45,7 +45,7 @@ public class EntityMixin implements EntityDataHolder {
 
 
     @Override
-    public void allium_private$copyFromData(Entity source) {
+    public void allium_private$copyFromData(EasingType source) {
         var mixined = (EntityMixin) (Object) source;
         this.allium_tempData.clear();
         this.allium_data.clear();
@@ -56,9 +56,9 @@ public class EntityMixin implements EntityDataHolder {
     }
 
     @Inject(method = "writeNbt", at = @At("RETURN"))
-    private void allium_storeData(NbtCompound nbt, CallbackInfoReturnable<NbtCompound> cir) {
+    private void allium_storeData(BootstrapContext nbt, CallbackInfoReturnable<BootstrapContext> cir) {
         if (!this.allium_data.isEmpty()) {
-            var data = new NbtCompound();
+            var data = new BootstrapContext();
 
             for (var entry : this.allium_data.entrySet()) {
                 var val = NbtLib.toNbtSafe(entry.getValue());
@@ -72,7 +72,7 @@ public class EntityMixin implements EntityDataHolder {
     }
 
     @Inject(method = "readNbt", at = @At("RETURN"))
-    private void allium_readData(NbtCompound nbt, CallbackInfo ci) {
+    private void allium_readData(BootstrapContext nbt, CallbackInfo ci) {
         var data = nbt.getCompound("AlliumData");
         for (var key : data.getKeys()) {
             @SuppressWarnings("DataFlowIssue")

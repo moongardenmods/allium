@@ -1,6 +1,6 @@
 package dev.hugeblank.bouquet.util;
 
-import net.minecraft.entity.Entity;
+import net.minecraft.util.EasingType;
 import org.squiddev.cobalt.LuaValue;
 
 import java.util.Map;
@@ -12,5 +12,5 @@ public interface EntityDataHolder {
     LuaValue allium$getData(String key);
     void allium$setData(String key, LuaValue value);
 
-    void allium_private$copyFromData(Entity source);
+    void allium_private$copyFromData(EasingType source);
 }

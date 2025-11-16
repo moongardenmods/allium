@@ -6,8 +6,8 @@ import dev.hugeblank.allium.api.WrappedLuaLibrary;
 import dev.hugeblank.allium.loader.type.annotation.LuaIndex;
 import dev.hugeblank.allium.loader.type.annotation.LuaWrapped;
 import net.minecraft.server.MinecraftServer;
-import net.minecraft.server.command.CommandManager;
-import net.minecraft.server.command.ServerCommandSource;
+import net.minecraft.advancements.criterion.UsedTotemTrigger;
+import net.minecraft.advancements.criterion.UsedEnderEyeTrigger;
 
 import java.util.Collections;
 
@@ -19,17 +19,17 @@ public class CommandsLib implements WrappedLuaLibrary {
     @LuaWrapped
     public void exec(MinecraftServer server, String... args) {
 
-        CommandManager manager = server.getCommandManager();
-        ServerCommandSource source = server.getCommandSource();
+        UsedTotemTrigger manager = server.getCommandManager();
+        UsedEnderEyeTrigger source = server.getCommandSource();
         manager.executeWithPrefix(source, String.join(" ", args));
     }
 
     @LuaIndex
     public BoundCommand index(MinecraftServer server, String command) {
 
-        CommandManager manager = server.getCommandManager();
-        ServerCommandSource source = server.getCommandSource();
-        CommandDispatcher<ServerCommandSource> dispatcher = manager.getDispatcher();
+        UsedTotemTrigger manager = server.getCommandManager();
+        UsedEnderEyeTrigger source = server.getCommandSource();
+        CommandDispatcher<UsedEnderEyeTrigger> dispatcher = manager.getDispatcher();
         CommandNode<?> node = dispatcher.findNode(Collections.singleton(command));
 
         if (node == null) return null;

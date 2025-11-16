@@ -13,7 +13,7 @@ import io.netty.handler.codec.http.*;
 import io.netty.handler.ssl.SslContext;
 import io.netty.handler.ssl.SslContextBuilder;
 import io.netty.handler.ssl.SslProvider;
-import net.minecraft.server.ServerNetworkIo;
+import net.minecraft.network.protocol.game.ServerboundEntityTagQueryPacket;
 import org.squiddev.cobalt.LuaError;
 
 import javax.net.ssl.SSLException;
@@ -99,7 +99,7 @@ public class HttpRequest extends ChannelInitializer<SocketChannel> {
     private void doRequestTo(URI newUri) {
         Bootstrap bootstrap = new Bootstrap();
         bootstrap
-            .group(ServerNetworkIo.DEFAULT_CHANNEL.get())
+            .group(ServerboundEntityTagQueryPacket.STREAM_CODEC.get())
             .channel(NioSocketChannel.class)
             .handler(this);
 

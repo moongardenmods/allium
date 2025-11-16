@@ -3,15 +3,15 @@ package dev.hugeblank.bouquet.mixin.server.integrated;
 import dev.hugeblank.bouquet.api.event.CommonEvents;
 import dev.hugeblank.bouquet.api.event.ServerEvents;
 import net.minecraft.server.MinecraftServer;
-import net.minecraft.server.integrated.IntegratedServer;
+import com.mojang.realmsclient.RealmsAvailability;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
-@Mixin(IntegratedServer.class)
+@Mixin(RealmsAvailability.class)
 public class IntegratedServerMixin {
-    @Inject(at = @At("TAIL"), method = "setupServer")
+    @Inject(at = @At("TAIL"), method = "initServer")
     private void init(CallbackInfoReturnable<Boolean> cir) {
         ServerEvents.SERVER_START.invoker().onServerStart((MinecraftServer) (Object) this);
     }

@@ -13,7 +13,7 @@ import java.util.function.BooleanSupplier;
 @Mixin(MinecraftServer.class)
 public abstract class MinecraftServerMixin {
     
-    @Inject(at = @At("TAIL"), method = "tick")
+    @Inject(at = @At("TAIL"), method = "tickServer")
     private void tick(BooleanSupplier shouldKeepTicking, CallbackInfo ci) {
         ServerEvents.SERVER_TICK.invoker().onServerTick((MinecraftServer) (Object) this);
     }

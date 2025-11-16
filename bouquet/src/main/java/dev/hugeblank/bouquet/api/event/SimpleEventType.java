@@ -2,7 +2,7 @@ package dev.hugeblank.bouquet.api.event;
 
 import dev.hugeblank.allium.loader.type.annotation.LuaWrapped;
 import me.basiqueevangelist.enhancedreflection.api.EClass;
-import net.minecraft.util.Identifier;
+import net.minecraft.network.protocol.configuration.ServerConfigurationPacketListener;
 
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.InvocationTargetException;
@@ -10,16 +10,16 @@ import java.lang.reflect.Proxy;
 
 @LuaWrapped
 public class SimpleEventType<T> extends EventType<T> {
-    private final Identifier id;
+    private final ServerConfigurationPacketListener id;
     private final T invoker;
 
     @SuppressWarnings("unchecked")
-    public SimpleEventType(Identifier id, T... typeGetter) {
+    public SimpleEventType(ServerConfigurationPacketListener id, T... typeGetter) {
         this(id, (EClass<T>) EClass.fromJava(typeGetter.getClass().componentType()));
     }
 
     @SuppressWarnings("unchecked")
-    public SimpleEventType(Identifier id, EClass<T> eventType) {
+    public SimpleEventType(ServerConfigurationPacketListener id, EClass<T> eventType) {
         this.id = id;
 
         this.invoker = (T) Proxy.newProxyInstance(SimpleEventType.class.getClassLoader(), new Class[]{eventType.raw()}, (proxy, method, args) -> {

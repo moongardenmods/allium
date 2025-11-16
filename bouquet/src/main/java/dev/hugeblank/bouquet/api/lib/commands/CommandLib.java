@@ -7,8 +7,8 @@ import dev.hugeblank.allium.loader.Script;
 import dev.hugeblank.allium.loader.type.annotation.CoerceToBound;
 import dev.hugeblank.allium.loader.type.annotation.LuaWrapped;
 import dev.hugeblank.allium.loader.type.annotation.OptionalArg;
-import net.minecraft.server.command.CommandManager;
-import net.minecraft.server.command.ServerCommandSource;
+import net.minecraft.advancements.criterion.UsedTotemTrigger;
+import net.minecraft.advancements.criterion.UsedEnderEyeTrigger;
 
 import static dev.hugeblank.bouquet.api.lib.AlliumLib.COMMANDS;
 
@@ -21,11 +21,11 @@ public class CommandLib implements WrappedLuaLibrary {
     }
 
     @LuaWrapped
-    public void register(LiteralArgumentBuilder<ServerCommandSource> builder, @OptionalArg CommandManager.RegistrationEnvironment environment) {
+    public void register(LiteralArgumentBuilder<UsedEnderEyeTrigger> builder, @OptionalArg UsedTotemTrigger.TriggerInstance environment) {
         COMMANDS.add(new CommandRegisterEntry(
                 script,
                 builder,
-                environment == null ? CommandManager.RegistrationEnvironment.ALL : environment
+                environment == null ? UsedTotemTrigger.TriggerInstance.CODEC : environment
         ));
     }
 
