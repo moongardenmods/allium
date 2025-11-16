@@ -2,7 +2,7 @@ import java.util.*
 
 plugins {
     id("maven-publish")
-    id("fabric-loom") version "1.7-SNAPSHOT"
+    id("net.fabricmc.fabric-loom-no-remap") version "1.14.0-alpha.21"
 }
 // Common Mod Properties
 val mavenGroup: String by project
@@ -14,7 +14,6 @@ val loaderVersion: String by project
 
 // Common Dependencies
 val cobalt: String by project
-val tinyParser: String by project
 val enhancedReflections: String by project
 
 // Bouquet Dependencies
@@ -23,13 +22,12 @@ val placeholderApi: String by project
 
 dependencies {
     minecraft("com.mojang", "minecraft", minecraftVersion)
-    mappings("net.fabricmc", "yarn", yarnMappings, null, "v2")
-//    mappings("net.fabricmc", "intermediary", "1.21.1", null, "v2")
+//    mappings(loom.officialMojangMappings())
 }
 
 subprojects {
     apply(plugin = "maven-publish")
-    apply(plugin = "fabric-loom")
+    apply(plugin = "net.fabricmc.fabric-loom-no-remap")
 
     repositories {
         maven("https://maven.hugeblank.dev/releases") {
@@ -56,9 +54,7 @@ subprojects {
 
     dependencies {
         minecraft("com.mojang", "minecraft", minecraftVersion)
-        mappings("net.fabricmc", "yarn", yarnMappings, null, "v2")
-//        mappings("net.fabricmc", "intermediary", "1.21.1", null, "v2")
-        modImplementation("net.fabricmc", "fabric-loader", loaderVersion)
+        implementation("net.fabricmc", "fabric-loader", loaderVersion)
     }
 
     tasks {
