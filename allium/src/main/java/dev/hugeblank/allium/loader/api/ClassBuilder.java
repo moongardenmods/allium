@@ -91,7 +91,7 @@ public class ClassBuilder {
         if (access.size() > 1) {
             ScriptRegistry.scriptFromState(state).getLogger().warn("Flags on method override besides 'static' are ignored. For method {}", methodName);
         }
-        PropertyResolver.collectMethods(state, this.superClass, this.methods, methodName, access.getOrDefault("static", false), methods::add);
+        PropertyResolver.collectMethods(this.methods, methodName, access.getOrDefault("static", false), methods::add);
 
         for (var method : methods) {
             var methParams = method.parameters();

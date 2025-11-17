@@ -4,6 +4,5 @@
   "name": "Script B",
   "entrypoints": {
     "dynamic": "main.lua"
-  },
-  "mappings": "yarn"
+  }
 }

@@ -5,16 +5,17 @@ import dev.hugeblank.allium.Allium;
 import dev.hugeblank.allium.api.AlliumExtension;
 import dev.hugeblank.allium.loader.Script;
 import dev.hugeblank.allium.loader.ScriptRegistry;
-import dev.hugeblank.allium.mappings.Mappings;
 import net.fabricmc.loader.api.FabricLoader;
 import net.fabricmc.loader.api.ModContainer;
 import net.fabricmc.loader.api.entrypoint.EntrypointContainer;
+import org.jetbrains.annotations.NotNull;
 
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.function.BiConsumer;
+import java.util.stream.Collectors;
 
 public class SetupHelpers {
     public static void initializeEnvironment(Allium.EnvType containerEnvType) {
@@ -36,7 +37,7 @@ public class SetupHelpers {
         );
 
         // COLLECT SCRIPTS
-        ImmutableSet.Builder<Script> setBuilder = ImmutableSet.builder();
+        ImmutableSet.Builder<@NotNull Script> setBuilder = ImmutableSet.builder();
         setBuilder.addAll(FileHelper.getValidDirScripts(FileHelper.getScriptsDirectory(), containerEnvType));
         setBuilder.addAll(FileHelper.getValidModScripts(containerEnvType));
         Set<Script> scripts = setBuilder.build();
@@ -45,28 +46,19 @@ public class SetupHelpers {
             return;
         }
 
-        for (Script script : scripts) {
-            String mappingsID = script.getManifest().mappings();
-            if (!Mappings.REGISTRY.has(mappingsID) && Mappings.LOADERS.has(mappingsID)) {
-                Mappings.REGISTRY.register(Mappings.of(mappingsID, Mappings.LOADERS.get(mappingsID).load()));
-            } else if (!Mappings.LOADERS.has(mappingsID)){
-                Allium.LOGGER.error("No mappings exist with ID {} for script {}", mappingsID, script.getID());
-                scripts.remove(script);
-                continue;
-            }
-            ScriptRegistry.getInstance(containerEnvType).register(script);
-        }
+        scripts.forEach((script) -> ScriptRegistry.getInstance(containerEnvType).register(script) );
+
         list(scripts, containerEnvType, "Found " + scripts.size() + " scripts:\n",
                 (strBuilder, script) -> strBuilder.append(script.getID())
         );
 
         // INITIALIZE SCRIPTS
         ScriptRegistry.getInstance(containerEnvType).forEach(Script::initialize);
-        Set<Script> set = ScriptRegistry.getInstance(containerEnvType).getAll();
+        Set<Script> set = ScriptRegistry.getInstance(containerEnvType).getAll().stream()
+                .filter(script -> script.getLaunchState().equals(Script.State.INITIALIZED))
+                .collect(Collectors.toSet());
         list(set, containerEnvType, "Initialized " + set.size() + " scripts:\n",
-                (builder, script) -> {
-                    if (script.isInitialized()) builder.append(script.getID());
-                }
+                (builder, script) -> builder.append(script.getID())
         );
     }
 

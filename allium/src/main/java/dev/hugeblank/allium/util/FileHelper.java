@@ -194,7 +194,6 @@ public class FileHelper {
                 getOrDefault(value, "id", optId, CustomValue::getAsString),
                 getOrDefault(value, "version", optVersion, CustomValue::getAsString),
                 getOrDefault(value, "name", optName, CustomValue::getAsString),
-                getOrDefault(value, "mappings", null, CustomValue::getAsString),
                 makeEntrypointContainer(getOrDefault(value, "entrypoints", null, CustomValue::getAsObject))
         );
     }

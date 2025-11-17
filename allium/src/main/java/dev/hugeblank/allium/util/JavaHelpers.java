@@ -1,6 +1,5 @@
 package dev.hugeblank.allium.util;
 
-import dev.hugeblank.allium.loader.ScriptRegistry;
 import dev.hugeblank.allium.loader.type.AlliumClassUserdata;
 import dev.hugeblank.allium.loader.type.AlliumInstanceUserdata;
 import me.basiqueevangelist.enhancedreflection.api.EClass;
@@ -23,9 +22,8 @@ public class JavaHelpers {
         throw new LuaError("value " + value + " is not an instance of AlliumUserData. Do you have a '.' where a ':' should go?");
     }
 
-    public static EClass<?> getRawClass(LuaState state, String className) throws LuaError {
+    public static EClass<?> getRawClass(String className) throws LuaError {
             try {
-                className = ScriptRegistry.scriptFromState(state).getMappings().getUnmapped(className).get(0);
                 return EClass.fromJava(Class.forName(className));
             } catch (ClassNotFoundException ignored) {}
 
@@ -36,9 +34,9 @@ public class JavaHelpers {
         throw new LuaError("Couldn't find class \"" + className + "\"");
     }
 
-    public static EClass<?> asClass(LuaState state, LuaValue value) throws LuaError {
+    public static EClass<?> asClass(LuaValue value) throws LuaError {
         if (value.isString()) {
-            return getRawClass(state, value.checkString());
+            return getRawClass(value.checkString());
         } else if (value.isNil()) {
             return null;
         } else if (value instanceof AlliumClassUserdata<?> userdata) {

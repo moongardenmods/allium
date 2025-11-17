@@ -4,7 +4,7 @@
 -- These scripts are primarily used for debugging Allium, but also happen to demonstrate the versatility of `require`,
 -- being able to load APIs from other scripts.
 
-local Text = require("net.minecraft.text.Text")
+local Component = require("net.minecraft.network.chat.Component")
 
 local text
 
@@ -20,5 +20,5 @@ return function(otherScript, input)
     -- Print our ID, and the invoking script ID
     print(script:getID(), otherScript:getID())
     -- Create a text object to display on server start using a string given by the invoking script.
-    text = Text.of(input)
+    text = Component.literal(input)
 end

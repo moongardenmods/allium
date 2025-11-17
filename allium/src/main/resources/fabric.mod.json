@@ -34,8 +34,8 @@
   "mixins": [],
 
   "depends": {
-    "minecraft": ">=21w46a",
+    "minecraft": ">=1.21.11-alpha.25.46.a+unobfuscated",
     "java": ">=21",
-    "fabricloader": ">=0.17.3"
+    "fabricloader": ">=0.18.0"
   }
 }

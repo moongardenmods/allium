@@ -39,7 +39,7 @@ public class JavaLib implements WrappedLuaLibrary {
     public static boolean exists(@LuaStateArg LuaState state, String string, @OptionalArg Class<?>[] value) {
         try {
             var parts = string.split("#");
-            var clazz = getRawClass(state, parts[0]);
+            var clazz = getRawClass(parts[0]);
 
             if (parts.length != 2) {
                 return true;
@@ -68,8 +68,8 @@ public class JavaLib implements WrappedLuaLibrary {
     }
 
     @LuaWrapped
-    public static EClass<?> getRawClass(@LuaStateArg LuaState state, String className) throws LuaError {
-        return JavaHelpers.getRawClass(state, className);
+    public static EClass<?> getRawClass(String className) throws LuaError {
+        return JavaHelpers.getRawClass(className);
 
     }
 

@@ -99,7 +99,7 @@ public class UserdataFactory<T> {
                 PropertyData<? super T> cachedProperty = cachedProperties.get(name);
 
                 if (cachedProperty == null) {
-                    cachedProperty = PropertyResolver.resolveProperty(state, clazz, name, false);
+                    cachedProperty = PropertyResolver.resolveProperty(clazz, name, false);
 
                     cachedProperties.put(name, cachedProperty);
                 }
@@ -122,7 +122,7 @@ public class UserdataFactory<T> {
                 PropertyData<? super T> cachedProperty = cachedProperties.get(name);
 
                 if (cachedProperty == null) {
-                    cachedProperty = PropertyResolver.resolveProperty(state, clazz, name, false);
+                    cachedProperty = PropertyResolver.resolveProperty(clazz, name, false);
 
                     cachedProperties.put(name, cachedProperty);
                 }

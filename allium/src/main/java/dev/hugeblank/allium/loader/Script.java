@@ -3,14 +3,10 @@ package dev.hugeblank.allium.loader;
 import dev.hugeblank.allium.Allium;
 import dev.hugeblank.allium.api.ScriptResource;
 import dev.hugeblank.allium.loader.type.annotation.LuaWrapped;
-import dev.hugeblank.allium.mappings.Mappings;
 import dev.hugeblank.allium.util.Identifiable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.squiddev.cobalt.LuaError;
-import org.squiddev.cobalt.LuaState;
-import org.squiddev.cobalt.LuaValue;
-import org.squiddev.cobalt.UnwindThrowable;
+import org.squiddev.cobalt.*;
 import org.squiddev.cobalt.compiler.CompileException;
 import org.squiddev.cobalt.function.Dispatch;
 import org.squiddev.cobalt.function.LuaFunction;
@@ -30,7 +26,7 @@ public class Script implements Identifiable {
     private final Logger logger;
     private final ScriptExecutor executor;
     // Whether this script was able to execute (isolated by environment)
-    private final Set<Allium.EnvType> initialized = new HashSet<>();
+    private final Map<Allium.EnvType, State> initialized;
     // Resources are stored in a weak set so that if a resource is abandoned, it gets destroyed.
     private final Set<ScriptResource> resources = Collections.newSetFromMap(new WeakHashMap<>());
     private boolean destroyingResources = false;
@@ -43,6 +39,12 @@ public class Script implements Identifiable {
         this.envType = envType;
         this.executor = new ScriptExecutor(this, path, envType, manifest.entrypoints());
         this.logger = LoggerFactory.getLogger('@' + getID());
+        this.initialized = new HashMap<>();
+        this.initialized.putAll(Map.of(
+                Allium.EnvType.CLIENT, State.UNINITIALIZED,
+                Allium.EnvType.COMMON, State.UNINITIALIZED,
+                Allium.EnvType.DEDICATED, State.UNINITIALIZED
+        ));
     }
 
     // TODO: Move to Bouquet
@@ -108,23 +110,27 @@ public class Script implements Identifiable {
     }
 
     public void initialize() {
-        if (isInitialized()) {
-            getLogger().warn("Attempted to initialize while already active!");
-            return;
-        }
-        try {
-            // Initialize and set module used by require
-            this.module = getExecutor().initialize().arg(1);
-            this.initialized.add(envType); // If all these steps are successful, we can set initialized to true
-        } catch (Throwable e) {
-            //noinspection StringConcatenationArgumentToLogCall
-            getLogger().error("Could not initialize allium script " + getID(), e);
-            unload();
+        switch (getLaunchState()) {
+            case UNINITIALIZED -> {
+                try {
+                    // Initialize and set module used by require
+                    this.module = getExecutor().initialize().arg(1);
+                    this.initialized.put(envType, State.INITIALIZED); // If all these steps are successful, we can update the state
+                } catch (Throwable e) {
+                    this.module = Constants.NIL;
+                    //noinspection StringConcatenationArgumentToLogCall
+                    getLogger().error("Could not initialize allium script " + getID() + " on " + envType, e);
+                    unload();
+                    this.initialized.put(envType, State.INVALID);
+                }
+
+            }
+            case INITIALIZED -> getLogger().warn("Attempted to initialize while already active");
         }
     }
 
-    public boolean isInitialized() {
-        return initialized.contains(envType);
+    public State getLaunchState() {
+        return initialized.get(envType);
     }
 
     // return null if file isn't contained within Scripts path, or if it doesn't exist.
@@ -172,10 +178,6 @@ public class Script implements Identifiable {
         return manifest.name();
     }
 
-    public Mappings getMappings() {
-        return Mappings.REGISTRY.get(manifest.mappings());
-    }
-
     public Logger getLogger() {
         return logger;
     }
@@ -187,6 +189,12 @@ public class Script implements Identifiable {
     @Override
     public String toString() {
         return manifest.name();
+    }
+
+    public enum State {
+        UNINITIALIZED,
+        INITIALIZED,
+        INVALID
     }
 
 }

@@ -4,6 +4,5 @@
   "name": "Hangman",
   "entrypoints": {
     "static":"main.lua"
-  },
-  "mappings": "yarn"
+  }
 }

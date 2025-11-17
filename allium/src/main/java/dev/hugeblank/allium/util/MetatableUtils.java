@@ -94,12 +94,9 @@ public class MetatableUtils {
                     PropertyData<? super T> propertyData = cachedProperties.get(memberName);
 
                     if (propertyData == null) { // caching
-                        propertyData = PropertyResolver.resolveProperty(state, clazz, memberName, member.isStatic());
+                        propertyData = PropertyResolver.resolveProperty(clazz, memberName, member.isStatic());
                         cachedProperties.put(memberName, propertyData);
                     }
-
-                    if (!Allium.DEVELOPMENT)
-                        memberName = ScriptRegistry.scriptFromState(state).getMappings().getMapped(memberName);
 
                     varargs.add(ValueFactory.varargsOf(LuaString.valueOf(memberName), propertyData.get(
                             memberName,

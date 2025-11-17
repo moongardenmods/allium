@@ -85,7 +85,7 @@ public class PackageLib implements WrappedLuaLibrary {
         String[] path = args.arg(1).checkString().split("\\.");
         Script candidate = ScriptRegistry.getInstance(envType).get(path[0]);
         if (candidate != null) {
-            if (!candidate.isInitialized()) {
+            if (candidate.getLaunchState().equals(Script.State.UNINITIALIZED)) {
                 candidate.initialize();
             }
             if (path.length == 1) {
@@ -99,7 +99,7 @@ public class PackageLib implements WrappedLuaLibrary {
 
     public LuaValue javaLoader(LuaState state, LuaValue arg) {
         try {
-            return StaticBinder.bindClass(JavaHelpers.asClass(state, arg));
+            return StaticBinder.bindClass(JavaHelpers.asClass(arg));
         } catch (LuaError ignored) {}
         return Constants.NIL;
     }
