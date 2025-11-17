@@ -62,9 +62,11 @@ public class FsLib implements WrappedLuaLibrary {
         LuaTable out = new LuaTable();
         try {
             int i = 1;
-            for (Path p : Files.list(contents).toList()) {
+            Stream<Path> list = Files.list(contents);
+            for (Path p : list.toList()) {
                 out.rawset(i++, ValueFactory.valueOf(String.valueOf(p.getFileName())));
             }
+            list.close();
             return out;
         } catch (IOException e) {
             throw new LuaError(e);
@@ -155,6 +157,7 @@ public class FsLib implements WrappedLuaLibrary {
                 for (Path p : list.toList()) {
                     deleteInternal(p);
                 }
+                list.close();
             } catch (IOException ex) {
                 throw new LuaError(e);
             }
@@ -216,7 +219,7 @@ public class FsLib implements WrappedLuaLibrary {
                 if (path.getFileName().toString().matches(expr))
                     findInternal(base.resolve(path), subPath(routes), out);
             }
-
+            list.close();
         } catch (IOException e) {
             throw new LuaError(e);
         }

@@ -1,27 +1,40 @@
 package dev.hugeblank.bouquet.api.event;
 
+import net.minecraft.core.BlockPos;
+import net.minecraft.world.InteractionHand;
+import net.minecraft.world.damagesource.DamageSource;
+import net.minecraft.world.damagesource.DamageType;
 import net.minecraft.world.entity.npc.VillagerData;
-import net.minecraft.util.AbstractListBuilder;
 import net.minecraft.util.parsing.packrat.Term;
-import net.minecraft.server.MinecraftServer;
-import net.minecraft.network.protocol.game.ServerboundChangeGameModePacket;
-import net.minecraft.network.protocol.game.ServerboundChangeDifficultyPacket;
 import net.minecraft.tags.GameEventTags;
+import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.NoteBlock;
-import net.minecraft.commands.arguments.BlockPos;
 import net.minecraft.world.entity.ai.behavior.VillagerGoalPackages;
+import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.storage.ValueInput;
+import net.minecraft.world.level.storage.ValueOutput;
+import net.minecraft.world.phys.BlockHitResult;
 
 public class CommonEventHandlers {
     public interface PlayerTick {
-        void onPlayerTick(Term player);
+        void onPlayerTick(Player player);
     }
 
     public interface PlayerBlockInteract {
-        void onPlayerBlockInteraction(VillagerData state, VillagerGoalPackages world, BlockPos pos, Term player, GameEventTags hand, NoteBlock hitResult);
+        void onPlayerBlockInteraction(BlockState state, Level world, BlockPos pos, Player player, InteractionHand hand, BlockHitResult hitResult);
     }
 
     public interface PlayerDeath {
-        void onPlayerDeath(Term player, AbstractListBuilder damageSource);
+        void onPlayerDeath(Player player, DamageSource damageSource);
+    }
+
+    public interface EntitySave {
+        void save(ValueOutput valueOutput);
+    }
+
+    public interface EntityLoad {
+        void load(ValueInput valueInput);
     }
 
 }

@@ -2,6 +2,7 @@ package dev.hugeblank.bouquet.api.event;
 
 import dev.hugeblank.allium.loader.type.annotation.LuaWrapped;
 import net.minecraft.network.protocol.configuration.ServerConfigurationPacketListener;
+import net.minecraft.resources.Identifier;
 
 @LuaWrapped
 public class ClientEvents implements Events {
@@ -10,8 +11,8 @@ public class ClientEvents implements Events {
 
     static {
         // The end of the client render cycle (renders below everything in the gui)
-        GUI_RENDER_HEAD = new SimpleEventType<>(ServerConfigurationPacketListener.of("allium:client/render_head"));
+        GUI_RENDER_HEAD = new SimpleEventType<>(Identifier.parse("allium:client/render_head"));
         // The end of the client render cycle (renders above everything in the gui)
-        GUI_RENDER_TAIL = new SimpleEventType<>(ServerConfigurationPacketListener.of("allium:client/render_tail"));
+        GUI_RENDER_TAIL = new SimpleEventType<>(Identifier.parse("allium:client/render_tail"));
     }
 }

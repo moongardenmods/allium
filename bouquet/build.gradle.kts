@@ -35,7 +35,7 @@ dependencies {
 	implementation("me.basiqueevangelist","enhanced-reflection", enhancedReflections)
 
 	implementation(include("io.netty", "netty-codec-http", nettyHttp))
-	implementation("eu.pb4", "placeholder-api", placeholderApi)
+//	implementation("eu.pb4", "placeholder-api", placeholderApi)
 	implementation(project(path = ":allium"))
 }
 

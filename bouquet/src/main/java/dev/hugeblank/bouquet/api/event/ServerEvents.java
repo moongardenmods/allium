@@ -1,7 +1,7 @@
 package dev.hugeblank.bouquet.api.event;
 
 import dev.hugeblank.allium.loader.type.annotation.LuaWrapped;
-import net.minecraft.network.protocol.configuration.ServerConfigurationPacketListener;
+import net.minecraft.resources.Identifier;
 
 @LuaWrapped
 public class ServerEvents implements Events {
@@ -16,18 +16,18 @@ public class ServerEvents implements Events {
 
     static {
         // server gets a chat message
-        CHAT_MESSAGE = new SimpleEventType<>(ServerConfigurationPacketListener.of("allium:server/chat_message"));
+        CHAT_MESSAGE = new SimpleEventType<>(Identifier.parse("allium:server/chat_message"));
         // player joins the game
-        PLAYER_JOIN = new SimpleEventType<>(ServerConfigurationPacketListener.of("allium:server/player_join"));
+        PLAYER_JOIN = new SimpleEventType<>(Identifier.parse("allium:server/player_join"));
         // player leaves the game
-        PLAYER_QUIT = new SimpleEventType<>(ServerConfigurationPacketListener.of("allium:server/player_quit"));
+        PLAYER_QUIT = new SimpleEventType<>(Identifier.parse("allium:server/player_quit"));
         // player collides with a block
-        PLAYER_BLOCK_COLLISION = new SimpleEventType<>(ServerConfigurationPacketListener.of("allium:server/player_block_collision"));
+        PLAYER_BLOCK_COLLISION = new SimpleEventType<>(Identifier.parse("allium:server/player_block_collision"));
         // server gets ticked
-        SERVER_TICK = new SimpleEventType<>(ServerConfigurationPacketListener.of("allium:server/tick"));
+        SERVER_TICK = new SimpleEventType<>(Identifier.parse("allium:server/tick"));
         // the result of a registered command
-        COMMAND_REGISTER = new SimpleEventType<>(ServerConfigurationPacketListener.of("allium:server/command_register"));
+        COMMAND_REGISTER = new SimpleEventType<>(Identifier.parse("allium:server/command_register"));
         // server finishes loading
-        SERVER_START = new SimpleEventType<>(ServerConfigurationPacketListener.of("allium:server/start"));
+        SERVER_START = new SimpleEventType<>(Identifier.parse("allium:server/start"));
     }
 }

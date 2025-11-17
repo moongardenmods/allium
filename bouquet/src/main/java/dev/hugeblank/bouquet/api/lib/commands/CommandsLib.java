@@ -5,6 +5,8 @@ import com.mojang.brigadier.tree.CommandNode;
 import dev.hugeblank.allium.api.WrappedLuaLibrary;
 import dev.hugeblank.allium.loader.type.annotation.LuaIndex;
 import dev.hugeblank.allium.loader.type.annotation.LuaWrapped;
+import net.minecraft.commands.CommandSourceStack;
+import net.minecraft.commands.Commands;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.advancements.criterion.UsedTotemTrigger;
 import net.minecraft.advancements.criterion.UsedEnderEyeTrigger;
@@ -19,21 +21,21 @@ public class CommandsLib implements WrappedLuaLibrary {
     @LuaWrapped
     public void exec(MinecraftServer server, String... args) {
 
-        UsedTotemTrigger manager = server.getCommandManager();
-        UsedEnderEyeTrigger source = server.getCommandSource();
-        manager.executeWithPrefix(source, String.join(" ", args));
+        Commands manager = server.getCommands();
+        CommandSourceStack source = server.createCommandSourceStack();
+        manager.performPrefixedCommand(source, String.join(" ", args));
     }
 
     @LuaIndex
     public BoundCommand index(MinecraftServer server, String command) {
 
-        UsedTotemTrigger manager = server.getCommandManager();
-        UsedEnderEyeTrigger source = server.getCommandSource();
-        CommandDispatcher<UsedEnderEyeTrigger> dispatcher = manager.getDispatcher();
+        Commands manager = server.getCommands();
+        CommandSourceStack source = server.createCommandSourceStack();
+        CommandDispatcher<CommandSourceStack> dispatcher = manager.getDispatcher();
         CommandNode<?> node = dispatcher.findNode(Collections.singleton(command));
 
         if (node == null) return null;
-        else return (args) -> manager.executeWithPrefix(source, (command + " " + String.join(" ", args).trim()));
+        else return (args) -> manager.performPrefixedCommand(source, (command + " " + String.join(" ", args).trim()));
     }
 
     @FunctionalInterface

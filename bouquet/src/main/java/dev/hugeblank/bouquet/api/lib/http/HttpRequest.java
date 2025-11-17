@@ -14,6 +14,8 @@ import io.netty.handler.ssl.SslContext;
 import io.netty.handler.ssl.SslContextBuilder;
 import io.netty.handler.ssl.SslProvider;
 import net.minecraft.network.protocol.game.ServerboundEntityTagQueryPacket;
+import net.minecraft.server.network.EventLoopGroupHolder;
+import net.minecraft.server.network.ServerConnectionListener;
 import org.squiddev.cobalt.LuaError;
 
 import javax.net.ssl.SSLException;
@@ -98,9 +100,10 @@ public class HttpRequest extends ChannelInitializer<SocketChannel> {
 
     private void doRequestTo(URI newUri) {
         Bootstrap bootstrap = new Bootstrap();
+        EventLoopGroupHolder groupHolder = EventLoopGroupHolder.remote(false);
         bootstrap
-            .group(ServerboundEntityTagQueryPacket.STREAM_CODEC.get())
-            .channel(NioSocketChannel.class)
+            .group(groupHolder.eventLoopGroup())
+            .channel(groupHolder.channelCls())
             .handler(this);
 
         var port = newUri.getPort();
@@ -134,7 +137,7 @@ public class HttpRequest extends ChannelInitializer<SocketChannel> {
             p.addLast(SSL_CONTEXT.newHandler(ch.alloc(), uri.getHost(), uri.getPort()));
 
         p.addLast(new HttpClientCodec());
-        p.addLast(new HttpContentDecompressor());
+        p.addLast(new HttpContentDecompressor(0));
         p.addLast(new HttpObjectAggregator(1048576));
         p.addLast(new Handler());
     }

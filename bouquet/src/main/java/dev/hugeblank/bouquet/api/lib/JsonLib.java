@@ -55,8 +55,7 @@ public class JsonLib implements WrappedLuaLibrary {
     @LuaWrapped
     public static String toJson(LuaValue value, @OptionalArg Boolean compact) throws LuaError {
         JsonElement element = toJsonElement(value);
-        if (compact != null && compact) return COMPACT.toJson(element);
-        return  PRETTY.toJson(element);
+        return (compact != null && compact) ? COMPACT.toJson(element) : PRETTY.toJson(element);
     }
 
     @LuaWrapped

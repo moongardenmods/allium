@@ -5,15 +5,14 @@
 
 if package.environment ~= "client" then return end
 
-local Text = require("net.minecraft.text.Text")
-local BlockPos = require("net.minecraft.util.math.BlockPos")
-local Registries = require("net.minecraft.registry.Registries")
+local Component = require("net.minecraft.network.chat.Component")
+local BuiltInRegistries = require("net.minecraft.core.registries.BuiltInRegistries")
 
-local renderText -- The text to be shared between the render event and tick event
+local renderComponent -- The text to be shared between the render event and tick event
 
-events.client.GUI_RENDER_TAIL:register(script, function(client, context, hud)
-    if renderText then -- If there's text, then draw it at the top center
-        context:drawCenteredTextWithShadow(hud:getTextRenderer(), renderText, context:getScaledWindowWidth()/2, 5, 0xffffff)
+events.client.GUI_RENDER_TAIL:register(script, function(client, context, deltaTracker, gui)
+    if renderComponent then -- If there's text, then draw it at the top center
+        context:drawCenteredString(gui:getFont(), renderComponent, (context:guiWidth()/2)-40, 5, 0xffffffff)
         -- The position 5 was arbitrarily chosen, and was the first value I picked just to test. It worked perfectly.
         -- Exercise for the reader - Create a background frame behind the text, so it can be viewed on white backgrounds.
         -- Note that while text rendering uses RGB, background rendering uses ARGB.
@@ -21,23 +20,21 @@ events.client.GUI_RENDER_TAIL:register(script, function(client, context, hud)
 end)
 
 events.common.PLAYER_TICK:register(script, function(player)
-    if player:getWorld():isClient() then
+    local level = player:level()
+    if level:isClientSide() then
         -- Finally, use the block to get the identifier of the block
-        local identifier = Registries.BLOCK:getId(
+        local identifier = BuiltInRegistries.BLOCK:getKey(
         -- Use the position to get the state, then the block attributed to that state
-                player.world:getBlockState(
-                -- Convert position to an actual BlockPos
-                        BlockPos(
-                        -- Get the block position the player is looking at <- START HERE read UP ^
-                                player:raycast(5, 0, false):getBlockPos()
-                        )
+                level:getBlockState(
+                -- Get the block position the player is looking at <- START HERE read UP ^
+                        player:pick(5, 0, false):getBlockPos()
                 ):getBlock()
         )
         local namespace, path = identifier:getNamespace(),  identifier:getPath()
         if namespace == "minecraft" and path == "air" then -- If we're just looking at air, don't create a text object.
-            renderText = nil
+            renderComponent = nil
         else -- Otherwise, pull the name of the block from the language.
-            renderText = Text.translatable("block."..namespace.."."..path)
+            renderComponent = Component.translatable("block."..namespace.."."..path)
         end
     end
 end)
