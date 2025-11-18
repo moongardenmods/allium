@@ -4,7 +4,7 @@ print("I'm feeling lucky!")
 -- make sure to specify in mixin.to(), as well as checking that the package.environment is "client".
 
 -- For registering our recipe in the right location
-local BrewingRecipeRegistryMixinBuilder = mixin.to("net.minecraft.recipe.BrewingRecipeRegistry")
+local PotionBrewingMixinBuilder = mixin.to("net.minecraft.world.item.alchemy.PotionBrewing")
 
 --[[ The following mess of a table is parsed into an annotation on the java side. We have to be very careful
     with how it's structured so that it doesn't blow up in our face. The important bits are that "method" is a table
@@ -14,11 +14,11 @@ local BrewingRecipeRegistryMixinBuilder = mixin.to("net.minecraft.recipe.Brewing
     https://github.com/2xsaiko/mixin-cheatsheet It should be possible to extrapolate from this, what an inject would look
     like in Lua.
 --]]
-addRecipes = BrewingRecipeRegistryMixinBuilder:inject("add_brewing_recipes", { -- Get the point at which potions should be registered.
+addRecipes = PotionBrewingMixinBuilder:inject("add_brewing_recipes", { -- Get the point at which potions should be registered.
     at = { { "TAIL" } },
-    method = { "registerDefaults(Lnet/minecraft/recipe/BrewingRecipeRegistry$Builder;)V" }
+    method = { "addVanillaMixes(Lnet/minecraft/world/item/alchemy/PotionBrewing$Builder;)V" }
 })
 -- Inject returns an event type for us to register to.
 -- It is practice to register mixin events in another entrypoint, so we use it in dynamic!
 
-BrewingRecipeRegistryMixinBuilder:build() -- Don't forget to actually build the mixin!
+PotionBrewingMixinBuilder:build() -- Don't forget to actually build the mixin!

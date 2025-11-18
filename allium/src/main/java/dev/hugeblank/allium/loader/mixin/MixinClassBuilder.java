@@ -1,6 +1,7 @@
 package dev.hugeblank.allium.loader.mixin;
 
 import com.llamalad7.mixinextras.sugar.Local;
+import dev.hugeblank.allium.Allium;
 import dev.hugeblank.allium.api.event.MixinEventType;
 import dev.hugeblank.allium.loader.Script;
 import dev.hugeblank.allium.loader.lib.MixinLib;
@@ -61,7 +62,6 @@ public class MixinClassBuilder {
         this.script = script;
         this.targetEnvironment = targetEnvironment;
         this.duck = duck;
-        LuaState state = script.getExecutor().getState();
         this.visitedClass = VisitedClass.ofClass(target);
 
         EClass<?> superClass = EClass.fromJava(Object.class);

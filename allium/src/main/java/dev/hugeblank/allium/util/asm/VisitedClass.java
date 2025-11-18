@@ -5,6 +5,7 @@ import org.spongepowered.asm.service.MixinService;
 import org.squiddev.cobalt.LuaError;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicReference;
@@ -32,7 +33,7 @@ public class VisitedClass {
         this.signature = signature;
         this.superName = superName;
         this.interfaces = interfaces;
-        VISITED.put(className, this);
+        VISITED.put(className.replace("/", "."), this);
     }
 
     public Type getType() {
@@ -124,7 +125,8 @@ public class VisitedClass {
         if (!VISITED.containsKey(className)) {
             try {
                 final AtomicReference<LuaError> err = new AtomicReference<>(null);
-                new ClassReader(MixinService.getService().getResourceAsStream(className.replace(".", "/") + ".class")).accept(
+                InputStream classInputStream = MixinService.getService().getResourceAsStream(className.replace(".", "/") + ".class");
+                new ClassReader(classInputStream).accept(
                         new ClassVisitor(ASM9) {
                             VisitedClass instance;
 

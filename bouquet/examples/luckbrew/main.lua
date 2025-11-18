@@ -5,9 +5,9 @@
 -- Unfortunately here, the brewing recipe registry gets created only once on game start, so this file is not dynamic.
 
 addRecipes:register(script, function(builder, ci)
-    local Items = require("net.minecraft.item.Items")
-    local Potions = require("net.minecraft.potion.Potions")
+    local Items = require("net.minecraft.world.item.Items")
+    local Potions = require("net.minecraft.world.item.alchemy.Potions")
     print("registering lucky potion!")
     -- Register our lucky little potion
-    builder:registerPotionRecipe(Potions.AWKWARD, Items.GOLD_NUGGET, Potions.LUCK)
+    builder:addMix(Potions.AWKWARD, Items.GOLD_NUGGET, Potions.LUCK)
 end)

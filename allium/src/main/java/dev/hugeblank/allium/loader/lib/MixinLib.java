@@ -1,5 +1,6 @@
 package dev.hugeblank.allium.loader.lib;
 
+import dev.hugeblank.allium.Allium;
 import dev.hugeblank.allium.api.WrappedLuaLibrary;
 import dev.hugeblank.allium.api.event.MixinEventType;
 import dev.hugeblank.allium.loader.Script;
@@ -13,12 +14,7 @@ import org.squiddev.cobalt.LuaError;
 import org.squiddev.cobalt.LuaValue;
 
 @LuaWrapped(name = "mixin")
-public class MixinLib implements WrappedLuaLibrary {
-    private final Script script;
-
-    public MixinLib(Script script) {
-        this.script = script;
-    }
+public record MixinLib(Script script) implements WrappedLuaLibrary {
 
     @LuaWrapped
     public static MixinEventType get(String eventId) {
