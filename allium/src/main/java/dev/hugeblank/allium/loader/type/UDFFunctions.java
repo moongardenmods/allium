@@ -1,19 +1,24 @@
 package dev.hugeblank.allium.loader.type;
 
+import com.mojang.datafixers.util.Pair;
+import dev.hugeblank.allium.Allium;
+import dev.hugeblank.allium.loader.ScriptRegistry;
 import dev.hugeblank.allium.loader.type.coercion.TypeCoercions;
 import dev.hugeblank.allium.util.ArgumentUtils;
 import dev.hugeblank.allium.util.JavaHelpers;
 import me.basiqueevangelist.enhancedreflection.api.EClass;
 import me.basiqueevangelist.enhancedreflection.api.EMethod;
 import me.basiqueevangelist.enhancedreflection.api.typeuse.EClassUse;
+import org.apache.commons.io.function.IOStream;
 import org.squiddev.cobalt.LuaError;
 import org.squiddev.cobalt.LuaState;
 import org.squiddev.cobalt.LuaValue;
 import org.squiddev.cobalt.Varargs;
 import org.squiddev.cobalt.function.VarArgFunction;
 
+import java.io.*;
 import java.lang.reflect.InvocationTargetException;
-import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 
 public final class UDFFunctions<T> extends VarArgFunction {
@@ -40,11 +45,7 @@ public final class UDFFunctions<T> extends VarArgFunction {
 //                    name
 //            );
 //        }
-        List<String> paramList = new ArrayList<>(); // String for displaying errors more smartly
-        StringBuilder error = new StringBuilder("Could not find parameter match for called function \"" +
-            name + "\" for \"" + clazz.name() + "\"" +
-            "\nThe following are correct argument types:\n"
-        );
+        final StringBuilder error = new StringBuilder();
 
         try {
 //            final T instance;
@@ -80,27 +81,45 @@ public final class UDFFunctions<T> extends VarArgFunction {
                         } catch (InvocationTargetException e) {
                             if (e.getTargetException() instanceof LuaError err)
                                 throw err;
-
+                            // TODO: what is the point of RethrowException?
                             throw new RethrowException(e.getTargetException());
                         }
                     }
-                } catch (InvalidArgumentException e) {
-                    paramList.add(ArgumentUtils.paramsToPrettyString(parameters));
+                } catch (InvalidArgumentException ignored) {
                 }
             }
+        } catch (LuaError e) {
+            throw e;
         } catch (Exception e) {
-            if (e instanceof LuaError) {
-                throw e;
-            } else {
-                e.printStackTrace();
-                error = new StringBuilder(e.toString());
-            }
+            StringBuilder trace = new StringBuilder();
+            e.printStackTrace(new PrintStream(new OutputStream() {
+                @Override
+                public void write(int b) {
+                    trace.append((char) b);
+                }
+            }));
+            error.append("Could not call function \"").append(name).append("\" in \"")
+                    .append(clazz.name()).append("\"\n")
+                    .append("One of the arguments passed into this function may be of the wrong type.\n");
+            writeGivenAndExpectedTypes(args, error);
+            error.append("\nJava Trace:\n").append(trace).append("\nLua Error:");
+            throw new LuaError(error.toString());
         }
 
-        for (String headers : paramList) {
-            error.append("  - ").append(headers).append("\n");
-        }
-        error.append("got ").append(args.count()-(!isStatic ? 1 : 0)).append(" arguments: \n");
+        error.append("Could not find parameter match for function \"").append(name).append("\" in \"")
+                .append(clazz.name()).append("\"\n");
+        writeGivenAndExpectedTypes(args, error);
+        throw new LuaError(error.toString());
+    }
+
+    private void writeGivenAndExpectedTypes(Varargs args, StringBuilder error) {
+        error.append("The following are correct argument types:\n");
+        matches.stream().map((match) -> 
+                        new Pair<>(match.parameters().size(), ArgumentUtils.paramsToPrettyString(match.parameters())))
+                .sorted(Comparator.comparingInt(Pair::getFirst)).forEach((match) ->
+                        error.append("  - ").append(match.getSecond()).append('\n')
+                ); // String for displaying errors more smartly
+        error.append("got ").append(args.count()-(!isStatic ? 1 : 0)).append(" arguments: \n  ");
         for (int i = !isStatic ? 2 : 1; i <= args.count(); i++) {
             LuaValue val = args.arg(i);
             if (val instanceof AlliumInstanceUserdata<?> userdata) {
@@ -112,8 +131,5 @@ public final class UDFFunctions<T> extends VarArgFunction {
             }
             if (i < args.count()) error.append(", ");
         }
-        error.append('\n');
-
-        throw new LuaError(error.toString());
     }
 }

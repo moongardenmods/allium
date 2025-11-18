@@ -12,7 +12,7 @@ local renderComponent -- The text to be shared between the render event and tick
 
 events.client.GUI_RENDER_TAIL:register(script, function(client, context, deltaTracker, gui)
     if renderComponent then -- If there's text, then draw it at the top center
-        context:drawCenteredString(gui:getFont(), renderComponent, (context:guiWidth()/2)-40, 5, 0xffffffff)
+        context:drawCenteredString(gui:getFont(), renderComponent, context:guiWidth()/2, 5, 0xffffffff)
         -- The position 5 was arbitrarily chosen, and was the first value I picked just to test. It worked perfectly.
         -- Exercise for the reader - Create a background frame behind the text, so it can be viewed on white backgrounds.
         -- Note that while text rendering uses RGB, background rendering uses ARGB.

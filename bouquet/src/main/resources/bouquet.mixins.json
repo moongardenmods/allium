@@ -14,7 +14,7 @@
     "server.MinecraftServerMixin",
     "server.MinecraftServerSubclassMixin",
     "server.PlayerManagerMixin",
-    "server.network.ServerPlayerEntityMixin"
+    "server.network.ServerPlayerMixin"
   ],
   "injectors": {
     "defaultRequire": 1

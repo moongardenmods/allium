@@ -1,10 +1,9 @@
 package dev.hugeblank.bouquet.mixin.server.network;
 
+import com.mojang.authlib.GameProfile;
 import dev.hugeblank.bouquet.api.event.ServerEvents;
 import dev.hugeblank.bouquet.util.EntityDataHolder;
 import net.minecraft.server.level.ServerPlayer;
-import net.minecraft.world.entity.Entity;
-import net.minecraft.world.entity.npc.VillagerData;
 import net.minecraft.world.level.block.state.BlockState;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
@@ -12,7 +11,7 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 @Mixin(ServerPlayer.class)
-public class ServerPlayerEntityMixin{
+public class ServerPlayerMixin {
 
     @Inject(at = @At("HEAD"), method = "initInventoryMenu")
     private void onPlayerConnect(CallbackInfo ci) {
