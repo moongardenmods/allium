@@ -11,15 +11,13 @@
 // See LICENSE for more information
 package dev.hugeblank.allium;
 
-import dev.hugeblank.allium.util.FileHelper;
 import dev.hugeblank.allium.util.SetupHelpers;
+import net.fabricmc.api.EnvType;
 import net.fabricmc.api.ModInitializer;
 import net.fabricmc.loader.api.FabricLoader;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.IOException;
-import java.nio.file.Files;
 import java.nio.file.Path;
 
 public class Allium implements ModInitializer {
@@ -32,30 +30,8 @@ public class Allium implements ModInitializer {
 
     @Override
     public void onInitialize() {
-
-        try {
-            if (!Files.exists(FileHelper.PERSISTENCE_DIR)) Files.createDirectory(FileHelper.PERSISTENCE_DIR);
-            if (!Files.exists(FileHelper.CONFIG_DIR)) Files.createDirectory(FileHelper.CONFIG_DIR);
-        } catch (IOException e) {
-            throw new RuntimeException("Couldn't create config directory", e);
-        }
-
-        SetupHelpers.initializeEnvironment(EnvType.COMMON);
-    }
-
-    public enum EnvType {
-        COMMON("common"), // common & server code
-        CLIENT("client"), // client code only
-        DEDICATED("dedicated"); // server code only
-
-        private final String key;
-        EnvType(String key) {
-            this.key = key;
-        }
-
-        public String getKey() {
-            return key;
-        }
-
+        EnvType envType = FabricLoader.getInstance().getEnvironmentType();
+        SetupHelpers.initializeExtensions(envType);
+        SetupHelpers.initializeEnvironment();
     }
 }

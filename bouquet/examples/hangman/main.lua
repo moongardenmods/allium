@@ -4,7 +4,6 @@
 -- Derived from the original !hangman command in alpha, for allium-cc
 -- Source: https://github.com/hugeblank/Alpha/blob/master/alpha.lua#L354
 
-if package.environment == "client" then return end
 
 local words = require("words")
 local Commands = require("net.minecraft.commands.Commands") -- We need the java command manager for creating commands.

@@ -1,7 +1,6 @@
 package dev.hugeblank.bouquet.mixin.command;
 
 import com.mojang.brigadier.context.CommandContext;
-import dev.hugeblank.allium.loader.Script;
 import dev.hugeblank.allium.loader.ScriptRegistry;
 import net.minecraft.network.protocol.game.ClientboundPlayerPositionPacket;
 import net.minecraft.server.commands.ReloadCommand;
@@ -14,7 +13,6 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 public class ReloadCommandMixin {
     @Inject(at = @At("HEAD"), method = "lambda$register$2(Lcom/mojang/brigadier/context/CommandContext;)I")
     private static void executes(CommandContext<?> context, CallbackInfoReturnable<Integer> cir) {
-        ScriptRegistry.COMMON.reloadAll();
-        ScriptRegistry.DEDICATED.reloadAll();
+        ScriptRegistry.getInstance().reloadAll();
     }
 }

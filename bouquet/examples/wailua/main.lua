@@ -3,7 +3,7 @@
 -- WAILA-like (What Am I Looking At) script exclusively for the client-side.
 -- This is a demonstration of how allium is not just for server sided use cases.
 
-if package.environment ~= "client" then return end
+if package.environment() ~= "client" then return end
 
 local Component = require("net.minecraft.network.chat.Component")
 local BuiltInRegistries = require("net.minecraft.core.registries.BuiltInRegistries")

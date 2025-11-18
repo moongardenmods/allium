@@ -1,6 +1,5 @@
 package dev.hugeblank.allium.loader;
 
-import dev.hugeblank.allium.Allium;
 import org.squiddev.cobalt.*;
 import org.squiddev.cobalt.compiler.CompileException;
 import org.squiddev.cobalt.compiler.LoadState;
@@ -16,12 +15,11 @@ public class ScriptExecutor extends EnvironmentManager {
     protected final Path path;
     protected final Entrypoint entrypoint;
 
-    public ScriptExecutor(Script script, Path path, Allium.EnvType envType, Entrypoint entrypoint) {
+    public ScriptExecutor(Script script, Path path, Entrypoint entrypoint) {
         super();
         this.script = script;
         this.path = path;
         this.entrypoint = entrypoint;
-        createEnvironment(script, envType);
     }
 
     public LuaState getState() {
@@ -29,32 +27,36 @@ public class ScriptExecutor extends EnvironmentManager {
     }
 
     public Varargs initialize() throws Throwable {
-        LuaFunction staticFunction;
-        LuaFunction dynamicFunction;
+        applyLibraries(script);
         if (entrypoint.has(Entrypoint.Type.STATIC) && entrypoint.has(Entrypoint.Type.DYNAMIC)) {
-            staticFunction = this.load(getInputStream(Entrypoint.Type.STATIC), script.getID() + ":static");
-            dynamicFunction = this.load(getInputStream(Entrypoint.Type.DYNAMIC), script.getID() + ":dynamic");
-            Varargs out = LuaThread.runMain(state, staticFunction);
-            LuaThread.runMain(state, dynamicFunction);
+            Varargs out = execute(Entrypoint.Type.STATIC);
+            execute(Entrypoint.Type.DYNAMIC);
             return out;
         } else if (entrypoint.has(Entrypoint.Type.STATIC)) {
-            staticFunction = this.load(getInputStream(Entrypoint.Type.STATIC), script.getID());
-            return LuaThread.runMain(state, staticFunction);
+            return execute(Entrypoint.Type.STATIC);
         } else if (entrypoint.has(Entrypoint.Type.DYNAMIC)) {
-            dynamicFunction = this.load(getInputStream(Entrypoint.Type.DYNAMIC), script.getID());
-            return LuaThread.runMain(state, dynamicFunction);
+            return execute(Entrypoint.Type.DYNAMIC);
+        } else if (entrypoint.has(Entrypoint.Type.MIXIN)) {
+            // It's ok to have a script that's just mixins. I guess.
+            return Constants.NIL;
         }
         // This should be caught sooner, but who knows maybe a dev (hugeblank) will come along and mess something up
         throw new Exception("Expected either static or dynamic entrypoint, got none");
     }
 
+    public void preInitialize() throws CompileException, LuaError, IOException {
+        createEnvironment(script);
+        if (entrypoint.has(Entrypoint.Type.MIXIN)) execute(Entrypoint.Type.MIXIN);
+    }
+
 
     public Varargs reload() throws LuaError, CompileException, IOException {
-        if (entrypoint.has(Entrypoint.Type.DYNAMIC)) {
-            LuaFunction dynamicFunction = this.load(getInputStream(Entrypoint.Type.DYNAMIC), script.getID());
-            return LuaThread.runMain(state, dynamicFunction);
-        }
+        if (entrypoint.has(Entrypoint.Type.DYNAMIC)) return execute(Entrypoint.Type.DYNAMIC);
         return null;
+    }
+
+    private Varargs execute(Entrypoint.Type type) throws IOException, CompileException, LuaError {
+        return LuaThread.runMain(state, load(getInputStream(type), script.getID() + ":" + type));
     }
 
     private InputStream getInputStream(Entrypoint.Type entrypointType) throws IOException {

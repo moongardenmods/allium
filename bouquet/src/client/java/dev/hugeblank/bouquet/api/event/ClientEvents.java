@@ -1,5 +1,6 @@
 package dev.hugeblank.bouquet.api.event;
 
+import dev.hugeblank.allium.api.event.SimpleEventType;
 import dev.hugeblank.allium.loader.type.annotation.LuaWrapped;
 import net.minecraft.network.protocol.configuration.ServerConfigurationPacketListener;
 import net.minecraft.resources.Identifier;

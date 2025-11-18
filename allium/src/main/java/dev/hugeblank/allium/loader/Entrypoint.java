@@ -30,7 +30,8 @@ public class Entrypoint {
 
     public enum Type {
         STATIC("static"),
-        DYNAMIC("dynamic");
+        DYNAMIC("dynamic"),
+        MIXIN("mixin");
 
         private final String key;
         Type(String key) {
@@ -39,6 +40,11 @@ public class Entrypoint {
 
         public String getKey() {
             return key;
+        }
+
+        @Override
+        public String toString() {
+            return this.key;
         }
     }
 

@@ -1,7 +1,5 @@
 package dev.hugeblank.allium.util;
 
-import dev.hugeblank.allium.Allium;
-import dev.hugeblank.allium.loader.ScriptRegistry;
 import dev.hugeblank.allium.loader.type.InvalidArgumentException;
 import dev.hugeblank.allium.loader.type.annotation.LuaWrapped;
 import dev.hugeblank.allium.loader.type.coercion.TypeCoercions;

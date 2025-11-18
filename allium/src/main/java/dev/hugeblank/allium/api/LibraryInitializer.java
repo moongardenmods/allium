@@ -1,7 +1,7 @@
 package dev.hugeblank.allium.api;
 
-import dev.hugeblank.allium.Allium;
 import dev.hugeblank.allium.loader.Script;
+import net.fabricmc.api.EnvType;
 
 /**
  * Functional Tnterface for libraries that depend on the script to function.
@@ -11,5 +11,5 @@ import dev.hugeblank.allium.loader.Script;
   */
 @FunctionalInterface
 public interface LibraryInitializer {
-    WrappedLuaLibrary init(Script script, Allium.EnvType envType);
+    WrappedLuaLibrary init(Script script);
 }

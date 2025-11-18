@@ -1,7 +1,7 @@
 package dev.hugeblank.bouquet;
 
-import dev.hugeblank.allium.loader.EnvironmentManager;
 import dev.hugeblank.allium.api.AlliumExtension;
+import dev.hugeblank.allium.loader.EnvironmentManager;
 import dev.hugeblank.bouquet.api.event.CommonEvents;
 import dev.hugeblank.bouquet.api.event.ServerEvents;
 import dev.hugeblank.bouquet.api.lib.*;

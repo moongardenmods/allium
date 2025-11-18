@@ -2,10 +2,11 @@ package dev.hugeblank.allium.loader;
 
 import dev.hugeblank.allium.Allium;
 import dev.hugeblank.allium.api.LibraryInitializer;
-import dev.hugeblank.allium.loader.api.JavaLib;
-import dev.hugeblank.allium.loader.api.PackageLib;
-import dev.hugeblank.allium.loader.type.coercion.TypeCoercions;
 import dev.hugeblank.allium.api.WrappedLuaLibrary;
+import dev.hugeblank.allium.loader.lib.JavaLib;
+import dev.hugeblank.allium.loader.lib.MixinLib;
+import dev.hugeblank.allium.loader.lib.PackageLib;
+import dev.hugeblank.allium.loader.type.coercion.TypeCoercions;
 import me.basiqueevangelist.enhancedreflection.api.EClass;
 import org.squiddev.cobalt.*;
 import org.squiddev.cobalt.function.LibFunction;
@@ -25,7 +26,7 @@ public class EnvironmentManager {
         this.state = new LuaState();
     }
 
-    protected void createEnvironment(Script script, Allium.EnvType envType) {
+    protected void createEnvironment(Script script) {
         LuaTable globals = state.globals();
         BaseLib.add(globals);
         try {
@@ -39,21 +40,26 @@ public class EnvironmentManager {
             LibFunction.setGlobalLibrary(state, globals, "script",
                     TypeCoercions.toLuaValue(script, EClass.fromJava(Script.class))
             );
-            loadLibrary(script, state, globals, new JavaLib());
+
+            loadLibrary(script, state, new PackageLib(script));
+            loadLibrary(script, state, new JavaLib());
+            loadLibrary(script, state, new MixinLib(script));
         } catch (LuaError error) {
             script.getLogger().error("Error loading library:", error);
         }
 
         globals.rawset( "print", new PrintMethod(script) );
         globals.rawset( "_HOST", ValueFactory.valueOf(Allium.ID + "_" + Allium.VERSION) );
-
-        INITIALIZERS.forEach(initializer -> loadLibrary(script, state, globals, initializer.init(script, envType)));
-        LIBRARIES.forEach(library -> loadLibrary(script, state, globals, library));
     }
 
-    private static void loadLibrary(Script script, LuaState state, LuaTable globals, WrappedLuaLibrary adder) {
+    protected void applyLibraries(Script script) {
+        INITIALIZERS.forEach(initializer -> loadLibrary(script, state, initializer.init(script)));
+        LIBRARIES.forEach(library -> loadLibrary(script, state, library));
+    }
+
+    private static void loadLibrary(Script script, LuaState state, WrappedLuaLibrary adder) {
         try {
-            adder.add(state, globals);
+            adder.add(state, state.globals());
         } catch (LuaError error) {
             script.getLogger().error("Error loading library:", error);
         }
@@ -66,10 +72,6 @@ public class EnvironmentManager {
 
     public static void registerLibrary(WrappedLuaLibrary library) {
         LIBRARIES.add(library);
-    }
-
-    static {
-        registerLibrary(PackageLib::new);
     }
 
     private static final class PrintMethod extends VarArgFunction {

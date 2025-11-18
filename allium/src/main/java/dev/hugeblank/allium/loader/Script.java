@@ -4,6 +4,8 @@ import dev.hugeblank.allium.Allium;
 import dev.hugeblank.allium.api.ScriptResource;
 import dev.hugeblank.allium.loader.type.annotation.LuaWrapped;
 import dev.hugeblank.allium.util.Identifiable;
+import dev.hugeblank.allium.util.MixinConfigUtil;
+import net.fabricmc.api.EnvType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.squiddev.cobalt.*;
@@ -15,39 +17,33 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.*;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.Set;
+import java.util.WeakHashMap;
 
 @LuaWrapped()
 public class Script implements Identifiable {
 
     private final Manifest manifest;
     private final Path path;
-    private final Allium.EnvType envType;
     private final Logger logger;
     private final ScriptExecutor executor;
     // Whether this script was able to execute (isolated by environment)
-    private final Map<Allium.EnvType, State> initialized;
+    private State initialized = State.UNINITIALIZED;
     // Resources are stored in a weak set so that if a resource is abandoned, it gets destroyed.
     private final Set<ScriptResource> resources = Collections.newSetFromMap(new WeakHashMap<>());
     private boolean destroyingResources = false;
 
     protected LuaValue module;
 
-    public Script(Manifest manifest, Path path, Allium.EnvType envType) {
-        this.manifest = manifest;
-        this.path = path;
-        this.envType = envType;
-        this.executor = new ScriptExecutor(this, path, envType, manifest.entrypoints());
+    public Script(Reference reference) {
+        this.manifest = reference.manifest();
+        this.path = reference.path();
+        this.executor = new ScriptExecutor(this, path, manifest.entrypoints());
         this.logger = LoggerFactory.getLogger('@' + getID());
-        this.initialized = new HashMap<>();
-        this.initialized.putAll(Map.of(
-                Allium.EnvType.CLIENT, State.UNINITIALIZED,
-                Allium.EnvType.COMMON, State.UNINITIALIZED,
-                Allium.EnvType.DEDICATED, State.UNINITIALIZED
-        ));
     }
 
-    // TODO: Move to Bouquet
     public void reload() {
         destroyAllResources();
         try {
@@ -109,19 +105,32 @@ public class Script implements Identifiable {
         destroyAllResources();
     }
 
+    public void preInitialize() {
+        if (MixinConfigUtil.isComplete()) {
+            getLogger().error("Attempted to pre-initialize after mixin configuration was loaded.");
+            return;
+        }
+        try {
+            getExecutor().preInitialize();
+        } catch (Throwable e) {
+            //noinspection StringConcatenationArgumentToLogCall
+            getLogger().error("Could not pre-initialize allium script " + getID(), e);
+        }
+    }
+
     public void initialize() {
-        switch (getLaunchState()) {
+        switch (initialized) {
             case UNINITIALIZED -> {
                 try {
                     // Initialize and set module used by require
                     this.module = getExecutor().initialize().arg(1);
-                    this.initialized.put(envType, State.INITIALIZED); // If all these steps are successful, we can update the state
+                    this.initialized = State.INITIALIZED; // If all these steps are successful, we can update the state
                 } catch (Throwable e) {
                     this.module = Constants.NIL;
                     //noinspection StringConcatenationArgumentToLogCall
-                    getLogger().error("Could not initialize allium script " + getID() + " on " + envType, e);
+                    getLogger().error("Could not initialize allium script " + getID(), e);
                     unload();
-                    this.initialized.put(envType, State.INVALID);
+                    this.initialized = State.INVALID;
                 }
 
             }
@@ -130,7 +139,7 @@ public class Script implements Identifiable {
     }
 
     public State getLaunchState() {
-        return initialized.get(envType);
+        return initialized;
     }
 
     // return null if file isn't contained within Scripts path, or if it doesn't exist.
@@ -152,8 +161,6 @@ public class Script implements Identifiable {
     public LuaValue getModule() {
         return module;
     }
-
-    public Allium.EnvType getEnvironment() { return envType; }
 
     public Manifest getManifest() {
         return manifest;
@@ -189,6 +196,14 @@ public class Script implements Identifiable {
     @Override
     public String toString() {
         return manifest.name();
+    }
+
+    public record Reference(Manifest manifest, Path path) implements Identifiable {
+
+        @Override
+        public String getID() {
+            return manifest().id();
+        }
     }
 
     public enum State {

@@ -33,7 +33,6 @@ public class FileHelper {
     public static final Path SCRIPT_DIR = FabricLoader.getInstance().getGameDir().resolve(Allium.ID);
     public static final Path CONFIG_DIR = FabricLoader.getInstance().getConfigDir().resolve(Allium.ID);
     public static final Path PERSISTENCE_DIR = FabricLoader.getInstance().getConfigDir().resolve(Allium.ID + "_persistence");
-    public static final Path MAPPINGS_CFG_DIR = FabricLoader.getInstance().getConfigDir().resolve(Allium.ID + "_mappings");
     public static final String MANIFEST_FILE_NAME = "manifest.json";
 
     public static Path getScriptsDirectory() {
@@ -48,17 +47,17 @@ public class FileHelper {
         return SCRIPT_DIR;
     }
 
-    public static Set<Script> getValidDirScripts(Path p, Allium.EnvType containerEnvType) {
-        Set<Script> out = new HashSet<>();
+    public static Set<Script.Reference> getValidDirScripts(Path p) {
+        Set<Script.Reference> out = new HashSet<>();
         try {
             Stream<Path> files = Files.list(p);
             files.forEach((scriptDir) -> {
                 if (Files.isDirectory(scriptDir)) {
-                    buildScript(out, scriptDir, containerEnvType);
+                    addReference(out, scriptDir);
                 } else {
                     try {
                         FileSystem fs = FileSystems.newFileSystem(scriptDir); // zip, tarball, whatever has a provider.
-                        buildScript(out, fs.getPath("/"), containerEnvType);
+                        addReference(out, fs.getPath("/"));
                     } catch (IOException | ProviderNotFoundException ignored) {}
                 }
             });
@@ -69,12 +68,12 @@ public class FileHelper {
         return out;
     }
 
-    private static void buildScript(Set<Script> scripts, Path path, Allium.EnvType containerEnvType) {
+    private static void addReference(Set<Script.Reference> scripts, Path path) {
         try {
             BufferedReader reader = Files.newBufferedReader(path.resolve(MANIFEST_FILE_NAME));
             Manifest manifest = new Gson().fromJson(reader, Manifest.class);
             if (manifest.isComplete()) {
-                scripts.add(new Script(manifest, path, containerEnvType));
+                scripts.add(new Script.Reference(manifest, path));
             } else {
                 Allium.LOGGER.error("Incomplete manifest on path {}", path);
             }
@@ -85,8 +84,8 @@ public class FileHelper {
     }
 
     // TODO: Test in prod
-    public static Set<Script> getValidModScripts(Allium.EnvType containerEnvType) {
-        Set<Script> out = new HashSet<>();
+    public static Set<Script.Reference> getValidModScripts() {
+        Set<Script.Reference> out = new HashSet<>();
         FabricLoader.getInstance().getAllMods().forEach((container) -> {
             ModMetadata metadata = container.getMetadata();
             if (metadata.containsCustomValue(Allium.ID)) {
@@ -108,12 +107,12 @@ public class FileHelper {
                                 Allium.LOGGER.error("Invalid entrypoints from script with ID {}", metadata.getId());
                                 return;
                             }
-                            Script script = scriptFromContainer(man, container, containerEnvType);
-                            if (script == null) {
+                            Script.Reference ref = referenceFromContainer(man, container);
+                            if (ref == null) {
                                 Allium.LOGGER.error("Could not find entrypoints for script with ID {}", metadata.getId());
                                 return;
                             }
-                            out.add(script);
+                            out.add(ref);
                         }
                     }
                     case ARRAY -> {
@@ -124,9 +123,9 @@ public class FileHelper {
                                 CustomValue.CvObject obj = v.getAsObject();
                                 Manifest man = makeManifest(obj); // No optional arguments here.
                                 if (!man.isComplete()) {
-                                    Script script = scriptFromContainer(man, container, containerEnvType);
-                                    if (script != null) {
-                                        out.add(script);
+                                    Script.Reference ref = referenceFromContainer(man, container);
+                                    if (ref != null) {
+                                        out.add(ref);
                                     }
                                 } else { // a value was missing. Be forgiving, and continue parsing
                                     Allium.LOGGER.warn("Malformed manifest at index {} of allium array block in fabric.mod.json of mod '{}'", i, metadata.getId());
@@ -144,14 +143,14 @@ public class FileHelper {
         return out;
     }
 
-    private static Script scriptFromContainer(Manifest man, ModContainer container, Allium.EnvType containerEnvType) {
-        AtomicReference<Script> out = new AtomicReference<>();
+    private static Script.Reference referenceFromContainer(Manifest man, ModContainer container) {
+        AtomicReference<Script.Reference> out = new AtomicReference<>();
         container.getRootPaths().forEach((path) -> {
             Entrypoint entrypoints = man.entrypoints();
-            if (exists(entrypoints, path, Entrypoint.Type.STATIC) || exists(entrypoints, path, Entrypoint.Type.DYNAMIC)) {
+            if (exists(entrypoints, path, Entrypoint.Type.STATIC) || exists(entrypoints, path, Entrypoint.Type.DYNAMIC) || exists(entrypoints, path, Entrypoint.Type.MIXIN)) {
                 // This has an incidental safeguard in the event that if multiple root paths have the same script
                 // the most recent script loaded will just *overwrite* previous ones.
-                out.set(new Script(man, path, containerEnvType));
+                out.set(new Script.Reference(man, path));
             }
         });
         return out.get();

@@ -2,7 +2,7 @@ package dev.hugeblank.allium.loader.type.coercion;
 
 import me.basiqueevangelist.enhancedreflection.api.EClass;
 import me.basiqueevangelist.enhancedreflection.api.EMethod;
-import dev.hugeblank.allium.util.AsmUtil;
+import dev.hugeblank.allium.util.asm.AsmUtil;
 import dev.hugeblank.allium.util.ClassFieldBuilder;
 import org.objectweb.asm.ClassWriter;
 import org.objectweb.asm.Handle;

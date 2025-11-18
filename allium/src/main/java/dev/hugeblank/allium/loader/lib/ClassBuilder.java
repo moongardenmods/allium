@@ -1,4 +1,4 @@
-package dev.hugeblank.allium.loader.api;
+package dev.hugeblank.allium.loader.lib;
 
 import dev.hugeblank.allium.loader.ScriptRegistry;
 import dev.hugeblank.allium.loader.type.StaticBinder;
@@ -8,7 +8,7 @@ import dev.hugeblank.allium.loader.type.annotation.OptionalArg;
 import dev.hugeblank.allium.loader.type.coercion.TypeCoercions;
 import dev.hugeblank.allium.loader.type.property.PropertyResolver;
 import dev.hugeblank.allium.util.ClassFieldBuilder;
-import dev.hugeblank.allium.util.AsmUtil;
+import dev.hugeblank.allium.util.asm.AsmUtil;
 import me.basiqueevangelist.enhancedreflection.api.EClass;
 import me.basiqueevangelist.enhancedreflection.api.EConstructor;
 import me.basiqueevangelist.enhancedreflection.api.EMethod;

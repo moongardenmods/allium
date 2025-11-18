@@ -1,6 +1,5 @@
 package dev.hugeblank.allium.loader;
 
-import dev.hugeblank.allium.Allium;
 import dev.hugeblank.allium.util.Registry;
 import org.squiddev.cobalt.LuaError;
 import org.squiddev.cobalt.LuaState;
@@ -9,10 +8,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 public class ScriptRegistry extends Registry<Script> {
-    public static final ScriptRegistry COMMON;
-    public static final ScriptRegistry CLIENT;
-    public static final ScriptRegistry DEDICATED;
-
+    public static final ScriptRegistry INSTANCE = new ScriptRegistry();
     private static final Map<LuaState, Script> SCRIPT_STATES = new HashMap<>();
 
     public ScriptRegistry() {
@@ -36,18 +32,9 @@ public class ScriptRegistry extends Registry<Script> {
         throw new LuaError("Unregistered state!");
     }
 
-    public static ScriptRegistry getInstance(Allium.EnvType type) {
-        return switch (type) {
-            case DEDICATED -> DEDICATED;
-            case COMMON -> COMMON;
-            case CLIENT -> CLIENT;
-        };
+    public static ScriptRegistry getInstance() {
+        return INSTANCE;
     }
 
-    static {
-        COMMON = new ScriptRegistry();
-        CLIENT = new ScriptRegistry();
-        DEDICATED = new ScriptRegistry();
-    }
 
 }

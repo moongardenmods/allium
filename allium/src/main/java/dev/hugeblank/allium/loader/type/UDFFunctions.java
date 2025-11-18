@@ -9,7 +9,6 @@ import dev.hugeblank.allium.util.JavaHelpers;
 import me.basiqueevangelist.enhancedreflection.api.EClass;
 import me.basiqueevangelist.enhancedreflection.api.EMethod;
 import me.basiqueevangelist.enhancedreflection.api.typeuse.EClassUse;
-import org.apache.commons.io.function.IOStream;
 import org.squiddev.cobalt.LuaError;
 import org.squiddev.cobalt.LuaState;
 import org.squiddev.cobalt.LuaValue;
@@ -114,7 +113,7 @@ public final class UDFFunctions<T> extends VarArgFunction {
 
     private void writeGivenAndExpectedTypes(Varargs args, StringBuilder error) {
         error.append("The following are correct argument types:\n");
-        matches.stream().map((match) -> 
+        matches.stream().map((match) ->
                         new Pair<>(match.parameters().size(), ArgumentUtils.paramsToPrettyString(match.parameters())))
                 .sorted(Comparator.comparingInt(Pair::getFirst)).forEach((match) ->
                         error.append("  - ").append(match.getSecond()).append('\n')
