@@ -153,6 +153,10 @@ public class ProxyGenerator {
         }
     }
 
+    /**  Invokes a lua function. Used in bytecode.
+     * @see ProxyGenerator#generateProxyClass(EClass, EMethod)
+     */
+    @SuppressWarnings("unused")
     public static Varargs dispatch(LuaState state, LuaValue value, Varargs args) throws UnwindThrowable, LuaError {
         synchronized (state) {
             return Dispatch.invoke(state, value, args);
