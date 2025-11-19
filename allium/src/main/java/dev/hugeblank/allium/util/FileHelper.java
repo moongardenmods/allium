@@ -83,7 +83,6 @@ public class FileHelper {
         }
     }
 
-    // TODO: Test in prod
     public static Set<Script.Reference> getValidModScripts() {
         Set<Script.Reference> out = new HashSet<>();
         FabricLoader.getInstance().getAllMods().forEach((container) -> {
@@ -158,25 +157,6 @@ public class FileHelper {
 
     private static boolean exists(Entrypoint entrypoints, Path path, Entrypoint.Type type) {
         return entrypoints.has(type) && path.resolve(entrypoints.get(type)).toFile().exists();
-    }
-
-    // TODO: Move this method and the one below to bouquet.
-    public static JsonElement getConfig(Script script) throws IOException {
-        Path path = FileHelper.CONFIG_DIR.resolve(script.getID() + ".json");
-        if (Files.exists(path)) {
-            return JsonParser.parseReader(Files.newBufferedReader(path));
-        }
-        return null;
-    }
-
-    public static void saveConfig(Script script, JsonElement element) throws IOException {
-        Path path = FileHelper.CONFIG_DIR.resolve(script.getID() + ".json");
-        Files.deleteIfExists(path);
-        OutputStream outputStream = Files.newOutputStream(path);
-        String jstr = new GsonBuilder().setPrettyPrinting().disableHtmlEscaping().create().toJson(element);
-        Allium.LOGGER.info(jstr);
-        outputStream.write(jstr.getBytes(StandardCharsets.UTF_8));
-        outputStream.close();
     }
 
     private static Manifest makeManifest(CustomValue.CvObject value) {

@@ -4,7 +4,7 @@ import dev.hugeblank.allium.loader.Script;
 import net.fabricmc.api.EnvType;
 
 /**
- * Functional Tnterface for libraries that depend on the script to function.
+ * Functional Interface for libraries that depend on the script to function.
  * Passing the constructor of a class that extends <code>WrappedLuaLibrary</code> is the ideal use case.
  *
  * @see dev.hugeblank.allium.loader.EnvironmentManager#registerLibrary(LibraryInitializer)

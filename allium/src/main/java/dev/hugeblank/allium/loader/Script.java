@@ -22,7 +22,7 @@ import java.util.HashSet;
 import java.util.Set;
 import java.util.WeakHashMap;
 
-@LuaWrapped()
+@LuaWrapped
 public class Script implements Identifiable {
 
     private final Manifest manifest;

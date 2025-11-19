@@ -1,6 +1,6 @@
 package dev.hugeblank.allium.loader.type.property;
 
-import dev.hugeblank.allium.loader.type.InvalidArgumentException;
+import dev.hugeblank.allium.loader.type.exception.InvalidArgumentException;
 import me.basiqueevangelist.enhancedreflection.api.EField;
 import dev.hugeblank.allium.loader.type.coercion.TypeCoercions;
 import org.squiddev.cobalt.LuaError;

@@ -1,6 +1,6 @@
 package dev.hugeblank.allium.loader.mixin;
 
-import dev.hugeblank.allium.loader.type.InvalidArgumentException;
+import dev.hugeblank.allium.loader.type.exception.InvalidArgumentException;
 import dev.hugeblank.allium.loader.type.coercion.TypeCoercions;
 import dev.hugeblank.allium.util.asm.VisitedClass;
 import me.basiqueevangelist.enhancedreflection.api.ClassType;

@@ -37,11 +37,11 @@ public class MixinConfigUtil {
 
         Map<String, byte[]> mixinConfigMap = new HashMap<>();
 
-        JsonObject config = JsonBuilder.of()
+        JsonObject config = JsonObjectBuilder.of()
                 .add("required", true)
                 .add("compatibilityLevel", "JAVA_21")
                 .add("package", "allium.mixin")
-                .add("injectors", JsonBuilder.of()
+                .add("injectors", JsonObjectBuilder.of()
                         .add("defaultRequire", 1)
                         .build()
                 )
@@ -86,7 +86,7 @@ public class MixinConfigUtil {
             if (key.matches(".*mixin.*")) {
                 mixins.add(key.replace(MIXIN_PACKAGE + ".", "").replace(".class", ""));
             }
-            configMap.put(key.replace(".", "/").replace("/class", ".class"), info.getBytes());
+            configMap.put(key.replace(".", "/").replace("/class", ".class"), info.classBytes());
         });
         return mixins;
     }
@@ -134,25 +134,25 @@ public class MixinConfigUtil {
         }
     }
 
-    public static class JsonBuilder {
+    public static class JsonObjectBuilder {
         private final JsonObject object = new JsonObject();
 
-        public JsonBuilder add(String key, String value) {
+        public JsonObjectBuilder add(String key, String value) {
             object.addProperty(key, value);
             return this;
         }
 
-        public JsonBuilder add(String key, Boolean value) {
+        public JsonObjectBuilder add(String key, Boolean value) {
             object.addProperty(key, value);
             return this;
         }
 
-        public JsonBuilder add(String key, Number value) {
+        public JsonObjectBuilder add(String key, Number value) {
             object.addProperty(key, value);
             return this;
         }
 
-        public JsonBuilder add(String key, JsonElement value) {
+        public JsonObjectBuilder add(String key, JsonElement value) {
             object.add(key, value);
             return this;
         }
@@ -161,8 +161,8 @@ public class MixinConfigUtil {
             return object;
         }
 
-        public static JsonBuilder of() {
-            return new JsonBuilder();
+        public static JsonObjectBuilder of() {
+            return new JsonObjectBuilder();
         }
     }
 }

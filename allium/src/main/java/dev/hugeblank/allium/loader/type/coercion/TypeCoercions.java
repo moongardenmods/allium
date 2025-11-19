@@ -3,6 +3,7 @@ package dev.hugeblank.allium.loader.type.coercion;
 import dev.hugeblank.allium.loader.type.*;
 import dev.hugeblank.allium.loader.type.annotation.CoerceToBound;
 import dev.hugeblank.allium.loader.type.annotation.CoerceToNative;
+import dev.hugeblank.allium.loader.type.exception.InvalidArgumentException;
 import dev.hugeblank.allium.util.JavaHelpers;
 import me.basiqueevangelist.enhancedreflection.api.*;
 import me.basiqueevangelist.enhancedreflection.api.typeuse.EClassUse;
@@ -110,7 +111,7 @@ public class TypeCoercions {
 
             if (unimplemented == 1) {
                 return ProxyGenerator.getProxyFactory(clatz, ifaceMethod).apply(state, func);
-            } // TODO: Weird code was removed here. Did that break anything?
+            }
         }
 
         throw new InvalidArgumentException("Couldn't convert " + value + " to java! Target type is " + clatz);
@@ -170,7 +171,7 @@ public class TypeCoercions {
             }
 
             if (unimplemented == 1) {
-                return new UDFFunctions(klass, Collections.singletonList(ifaceMethod), ifaceMethod.name(), out, false);
+                return new MethodInvocationFunction(klass, Collections.singletonList(ifaceMethod), ifaceMethod.name(), out, false);
             } else {
                 return UserdataFactory.of(klass).create(klass.cast(out));
             }

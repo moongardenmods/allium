@@ -1,6 +1,6 @@
 -- Let's add an allium on top of fully grown hand-planted cacti!
 local CactusBlockMixin = mixin.to("net.minecraft.world.level.block.CactusBlock") -- Mix into the block class
-addFlower = CactusBlockMixin:inject("add_flower", { -- Target the randomTick method, at a specific point after the cacti has grown
+CactusBlockMixin:inject("add_flower", { -- Target the randomTick method, at a specific point after the cacti has grown
     method = { "randomTick(Lnet/minecraft/world/level/block/state/BlockState;Lnet/minecraft/server/level/ServerLevel;Lnet/minecraft/core/BlockPos;Lnet/minecraft/util/RandomSource;)V" },
     at = { {
             value = "INVOKE",

@@ -1,4 +1,4 @@
-package dev.hugeblank.allium.loader.type;
+package dev.hugeblank.allium.loader.type.exception;
 
 public final class RethrowException extends RuntimeException {
     public RethrowException(Throwable throwable) {

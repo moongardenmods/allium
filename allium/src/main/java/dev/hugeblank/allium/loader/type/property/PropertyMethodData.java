@@ -1,6 +1,6 @@
 package dev.hugeblank.allium.loader.type.property;
 
-import dev.hugeblank.allium.loader.type.InvalidArgumentException;
+import dev.hugeblank.allium.loader.type.exception.InvalidArgumentException;
 import dev.hugeblank.allium.util.ArgumentUtils;
 import me.basiqueevangelist.enhancedreflection.api.EMethod;
 import me.basiqueevangelist.enhancedreflection.api.typeuse.EClassUse;

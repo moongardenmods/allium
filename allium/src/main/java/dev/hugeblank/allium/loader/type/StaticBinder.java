@@ -1,6 +1,7 @@
 package dev.hugeblank.allium.loader.type;
 
 import dev.hugeblank.allium.loader.type.coercion.TypeCoercions;
+import dev.hugeblank.allium.loader.type.exception.InvalidArgumentException;
 import dev.hugeblank.allium.loader.type.property.PropertyData;
 import dev.hugeblank.allium.util.AnnotationUtils;
 import dev.hugeblank.allium.util.ArgumentUtils;
@@ -20,9 +21,7 @@ import java.util.*;
 
 public final class StaticBinder {
 
-    private StaticBinder() {
-
-    }
+    private StaticBinder() {}
 
     public static <T> AlliumClassUserdata<T> bindClass(EClass<T> clazz) {
         Map<String, PropertyData<? super T>> cachedProperties = new HashMap<>();

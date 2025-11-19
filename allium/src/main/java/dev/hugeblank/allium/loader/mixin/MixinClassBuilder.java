@@ -1,12 +1,11 @@
 package dev.hugeblank.allium.loader.mixin;
 
 import com.llamalad7.mixinextras.sugar.Local;
-import dev.hugeblank.allium.Allium;
 import dev.hugeblank.allium.api.event.MixinEventType;
 import dev.hugeblank.allium.loader.Script;
 import dev.hugeblank.allium.loader.lib.MixinLib;
-import dev.hugeblank.allium.loader.type.InvalidArgumentException;
-import dev.hugeblank.allium.loader.type.InvalidMixinException;
+import dev.hugeblank.allium.loader.type.exception.InvalidArgumentException;
+import dev.hugeblank.allium.loader.type.exception.InvalidMixinException;
 import dev.hugeblank.allium.loader.type.annotation.LuaWrapped;
 import dev.hugeblank.allium.loader.type.annotation.OptionalArg;
 import dev.hugeblank.allium.util.MixinConfigUtil;
@@ -26,7 +25,6 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.Redirect;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import org.squiddev.cobalt.LuaError;
-import org.squiddev.cobalt.LuaState;
 import org.squiddev.cobalt.LuaTable;
 
 import java.lang.annotation.Retention;
@@ -58,7 +56,7 @@ public class MixinClassBuilder {
     private final Script script;
 
     public MixinClassBuilder(String target, @Nullable EnvType targetEnvironment, boolean duck, Script script) throws LuaError {
-        if (MixinConfigUtil.isComplete()) throw new IllegalStateException("Mixin cannot be created outside of preLaunch phase.");
+        checkPhase();
         this.script = script;
         this.targetEnvironment = targetEnvironment;
         this.duck = duck;
@@ -82,7 +80,8 @@ public class MixinClassBuilder {
     }
 
     @LuaWrapped
-    public MixinEventType inject(String eventName, LuaTable annotations, @OptionalArg List<MixinLib.LuaLocal> locals) throws LuaError, InvalidMixinException, InvalidArgumentException {
+    public void inject(String eventName, LuaTable annotations, @OptionalArg List<MixinLib.LuaLocal> locals) throws LuaError, InvalidMixinException, InvalidArgumentException {
+        checkPhase();
         if (visitedClass.isInterface() || this.duck)
             throw new InvalidMixinException(InvalidMixinException.Type.INVALID_CLASSTYPE, "class");
 
@@ -93,11 +92,12 @@ public class MixinClassBuilder {
                 EClass.fromJava(Inject.class)
         );
 
-        return writeInject(eventName, luaAnnotation, locals);
+        writeInject(eventName, luaAnnotation, locals);
     }
 
 //    @LuaWrapped
-    public MixinEventType redirect(String eventName, LuaTable annotations, @OptionalArg List<MixinLib.LuaLocal> locals, @OptionalArg Boolean instanceOf) throws LuaError, InvalidMixinException, InvalidArgumentException {
+    public void redirect(String eventName, LuaTable annotations, @OptionalArg List<MixinLib.LuaLocal> locals, @OptionalArg Boolean instanceOf) throws LuaError, InvalidMixinException, InvalidArgumentException {
+        checkPhase();
         if (visitedClass.isInterface() || this.duck)
             throw new InvalidMixinException(InvalidMixinException.Type.INVALID_CLASSTYPE, "class");
         // TODO: This doesn't actually work.
@@ -110,7 +110,7 @@ public class MixinClassBuilder {
                 EClass.fromJava(Redirect.class)
         );
 
-        return writeInject(eventName, luaAnnotation, locals);
+        writeInject(eventName, luaAnnotation, locals);
     }
 
     // There's some disadvantages to this system. All shadowed values are made public, and forced to be modifiable.
@@ -118,6 +118,7 @@ public class MixinClassBuilder {
     // TODO: Establish a way to access shadowed values. Or how about a custom injector that does what @Local does for fields?
 //    @LuaWrapped
     public void shadow(String target) {
+        checkPhase();
         if (visitedClass.containsField(target)) {
             VisitedField visitedField = visitedClass.getField(target);
             FieldVisitor fieldVisitor = c.visitField(
@@ -168,16 +169,19 @@ public class MixinClassBuilder {
 
     @LuaWrapped
     public void setAccessor(LuaTable annotations) throws LuaError, InvalidArgumentException, InvalidMixinException {
+        checkPhase();
         writeAccessor(true, annotations);
     }
 
     @LuaWrapped
     public void getAccessor(LuaTable annotations) throws LuaError, InvalidArgumentException, InvalidMixinException {
+        checkPhase();
         writeAccessor(false, annotations);
     }
 
     @LuaWrapped
     public void invoker(LuaTable annotations) throws InvalidMixinException, LuaError, InvalidArgumentException {
+        checkPhase();
         String methodName = getTargetValue(annotations);
         if (visitedClass.containsMethod(methodName)) {
             VisitedMethod visitedMethod = visitedClass.getMethod(methodName);
@@ -266,15 +270,15 @@ public class MixinClassBuilder {
         }
     }
 
-    private MixinEventType writeInject(String eventName, LuaAnnotation annotation, @Nullable List<MixinLib.LuaLocal> locals) throws LuaError, InvalidMixinException, InvalidArgumentException {
+    private void writeInject(String eventName, LuaAnnotation annotation, @Nullable List<MixinLib.LuaLocal> locals) throws LuaError, InvalidMixinException, InvalidArgumentException {
         String descriptor = annotation.findElement("method", String.class);
         if (visitedClass.containsMethod(descriptor)) {
             VisitedMethod visitedMethod = visitedClass.getMethod(descriptor);
-            List<Type> params = visitedMethod.getParams();
+            List<Type> params = new ArrayList<>(visitedMethod.getParams());
             params.add(Type.getType(CallbackInfo.class));
 
             int localOffset = -1;
-            if (locals != null) {
+            if (locals != null && !locals.isEmpty()) {
                 localOffset = params.size();
                 locals.forEach((local) -> params.add(Type.getType(local.type())));
             }
@@ -301,7 +305,7 @@ public class MixinClassBuilder {
 
             List<String> paramNames = new ArrayList<>();
             paramTypes.forEach((type) -> paramNames.add(AsmUtil.getWrappedTypeName(type)));
-            return new MixinEventType(script.getID() + ":" + eventName, paramNames);
+            new MixinEventType(script.getID() + ":" + eventName, paramNames);
 
         } else {
             throw new InvalidMixinException(InvalidMixinException.Type.INVALID_DESCRIPTOR, descriptor);
@@ -385,6 +389,10 @@ public class MixinClassBuilder {
         }
     }
 
+    private static void checkPhase() {
+        if (MixinConfigUtil.isComplete()) throw new IllegalStateException("Mixins cannot be created outside of preLaunch phase.");
+    }
+
     // I'm a hater of how ClassVisitor, MethodVisitor, FieldVisitor, etc. aren't all under a common interface.
     private static AnnotationVisitor attachAnnotation(MethodVisitor visitor, Class<?> annotation) {
         EClass<?> eAnnotation = EClass.fromJava(annotation);
@@ -424,7 +432,7 @@ public class MixinClassBuilder {
         AsmUtil.dumpClass(className, classBytes);
 
         // give the class back to the user for later use in the case of an interface.
-        MixinClassInfo info = new MixinClassInfo(className, classBytes, this.duck);
+        MixinClassInfo info = new MixinClassInfo(className.replace("/", "."), classBytes, this.duck);
 
         Registry<MixinClassInfo> registry = (targetEnvironment == null) ? MIXINS : switch (targetEnvironment) {
             case SERVER -> SERVER;

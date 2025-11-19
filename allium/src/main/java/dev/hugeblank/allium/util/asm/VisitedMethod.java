@@ -8,6 +8,6 @@ import java.util.List;
 
 public record VisitedMethod(VisitedClass owner, int access, String name, String descriptor, String signature, String[] exceptions) implements VisitedElement {
     public List<Type> getParams() {
-        return new ArrayList<>(Arrays.asList(Type.getArgumentTypes(descriptor)));
+        return Arrays.asList(Type.getArgumentTypes(descriptor));
     }
 }

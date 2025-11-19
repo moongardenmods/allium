@@ -1,4 +1,4 @@
-package dev.hugeblank.allium.loader.type;
+package dev.hugeblank.allium.loader.type.exception;
 
 public class InvalidMixinException extends Exception {
     public InvalidMixinException(Type type, String message) {

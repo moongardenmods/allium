@@ -1,4 +1,4 @@
-package dev.hugeblank.allium.loader.type;
+package dev.hugeblank.allium.loader.type.exception;
 
 public final class InvalidArgumentException extends Exception {
     public InvalidArgumentException() {

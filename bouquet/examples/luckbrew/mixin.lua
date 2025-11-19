@@ -1,7 +1,7 @@
 print("I'm feeling lucky!")
 
 -- We have to be VERY careful about where we register our mixins. If your mixin is client-specific,
--- make sure to specify in mixin.to(), as well as checking that the package.environment is "client".
+-- make sure to specify in mixin.to(), as well as checking that package.environment() is "client".
 
 -- For registering our recipe in the right location
 local PotionBrewingMixinBuilder = mixin.to("net.minecraft.world.item.alchemy.PotionBrewing")
@@ -14,7 +14,7 @@ local PotionBrewingMixinBuilder = mixin.to("net.minecraft.world.item.alchemy.Pot
     https://github.com/2xsaiko/mixin-cheatsheet It should be possible to extrapolate from this, what an inject would look
     like in Lua.
 --]]
-addRecipes = PotionBrewingMixinBuilder:inject("add_brewing_recipes", { -- Get the point at which potions should be registered.
+PotionBrewingMixinBuilder:inject("add_brewing_recipes", { -- Get the point at which potions should be registered.
     at = { { "TAIL" } },
     method = { "addVanillaMixes(Lnet/minecraft/world/item/alchemy/PotionBrewing$Builder;)V" }
 })

@@ -4,6 +4,11 @@
 
 local Blocks = require("net.minecraft.world.level.block.Blocks")
 
+local addFlower = mixin.get(script, "add_flower")
+
+-- Note that because this mixin doesn't do anything to any registries, it's dynamic! We could, say, change the flower
+-- to a poppy! Or to a diamond block!
+
 addFlower:register(script, function(self, state, world, pos, random, ci, blockPos, i)
     -- If the cactus is currently 2 blocks tall (not including the block that was just added prior to this function
     -- being called...)

@@ -4,6 +4,9 @@
 -- beneficial to put it in a dynamic entrypoint, to enable easy modification and reloading!
 -- Unfortunately here, the brewing recipe registry gets created only once on game start, so this file is not dynamic.
 
+-- Get the event for the mixin we created in mixin.lua
+local addRecipes = mixin.get(script, "add_brewing_recipes")
+
 addRecipes:register(script, function(builder, ci)
     local Items = require("net.minecraft.world.item.Items")
     local Potions = require("net.minecraft.world.item.alchemy.Potions")

@@ -22,6 +22,16 @@ public record MixinLib(Script script) implements WrappedLuaLibrary {
     }
 
     @LuaWrapped
+    public static MixinEventType get(String name, String path) {
+        return MixinEventType.EVENT_MAP.get(name + ':' + path);
+    }
+
+    @LuaWrapped
+    public static MixinEventType get(Script script, String path) {
+        return MixinEventType.EVENT_MAP.get(script.getID() + ':' + path);
+    }
+
+    @LuaWrapped
     public MixinClassBuilder to(String targetClass, @OptionalArg @Nullable String targetEnvironment, @OptionalArg @Nullable Boolean duck) throws LuaError {
         EnvType targetEnv;
         if (targetEnvironment == null) {

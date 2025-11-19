@@ -12,12 +12,7 @@ import net.minecraft.commands.Commands;
 import static dev.hugeblank.bouquet.api.lib.AlliumLib.COMMANDS;
 
 @LuaWrapped(name = "command")
-public class CommandLib implements WrappedLuaLibrary {
-    private final Script script;
-
-    public CommandLib(Script script) {
-        this.script = script;
-    }
+public record CommandLib(Script script) implements WrappedLuaLibrary {
 
     @LuaWrapped
     public void register(LiteralArgumentBuilder<CommandSourceStack> builder, @OptionalArg Commands.CommandSelection environment) {

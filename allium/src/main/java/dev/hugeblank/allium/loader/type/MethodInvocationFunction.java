@@ -1,9 +1,9 @@
 package dev.hugeblank.allium.loader.type;
 
 import com.mojang.datafixers.util.Pair;
-import dev.hugeblank.allium.Allium;
-import dev.hugeblank.allium.loader.ScriptRegistry;
 import dev.hugeblank.allium.loader.type.coercion.TypeCoercions;
+import dev.hugeblank.allium.loader.type.exception.InvalidArgumentException;
+import dev.hugeblank.allium.loader.type.exception.RethrowException;
 import dev.hugeblank.allium.util.ArgumentUtils;
 import dev.hugeblank.allium.util.JavaHelpers;
 import me.basiqueevangelist.enhancedreflection.api.EClass;
@@ -20,14 +20,15 @@ import java.lang.reflect.InvocationTargetException;
 import java.util.Comparator;
 import java.util.List;
 
-public final class UDFFunctions<T> extends VarArgFunction {
+/// Represents one or more class methods of a given name bundled together in preparation for invocation on the lua side.
+public final class MethodInvocationFunction<T> extends VarArgFunction {
     private final EClass<T> clazz;
     private final List<EMethod> matches;
     private final String name;
     private final T boundReceiver;
     private final boolean isStatic;
 
-    public UDFFunctions(EClass<T> clazz, List<EMethod> matches, String name, T boundReceiver, boolean isStatic) {
+    public MethodInvocationFunction(EClass<T> clazz, List<EMethod> matches, String name, T boundReceiver, boolean isStatic) {
         this.clazz = clazz;
         this.matches = matches;
         this.name = name;
@@ -37,28 +38,7 @@ public final class UDFFunctions<T> extends VarArgFunction {
 
     @Override
     public Varargs invoke(LuaState state, Varargs args) throws LuaError {
-//        if (Allium.DEVELOPMENT) { // Output the script with which the invoking state belongs to (common scripts only)
-//            Allium.LOGGER.info("{} {}.{}",
-//                    ScriptRegistry.COMMON.hasScript(state) ? ScriptRegistry.COMMON.getScript(state).getId() : "ignore",
-//                    clazz.name(),
-//                    name
-//            );
-//        }
-        final StringBuilder error = new StringBuilder();
-
         try {
-//            final T instance;
-//            if (boundReceiver != null || isStatic) {
-//                instance = boundReceiver;
-//            } else if (args.arg(1) instanceof AlliumUserdata<?> userdata) {
-//                try {
-//                    instance = userdata.toUserdata(clazz);
-//                } catch (ClassCastException e) {
-//                    throw new LuaError(e);
-//                }
-//            } else {
-//                throw new LuaError("Invocation has no instance"); // This should never happen.
-//            }
             T instance = boundReceiver != null || isStatic ? boundReceiver : JavaHelpers.checkUserdata(args.arg(1), clazz.raw());
             for (EMethod method : matches) { // For each matched method from the index call
                 var parameters = method.parameters();
@@ -80,7 +60,6 @@ public final class UDFFunctions<T> extends VarArgFunction {
                         } catch (InvocationTargetException e) {
                             if (e.getTargetException() instanceof LuaError err)
                                 throw err;
-                            // TODO: what is the point of RethrowException?
                             throw new RethrowException(e.getTargetException());
                         }
                     }
@@ -90,7 +69,8 @@ public final class UDFFunctions<T> extends VarArgFunction {
         } catch (LuaError e) {
             throw e;
         } catch (Exception e) {
-            StringBuilder trace = new StringBuilder();
+            final StringBuilder error = new StringBuilder();
+            final StringBuilder trace = new StringBuilder();
             e.printStackTrace(new PrintStream(new OutputStream() {
                 @Override
                 public void write(int b) {
@@ -104,7 +84,7 @@ public final class UDFFunctions<T> extends VarArgFunction {
             error.append("\nJava Trace:\n").append(trace).append("\nLua Error:");
             throw new LuaError(error.toString());
         }
-
+        final StringBuilder error = new StringBuilder();
         error.append("Could not find parameter match for function \"").append(name).append("\" in \"")
                 .append(clazz.name()).append("\"\n");
         writeGivenAndExpectedTypes(args, error);

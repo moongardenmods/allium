@@ -1,6 +1,6 @@
 package dev.hugeblank.allium.util;
 
-import dev.hugeblank.allium.loader.type.InvalidArgumentException;
+import dev.hugeblank.allium.loader.type.exception.InvalidArgumentException;
 import dev.hugeblank.allium.loader.type.annotation.LuaWrapped;
 import dev.hugeblank.allium.loader.type.coercion.TypeCoercions;
 import dev.hugeblank.allium.loader.type.property.PropertyData;
@@ -72,12 +72,9 @@ public class MetatableUtils {
             } else {
                 instance = null;
             }
+            final boolean classHasAnnotation = clazz.hasAnnotation(LuaWrapped.class);
             List<EMember> members = memberBuilder.build().filter((member)->
-                    !clazz.hasAnnotation(LuaWrapped.class) ||
-                            (
-                                    clazz.hasAnnotation(LuaWrapped.class) &&
-                                            member.hasAnnotation(LuaWrapped.class)
-                            )
+                    !classHasAnnotation || member.hasAnnotation(LuaWrapped.class)
             ).toList();
             List<Varargs> varargs = new ArrayList<>();
             for (EMember member : members) {

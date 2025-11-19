@@ -5,6 +5,7 @@
 package dev.hugeblank.allium.loader.type;
 
 import dev.hugeblank.allium.loader.type.coercion.TypeCoercions;
+import dev.hugeblank.allium.loader.type.exception.InvalidArgumentException;
 import dev.hugeblank.allium.loader.type.property.PropertyData;
 import dev.hugeblank.allium.util.AnnotationUtils;
 import dev.hugeblank.allium.util.ArgumentUtils;
