@@ -28,7 +28,7 @@
   "mixins": [],
 
   "depends": {
-    "minecraft": ">=1.21.11-alpha.25.46.a+unobfuscated",
+    "minecraft": ">=1.21.11-",
     "java": ">=21",
     "fabricloader": ">=0.18.0"
   }
