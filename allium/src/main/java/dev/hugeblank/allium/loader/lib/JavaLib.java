@@ -26,6 +26,15 @@ public class JavaLib implements WrappedLuaLibrary {
     }
 
     @LuaWrapped
+    public static LuaValue wrap(@LuaStateArg LuaState state, LuaValue value, EClass<?> klass) throws LuaError {
+        try {
+            return TypeCoercions.toLuaValue(TypeCoercions.toJava(state, value, klass, false), klass, false);
+        } catch (InvalidArgumentException e) {
+            throw new LuaError(e);
+        }
+    }
+
+    @LuaWrapped
     public static boolean instanceOf(@LuaStateArg LuaState state, LuaUserdata object, EClass<?> klass) {
         try {
             Object obj = TypeCoercions.toJava(state, object, Object.class);

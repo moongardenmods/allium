@@ -1,17 +1,21 @@
 package dev.hugeblank.allium.loader.lib;
 
-import dev.hugeblank.allium.Allium;
+import com.llamalad7.mixinextras.sugar.Local;
 import dev.hugeblank.allium.api.WrappedLuaLibrary;
 import dev.hugeblank.allium.api.event.MixinEventType;
 import dev.hugeblank.allium.loader.Script;
+import dev.hugeblank.allium.loader.mixin.LuaAnnotation;
 import dev.hugeblank.allium.loader.mixin.MixinClassBuilder;
+import dev.hugeblank.allium.loader.type.annotation.LuaStateArg;
 import dev.hugeblank.allium.loader.type.annotation.LuaWrapped;
 import dev.hugeblank.allium.loader.type.annotation.OptionalArg;
+import dev.hugeblank.allium.loader.type.exception.InvalidArgumentException;
+import me.basiqueevangelist.enhancedreflection.api.EClass;
 import net.fabricmc.api.EnvType;
 import org.jetbrains.annotations.Nullable;
-import org.objectweb.asm.AnnotationVisitor;
 import org.squiddev.cobalt.LuaError;
-import org.squiddev.cobalt.LuaValue;
+import org.squiddev.cobalt.LuaState;
+import org.squiddev.cobalt.LuaTable;
 
 @LuaWrapped(name = "mixin")
 public record MixinLib(Script script) implements WrappedLuaLibrary {
@@ -32,7 +36,7 @@ public record MixinLib(Script script) implements WrappedLuaLibrary {
     }
 
     @LuaWrapped
-    public MixinClassBuilder to(String targetClass, @OptionalArg @Nullable String targetEnvironment, @OptionalArg @Nullable Boolean duck) throws LuaError {
+    public MixinClassBuilder to(String targetClass, @OptionalArg @Nullable String[] interfaces, @OptionalArg @Nullable String targetEnvironment, @OptionalArg @Nullable Boolean duck) throws LuaError {
         EnvType targetEnv;
         if (targetEnvironment == null) {
             targetEnv = null;
@@ -43,23 +47,20 @@ public record MixinLib(Script script) implements WrappedLuaLibrary {
         } else {
             throw new LuaError("Mixin for " + targetClass + " expects target environment of nil, 'client' or 'server'.");
         }
-        return new MixinClassBuilder(targetClass, targetEnv, duck != null && duck, script);
+        return new MixinClassBuilder(targetClass, interfaces == null ? new String[]{} : interfaces, targetEnv, duck != null && duck, script);
     }
 
     @LuaWrapped
-    public LuaLocal getLocal(String type, String action, LuaValue value) {
-        return new LuaLocal(type, action, value);
+    public LuaLocal getLocal(@LuaStateArg LuaState state, String type, @OptionalArg @Nullable LuaTable annotationTable, @OptionalArg @Nullable Boolean mutable) throws InvalidArgumentException, LuaError {
+        return new LuaLocal(type, mutable == null || mutable,
+                new LuaAnnotation(
+                        state,
+                        null,
+                        annotationTable == null ? new LuaTable() : annotationTable,
+                        EClass.fromJava(Local.class)
+                )
+        );
     }
 
-    public record LuaLocal(String type, String action, LuaValue value) {
-        public void visit(AnnotationVisitor visitor) throws LuaError {
-            if (action.equals("print")) {
-                visitor.visit(action, value.checkBoolean());
-            } else if (action.equals("ordinal") || action.equals("index")) {
-                visitor.visit(action, value.checkInteger());
-            } else {
-                throw new LuaError("Cannot parse @Local '" + action + "'");
-            }
-        }
-    }
+    public record LuaLocal(String type, boolean mutable, LuaAnnotation luaAnnotation) {}
 }

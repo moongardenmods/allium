@@ -5,7 +5,6 @@ import dev.hugeblank.allium.loader.type.annotation.CoerceToNative;
 import dev.hugeblank.allium.loader.type.annotation.LuaWrapped;
 import io.netty.handler.codec.http.FullHttpResponse;
 import io.netty.handler.codec.http.HttpUtil;
-import org.jetbrains.annotations.NotNull;
 
 import java.nio.charset.StandardCharsets;
 import java.util.Map;

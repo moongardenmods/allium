@@ -8,14 +8,11 @@ import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInitializer;
 import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.channel.socket.SocketChannel;
-import io.netty.channel.socket.nio.NioSocketChannel;
 import io.netty.handler.codec.http.*;
 import io.netty.handler.ssl.SslContext;
 import io.netty.handler.ssl.SslContextBuilder;
 import io.netty.handler.ssl.SslProvider;
-import net.minecraft.network.protocol.game.ServerboundEntityTagQueryPacket;
 import net.minecraft.server.network.EventLoopGroupHolder;
-import net.minecraft.server.network.ServerConnectionListener;
 import org.squiddev.cobalt.LuaError;
 
 import javax.net.ssl.SSLException;

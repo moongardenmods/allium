@@ -4,6 +4,7 @@
 // If someone wants to SCP this, please by all means do so.
 package dev.hugeblank.allium.loader.type;
 
+import com.mojang.brigadier.builder.ArgumentBuilder;
 import dev.hugeblank.allium.loader.type.coercion.TypeCoercions;
 import dev.hugeblank.allium.loader.type.exception.InvalidArgumentException;
 import dev.hugeblank.allium.loader.type.property.PropertyData;
@@ -23,9 +24,7 @@ import org.squiddev.cobalt.function.VarArgFunction;
 
 import java.lang.annotation.Annotation;
 import java.lang.reflect.InvocationTargetException;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Objects;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
@@ -95,7 +94,15 @@ public class UserdataFactory<T> {
 
             @Override
             public LuaValue invoke(LuaState state, Varargs args) throws LuaError {
-                String name = args.arg(2).checkString(); // mapped name
+//                if (args.arg(2) instanceof LuaTable generics) {
+//                    for (int i = 1; i <= generics.size(); i++) {
+//                        if (generics.rawget(i) instanceof AlliumClassUserdata<?> userdata) {
+//                            genericTypes.add(userdata.toUserdata());
+//                        }
+//                    }
+//                    return args.arg(1);
+//                }
+                String name = args.arg(2).checkString();
 
                 PropertyData<? super T> cachedProperty = cachedProperties.get(name);
 
@@ -118,7 +125,7 @@ public class UserdataFactory<T> {
         metatable.rawset("__newindex", new VarArgFunction() {
             @Override
             public LuaValue invoke(LuaState state, Varargs args) throws LuaError {
-                String name = args.arg(2).checkString(); // mapped name
+                String name = args.arg(2).checkString();
 
                 PropertyData<? super T> cachedProperty = cachedProperties.get(name);
 

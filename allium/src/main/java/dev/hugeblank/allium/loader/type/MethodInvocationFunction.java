@@ -1,6 +1,7 @@
 package dev.hugeblank.allium.loader.type;
 
 import com.mojang.datafixers.util.Pair;
+import dev.hugeblank.allium.api.Rethrowable;
 import dev.hugeblank.allium.loader.type.coercion.TypeCoercions;
 import dev.hugeblank.allium.loader.type.exception.InvalidArgumentException;
 import dev.hugeblank.allium.loader.type.exception.RethrowException;
@@ -17,6 +18,7 @@ import org.squiddev.cobalt.function.VarArgFunction;
 
 import java.io.*;
 import java.lang.reflect.InvocationTargetException;
+import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 
@@ -58,9 +60,9 @@ public final class MethodInvocationFunction<T> extends VarArgFunction {
                         } catch (IllegalAccessException e) {
                             throw new LuaError(e);
                         } catch (InvocationTargetException e) {
-                            if (e.getTargetException() instanceof LuaError err)
-                                throw err;
-                            throw new RethrowException(e.getTargetException());
+                            if (e.getTargetException() instanceof Rethrowable)
+                                throw new RethrowException(e.getTargetException());
+                            throw e;
                         }
                     }
                 } catch (InvalidArgumentException ignored) {

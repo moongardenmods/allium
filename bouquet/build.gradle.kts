@@ -33,9 +33,11 @@ loom {
 dependencies {
 	implementation("cc.tweaked", "cobalt", cobalt)
 	implementation("me.basiqueevangelist","enhanced-reflection", enhancedReflections)
-
-	implementation(include("io.netty", "netty-codec-http", nettyHttp))
 //	implementation("eu.pb4", "placeholder-api", placeholderApi)
+
+    // Probably don't need anymore now that it's bundled with game
+//	implementation(include("io.netty", "netty-codec-http", nettyHttp))
+
 	implementation(project(path = ":allium"))
 }
 

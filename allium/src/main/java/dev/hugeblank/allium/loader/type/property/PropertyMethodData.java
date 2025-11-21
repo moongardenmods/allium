@@ -2,6 +2,7 @@ package dev.hugeblank.allium.loader.type.property;
 
 import dev.hugeblank.allium.loader.type.exception.InvalidArgumentException;
 import dev.hugeblank.allium.util.ArgumentUtils;
+import me.basiqueevangelist.enhancedreflection.api.EClass;
 import me.basiqueevangelist.enhancedreflection.api.EMethod;
 import me.basiqueevangelist.enhancedreflection.api.typeuse.EClassUse;
 import dev.hugeblank.allium.loader.type.coercion.TypeCoercions;
@@ -12,6 +13,7 @@ import org.squiddev.cobalt.LuaState;
 import org.squiddev.cobalt.LuaValue;
 
 import java.lang.reflect.InvocationTargetException;
+import java.util.List;
 
 public record PropertyMethodData<I>(EMethod getter, @Nullable EMethod setter) implements PropertyData<I> {
 
@@ -20,7 +22,6 @@ public record PropertyMethodData<I>(EMethod getter, @Nullable EMethod setter) im
         var params = getter.parameters();
         try {
             var jargs = ArgumentUtils.toJavaArguments(state, Constants.NONE, 1, params);
-
             EClassUse<?> ret = getter.returnTypeUse().upperBound();
             Object out = getter.invoke(instance, jargs);
             return TypeCoercions.toLuaValue(out, ret);

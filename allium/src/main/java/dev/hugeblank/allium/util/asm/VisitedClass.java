@@ -70,27 +70,10 @@ public class VisitedClass {
 
     private void addVisitedMethod(int access, String name, String descriptor, String signature, String[] exceptions) throws LuaError {
         String key = name;
-        StringBuilder mappedDescriptor = new StringBuilder("(");
-        for (Type arg : Type.getArgumentTypes(descriptor)) {
-            mapTypeArg(mappedDescriptor, arg);
-        }
-        mappedDescriptor.append(")");
-        mapTypeArg(mappedDescriptor, Type.getReturnType(descriptor));
         if (!name.equals("<init>") && !name.equals("<clinit>")) {
-            key = key+mappedDescriptor;
+            key = key+descriptor;
         }
         visitedMethods.put(key, new VisitedMethod(this, access, name, descriptor, signature, exceptions));
-    }
-
-    private void mapTypeArg(StringBuilder mappedDescriptor, Type arg) {
-        if (arg.getSort() == Type.OBJECT) {
-            mappedDescriptor
-                    .append("L")
-                    .append(arg.getInternalName())
-                    .append(";");
-        } else {
-            mappedDescriptor.append(arg.getInternalName());
-        }
     }
 
     public boolean isInterface() {
