@@ -1,6 +1,7 @@
 package dev.hugeblank.allium.loader.lib;
 
 import com.llamalad7.mixinextras.sugar.Local;
+import dev.hugeblank.allium.Allium;
 import dev.hugeblank.allium.api.WrappedLuaLibrary;
 import dev.hugeblank.allium.api.event.MixinEventType;
 import dev.hugeblank.allium.loader.Script;
@@ -52,6 +53,7 @@ public record MixinLib(Script script) implements WrappedLuaLibrary {
 
     @LuaWrapped
     public LuaLocal getLocal(@LuaStateArg LuaState state, String type, @OptionalArg @Nullable LuaTable annotationTable, @OptionalArg @Nullable Boolean mutable) throws InvalidArgumentException, LuaError {
+        if (mutable != null && mutable) Allium.LOGGER.warn("@Local mutability is not yet implemented");
         return new LuaLocal(type, mutable == null || mutable,
                 new LuaAnnotation(
                         state,
@@ -62,5 +64,6 @@ public record MixinLib(Script script) implements WrappedLuaLibrary {
         );
     }
 
+    // TODO: Support mutablility
     public record LuaLocal(String type, boolean mutable, LuaAnnotation luaAnnotation) {}
 }

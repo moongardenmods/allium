@@ -11,7 +11,7 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
-import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.Set;
 
 @Mixin(PackRepository.class)
@@ -22,9 +22,8 @@ public class PackRepositoryMixin {
     private Set<RepositorySource> sources;
 
     @Inject(at = @At("RETURN"), method = "<init>")
-    private void init(RepositorySource[] sources, CallbackInfo ci) {
-        // TODO: Reimplement Resource Pack Library
-        this.sources = new HashSet<>(this.sources);
+    private void init(RepositorySource[] packProviders, CallbackInfo ci) {
+        this.sources = new LinkedHashSet<>(this.sources);
         this.sources.add(new ScriptRepositorySource());
     }
 }

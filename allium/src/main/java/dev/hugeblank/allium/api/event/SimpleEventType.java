@@ -2,7 +2,6 @@ package dev.hugeblank.allium.api.event;
 
 import dev.hugeblank.allium.loader.type.annotation.LuaWrapped;
 import me.basiqueevangelist.enhancedreflection.api.EClass;
-import net.minecraft.network.protocol.configuration.ServerConfigurationPacketListener;
 import net.minecraft.resources.Identifier;
 
 import java.lang.reflect.InvocationHandler;

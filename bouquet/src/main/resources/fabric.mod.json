@@ -16,7 +16,7 @@
 	"environment": "*",
 	"entrypoints": {
 		"main": [
-          "dev.hugeblank.bouquet.BouquetModInitializer"
+          "dev.hugeblank.bouquet.Bouquet"
 		],
 		"allium": [
 			"dev.hugeblank.bouquet.BouquetAlliumExtension"

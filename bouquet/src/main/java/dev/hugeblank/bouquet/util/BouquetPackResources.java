@@ -1,6 +1,6 @@
 package dev.hugeblank.bouquet.util;
 
-import dev.hugeblank.bouquet.BouquetModInitializer;
+import dev.hugeblank.bouquet.Bouquet;
 import net.minecraft.resources.Identifier;
 import net.minecraft.server.packs.AbstractPackResources;
 import net.minecraft.server.packs.PackLocationInfo;
@@ -21,9 +21,9 @@ public class BouquetPackResources extends AbstractPackResources {
     @Override
     public @Nullable IoSupplier<@NotNull InputStream> getRootResource(String @NotNull ... path) {
         if (path[0].equals("pack.mcmeta")) {
-            return () -> Objects.requireNonNull(BouquetModInitializer.class.getResourceAsStream("/assets/pack.mcmeta"));
+            return () -> Objects.requireNonNull(Bouquet.class.getResourceAsStream("/assets/pack.mcmeta"));
         } else if (path[0].equals("pack.png")) {
-            return () -> Objects.requireNonNull(BouquetModInitializer.class.getResourceAsStream("/assets/bouquet/icon.png"));
+            return () -> Objects.requireNonNull(Bouquet.class.getResourceAsStream("/assets/bouquet/icon.png"));
         }
         return null;
     }

@@ -24,8 +24,7 @@ public class MethodData<I> implements PropertyData<I> {
     @Override
     public LuaValue get(String name, LuaState state, I instance, boolean isBound) {
         if (isBound) {
-            MethodInvocationFunction<?> func = new MethodInvocationFunction<>(sourceClass, methods, name, instance, false);
-            return func;
+            return new MethodInvocationFunction<>(sourceClass, methods, name, instance, false);
         }
         else {
             return unboundFunction;

@@ -1,9 +1,7 @@
 package dev.hugeblank.allium.loader.mixin;
 
-import dev.hugeblank.allium.loader.type.annotation.LuaStateArg;
 import dev.hugeblank.allium.loader.type.exception.InvalidArgumentException;
 import dev.hugeblank.allium.loader.type.coercion.TypeCoercions;
-import dev.hugeblank.allium.util.asm.VisitedClass;
 import me.basiqueevangelist.enhancedreflection.api.ClassType;
 import me.basiqueevangelist.enhancedreflection.api.EClass;
 import me.basiqueevangelist.enhancedreflection.api.EMethod;
@@ -147,9 +145,4 @@ public class LuaAnnotation implements Annotating {
         }
     }
 
-    public record LuaAnnotationReference(LuaState state, @Nullable String name, LuaTable annotationTable, EClass<?> annotationClass) {
-        public LuaAnnotation build(VisitedClass visitedClass) throws InvalidArgumentException, LuaError {
-            return new LuaAnnotation(state, name, annotationTable, annotationClass);
-        }
-    }
 }
