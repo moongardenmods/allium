@@ -2,7 +2,8 @@ package dev.hugeblank.allium.loader.mixin;
 
 import dev.hugeblank.allium.api.event.MixinEventType;
 import dev.hugeblank.allium.loader.Script;
-import dev.hugeblank.allium.loader.lib.MixinLib;
+import dev.hugeblank.allium.loader.mixin.annotation.sugar.LuaAnnotatedParameter;
+import dev.hugeblank.allium.loader.mixin.annotation.LuaAnnotation;
 import dev.hugeblank.allium.loader.type.exception.InvalidArgumentException;
 import dev.hugeblank.allium.loader.type.exception.InvalidMixinException;
 import dev.hugeblank.allium.loader.type.annotation.LuaWrapped;
@@ -74,7 +75,7 @@ public class MixinClassBuilder {
     }
 
     @LuaWrapped
-    public void inject(String eventName, LuaTable annotations, @OptionalArg @Nullable List<MixinLib.LuaLocal> locals) throws LuaError, InvalidMixinException, InvalidArgumentException {
+    public void inject(String eventName, LuaTable annotations, @OptionalArg @Nullable List<LuaAnnotatedParameter> luaParameters) throws LuaError, InvalidMixinException, InvalidArgumentException {
         checkPhase();
         if (visitedClass.isInterface() || this.duck)
             throw new InvalidMixinException(InvalidMixinException.Type.INVALID_CLASSTYPE, "class");
@@ -85,11 +86,41 @@ public class MixinClassBuilder {
                 EClass.fromJava(Inject.class)
         );
 
-        writeInject(eventName, luaAnnotation, locals);
+        String descriptor = luaAnnotation.findElement("method", String.class);
+        if (visitedClass.containsMethod(descriptor)) {
+            VisitedMethod visitedMethod = visitedClass.getMethod(descriptor);
+            List<MixinParameter> params = new ArrayList<>(visitedMethod.getParams().stream().map(MixinParameter::new).toList());
+            Type returnType = Type.getReturnType(visitedMethod.descriptor());
+            if (returnType.equals(Type.VOID_TYPE)) {
+                params.add(new MixinParameter(Type.getType(CallbackInfo.class)));
+            } else {
+                params.add(new MixinParameter(Type.getType(CallbackInfoReturnable.class)));
+            }
+
+
+            MixinMethodBuilder methodBuilder = MixinMethodBuilder.of(
+                    c, visitedMethod, createInjectName(visitedMethod.name()), params
+            );
+
+            if (luaParameters != null) methodBuilder.luaParameters(luaParameters);
+
+            MixinMethodBuilder.InvocationReference invocationReference = methodBuilder
+                    .access(visitedMethod.access() & ~(ACC_PUBLIC | ACC_PROTECTED) | ACC_PRIVATE)
+                    .returnType(Type.VOID_TYPE)
+                    .annotations(List.of(luaAnnotation))
+                    .signature(visitedMethod.signature())
+                    .exceptions(visitedMethod.exceptions())
+                    .code(createInjectWriteFactory(eventName))
+                    .build();
+
+            invocationReference.createEvent(script.getID() + ":" + eventName);
+        } else {
+            throw new InvalidMixinException(InvalidMixinException.Type.INVALID_DESCRIPTOR, descriptor);
+        }
     }
 
     @LuaWrapped
-    public void modifyArgs(String eventName, LuaTable annotations, @OptionalArg @Nullable List<MixinLib.LuaLocal> locals) throws InvalidMixinException, InvalidArgumentException, LuaError {
+    public void modifyArgs(String eventName, LuaTable annotations, @OptionalArg @Nullable List<LuaAnnotatedParameter> locals) throws InvalidMixinException, InvalidArgumentException, LuaError {
         checkPhase();
         if (visitedClass.isInterface() || this.duck)
             throw new InvalidMixinException(InvalidMixinException.Type.INVALID_CLASSTYPE, "class");
@@ -105,12 +136,12 @@ public class MixinClassBuilder {
             VisitedMethod visitedMethod = visitedClass.getMethod(descriptor);
 
             MixinMethodBuilder methodBuilder = MixinMethodBuilder.of(
-                    c, visitedClass,
+                    c, visitedMethod,
                     createInjectName(visitedMethod.name()),
                     List.of(new MixinParameter(Type.getType(Args.class)))
             );
 
-            if (locals != null) methodBuilder.locals(locals);
+            if (locals != null) methodBuilder.luaParameters(locals);
 
             MixinMethodBuilder.InvocationReference invocationReference = methodBuilder
                     .access(visitedMethod.access() & ~(ACC_PUBLIC | ACC_PROTECTED) | ACC_PRIVATE)
@@ -157,7 +188,7 @@ public class MixinClassBuilder {
                     name.substring(1); // Rest of name
             List<MixinParameter> params = isSetter ? List.of(new MixinParameter(visitedFieldType)) : List.of();
 
-            MixinMethodBuilder methodBuilder = MixinMethodBuilder.of(c, visitedClass, name, params);
+            MixinMethodBuilder methodBuilder = MixinMethodBuilder.of(c, visitedField, name, params);
 
             methodBuilder.annotations(List.of(new LuaAnnotation(
                     script.getExecutor().getState(),
@@ -201,7 +232,7 @@ public class MixinClassBuilder {
                     Type.getArgumentTypes(visitedMethod.descriptor())).map(MixinParameter::new
             ).toList();
 
-            MixinMethodBuilder methodBuilder = MixinMethodBuilder.of(c, visitedClass, name, params);
+            MixinMethodBuilder methodBuilder = MixinMethodBuilder.of(c, visitedMethod, name, params);
 
             methodBuilder.annotations(List.of(new LuaAnnotation(
                     script.getExecutor().getState(),
@@ -239,40 +270,6 @@ public class MixinClassBuilder {
             throw new InvalidArgumentException("Expected field name at key 'value' or index 1");
         } else {
             return name;
-        }
-    }
-
-    private void writeInject(String eventName, LuaAnnotation annotation, @Nullable List<MixinLib.LuaLocal> locals) throws LuaError, InvalidMixinException, InvalidArgumentException {
-        String descriptor = annotation.findElement("method", String.class);
-        if (visitedClass.containsMethod(descriptor)) {
-            VisitedMethod visitedMethod = visitedClass.getMethod(descriptor);
-            List<MixinParameter> params = new ArrayList<>(visitedMethod.getParams().stream().map(MixinParameter::new).toList());
-            Type returnType = Type.getReturnType(visitedMethod.descriptor());
-            if (returnType.equals(Type.VOID_TYPE)) {
-                params.add(new MixinParameter(Type.getType(CallbackInfo.class)));
-            } else {
-                params.add(new MixinParameter(Type.getType(CallbackInfoReturnable.class)));
-            }
-
-
-            MixinMethodBuilder methodBuilder = MixinMethodBuilder.of(
-                    c, visitedClass, createInjectName(visitedMethod.name()), params
-            );
-
-            if (locals != null) methodBuilder.locals(locals);
-
-            MixinMethodBuilder.InvocationReference invocationReference = methodBuilder
-                    .access(visitedMethod.access() & ~(ACC_PUBLIC | ACC_PROTECTED) | ACC_PRIVATE)
-                    .returnType(Type.VOID_TYPE)
-                    .annotations(List.of(annotation))
-                    .signature(visitedMethod.signature())
-                    .exceptions(visitedMethod.exceptions())
-                    .code(createInjectWriteFactory(eventName))
-                    .build();
-
-            invocationReference.createEvent(script.getID() + ":" + eventName);
-        } else {
-            throw new InvalidMixinException(InvalidMixinException.Type.INVALID_DESCRIPTOR, descriptor);
         }
     }
 

@@ -1,5 +1,6 @@
 package dev.hugeblank.allium.loader.mixin;
 
+import dev.hugeblank.allium.loader.mixin.annotation.LuaAnnotation;
 import me.basiqueevangelist.enhancedreflection.api.EClass;
 import org.jetbrains.annotations.Nullable;
 import org.objectweb.asm.AnnotationVisitor;
@@ -11,7 +12,6 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 
 public class MixinParameter {
     private Type type;
@@ -49,7 +49,7 @@ public class MixinParameter {
     private static AnnotationVisitor attachParameterAnnotation(
             MethodVisitor visitor,
             int index,
-            @SuppressWarnings("SameParameterValue") Class<?> annotation
+            Class<?> annotation
     ) {
         EClass<?> eAnnotation = EClass.fromJava(annotation);
         return visitor.visitParameterAnnotation(index,

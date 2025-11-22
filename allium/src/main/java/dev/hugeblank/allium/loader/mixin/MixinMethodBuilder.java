@@ -1,11 +1,14 @@
 package dev.hugeblank.allium.loader.mixin;
 
 import dev.hugeblank.allium.api.event.MixinEventType;
-import dev.hugeblank.allium.loader.lib.MixinLib;
+import dev.hugeblank.allium.loader.mixin.annotation.sugar.LuaAnnotatedParameter;
+import dev.hugeblank.allium.loader.mixin.annotation.LuaAnnotation;
+import dev.hugeblank.allium.loader.mixin.annotation.sugar.LuaCancellable;
 import dev.hugeblank.allium.loader.type.exception.InvalidArgumentException;
 import dev.hugeblank.allium.loader.type.exception.InvalidMixinException;
 import dev.hugeblank.allium.util.asm.AsmUtil;
-import dev.hugeblank.allium.util.asm.VisitedClass;
+import dev.hugeblank.allium.util.asm.VisitedElement;
+import dev.hugeblank.allium.util.asm.VisitedMethod;
 import me.basiqueevangelist.enhancedreflection.api.EClass;
 import org.objectweb.asm.AnnotationVisitor;
 import org.objectweb.asm.ClassWriter;
@@ -20,9 +23,10 @@ import java.util.List;
 
 import static org.objectweb.asm.Opcodes.ACC_STATIC;
 
+@SuppressWarnings("UnusedReturnValue")
 public class MixinMethodBuilder {
     private final ClassWriter classWriter;
-    private final VisitedClass thisType;
+    private final VisitedElement target;
     private int access = 0;
     private final String name;
     private final List<MixinParameter> initialParameters;
@@ -33,15 +37,15 @@ public class MixinMethodBuilder {
     private MixinClassBuilder.MethodWriteFactory code;
     private Type returnType = Type.VOID_TYPE;
 
-    private MixinMethodBuilder(ClassWriter classWriter, VisitedClass thisType, String name, List<MixinParameter> initialParameters) {
+    private MixinMethodBuilder(ClassWriter classWriter, VisitedElement target, String name, List<MixinParameter> initialParameters) {
         this.classWriter = classWriter;
-        this.thisType = thisType;
+        this.target = target;
         this.name = name;
         this.initialParameters = new ArrayList<>(initialParameters);
     }
 
-    public static MixinMethodBuilder of(ClassWriter classWriter, VisitedClass thisType, String name, List<MixinParameter> initialParameters) {
-        return new MixinMethodBuilder(classWriter, thisType, name, initialParameters);
+    public static MixinMethodBuilder of(ClassWriter classWriter, VisitedElement target, String name, List<MixinParameter> initialParameters) {
+        return new MixinMethodBuilder(classWriter, target, name, initialParameters);
     }
 
     public MixinMethodBuilder access(int access) {
@@ -59,11 +63,20 @@ public class MixinMethodBuilder {
         return this;
     }
 
-    public MixinMethodBuilder locals(List<MixinLib.LuaLocal> locals) {
-        if (locals != null && !locals.isEmpty()) {
-            for (MixinLib.LuaLocal local : locals) {
+    public MixinMethodBuilder luaParameters(List<LuaAnnotatedParameter> luaParams) throws InvalidArgumentException {
+        if (!luaParams.isEmpty()) {
+            for (LuaAnnotatedParameter lp : luaParams) {
+                if (lp instanceof LuaCancellable lc) {
+                    if (target instanceof VisitedMethod targetMethod) {
+                        lc.methodIsReturnable(!Type.getReturnType(targetMethod.descriptor()).equals(Type.VOID_TYPE));
+                    } else {
+                        throw new InvalidArgumentException(
+                                "Cancellable parameter cannot be applied to field-based mixin methods."
+                        );
+                    }
+                }
                 parameter(new MixinParameter(
-                        Type.getType(local.type()), List.of(local.luaAnnotation())
+                        Type.getType(lp.type()), List.of(lp.luaAnnotation())
                 ));
             }
         }
@@ -118,7 +131,7 @@ public class MixinMethodBuilder {
         }
 
         if ((access & ACC_STATIC) == 0) {
-            params.add(0, new MixinParameter(thisType.getType()));
+            params.addFirst(new MixinParameter(target.owner().getType()));
         }
 
         if (code != null) {

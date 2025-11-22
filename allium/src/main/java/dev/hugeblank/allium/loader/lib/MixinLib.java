@@ -1,17 +1,16 @@
 package dev.hugeblank.allium.loader.lib;
 
-import com.llamalad7.mixinextras.sugar.Local;
-import dev.hugeblank.allium.Allium;
 import dev.hugeblank.allium.api.WrappedLuaLibrary;
 import dev.hugeblank.allium.api.event.MixinEventType;
 import dev.hugeblank.allium.loader.Script;
-import dev.hugeblank.allium.loader.mixin.LuaAnnotation;
-import dev.hugeblank.allium.loader.mixin.MixinClassBuilder;
+import dev.hugeblank.allium.loader.mixin.*;
+import dev.hugeblank.allium.loader.mixin.annotation.sugar.LuaCancellable;
+import dev.hugeblank.allium.loader.mixin.annotation.sugar.LuaLocal;
+import dev.hugeblank.allium.loader.mixin.annotation.sugar.LuaShare;
 import dev.hugeblank.allium.loader.type.annotation.LuaStateArg;
 import dev.hugeblank.allium.loader.type.annotation.LuaWrapped;
 import dev.hugeblank.allium.loader.type.annotation.OptionalArg;
 import dev.hugeblank.allium.loader.type.exception.InvalidArgumentException;
-import me.basiqueevangelist.enhancedreflection.api.EClass;
 import net.fabricmc.api.EnvType;
 import org.jetbrains.annotations.Nullable;
 import org.squiddev.cobalt.LuaError;
@@ -53,17 +52,19 @@ public record MixinLib(Script script) implements WrappedLuaLibrary {
 
     @LuaWrapped
     public LuaLocal getLocal(@LuaStateArg LuaState state, String type, @OptionalArg @Nullable LuaTable annotationTable, @OptionalArg @Nullable Boolean mutable) throws InvalidArgumentException, LuaError {
-        if (mutable != null && mutable) Allium.LOGGER.warn("@Local mutability is not yet implemented");
-        return new LuaLocal(type, mutable == null || mutable,
-                new LuaAnnotation(
-                        state,
-                        null,
-                        annotationTable == null ? new LuaTable() : annotationTable,
-                        EClass.fromJava(Local.class)
-                )
-        );
+        return new LuaLocal(state, type,
+                mutable != null && mutable,
+                annotationTable == null ? new LuaTable() : annotationTable);
     }
 
-    // TODO: Support mutablility
-    public record LuaLocal(String type, boolean mutable, LuaAnnotation luaAnnotation) {}
+    @LuaWrapped
+    public LuaShare getShare(@LuaStateArg LuaState state, String type, LuaTable annotationTable) throws InvalidArgumentException, LuaError {
+        return new LuaShare(state, type, annotationTable);
+    }
+
+    @LuaWrapped
+    public LuaCancellable getCancellable(@LuaStateArg LuaState state) throws InvalidArgumentException, LuaError {
+        return new LuaCancellable(state);
+    }
+
 }

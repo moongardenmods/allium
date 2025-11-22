@@ -1,4 +1,4 @@
-package dev.hugeblank.allium.loader.mixin;
+package dev.hugeblank.allium.loader.mixin.annotation;
 
 import dev.hugeblank.allium.loader.type.exception.InvalidArgumentException;
 import dev.hugeblank.allium.loader.type.coercion.TypeCoercions;

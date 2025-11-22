@@ -1,9 +1,8 @@
-package dev.hugeblank.allium.loader.mixin;
+package dev.hugeblank.allium.loader.mixin.annotation;
 
 import me.basiqueevangelist.enhancedreflection.api.EClass;
 import org.objectweb.asm.AnnotationVisitor;
 import org.squiddev.cobalt.LuaError;
-import org.squiddev.cobalt.LuaValue;
 
 public interface Annotating {
 
