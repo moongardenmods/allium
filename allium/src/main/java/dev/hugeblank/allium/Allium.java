@@ -12,6 +12,7 @@
 package dev.hugeblank.allium;
 
 import dev.hugeblank.allium.util.SetupHelpers;
+import dev.hugeblank.allium.util.SimpleProfiler;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.ModInitializer;
 import net.fabricmc.loader.api.FabricLoader;
@@ -27,11 +28,15 @@ public class Allium implements ModInitializer {
     public static final boolean DEVELOPMENT = FabricLoader.getInstance().isDevelopmentEnvironment();
     public static final Path DUMP_DIRECTORY = FabricLoader.getInstance().getGameDir().resolve("allium-dump");
     public static final String VERSION = FabricLoader.getInstance().getModContainer(ID).orElseThrow().getMetadata().getVersion().getFriendlyString();
+    public static final SimpleProfiler PROFILER = new SimpleProfiler(true);
 
     @Override
     public void onInitialize() {
+        PROFILER.push("onInitialize");
         EnvType envType = FabricLoader.getInstance().getEnvironmentType();
         SetupHelpers.initializeExtensions(envType);
         SetupHelpers.initializeEnvironment();
+        PROFILER.pop();
+        PROFILER.print();
     }
 }

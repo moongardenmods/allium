@@ -39,9 +39,11 @@ public class Script implements Identifiable {
 
     public Script(Reference reference) {
         this.manifest = reference.manifest();
+        Allium.PROFILER.push(manifest.id(), "<init>");
         this.path = reference.path();
         this.executor = new ScriptExecutor(this, path, manifest.entrypoints());
         this.logger = LoggerFactory.getLogger('@' + getID());
+        Allium.PROFILER.pop();
     }
 
     public void reload() {
@@ -106,6 +108,7 @@ public class Script implements Identifiable {
     }
 
     public void preInitialize() {
+        Allium.PROFILER.push(getID(), "preInitialize");
         if (MixinConfigUtil.isComplete()) {
             getLogger().error("Attempted to pre-initialize after mixin configuration was loaded.");
             return;
@@ -116,9 +119,11 @@ public class Script implements Identifiable {
             //noinspection StringConcatenationArgumentToLogCall
             getLogger().error("Could not pre-initialize allium script " + getID(), e);
         }
+        Allium.PROFILER.pop();
     }
 
     public void initialize() {
+        Allium.PROFILER.push(getID(), "initialize");
         switch (initialized) {
             case UNINITIALIZED -> {
                 try {
@@ -136,6 +141,7 @@ public class Script implements Identifiable {
             }
             case INITIALIZED -> getLogger().warn("Attempted to initialize while already active");
         }
+        Allium.PROFILER.pop();
     }
 
     public State getLaunchState() {
@@ -144,15 +150,22 @@ public class Script implements Identifiable {
 
     // return null if file isn't contained within Scripts path, or if it doesn't exist.
     public LuaValue loadLibrary(LuaState state, Path mod) throws UnwindThrowable, LuaError {
+        Allium.PROFILER.push(getID(), "loadLibrary");
         // Ensure the modules parent path is the root path, and that the module exists before loading
         try {
             LuaFunction loadValue = getExecutor().load(Files.newInputStream(mod), mod.getFileName().toString());
-            return Dispatch.call(state, loadValue);
+            Allium.PROFILER.push(getID(), "dispatch");
+            LuaValue value = Dispatch.call(state, loadValue);
+            Allium.PROFILER.pop();
+            Allium.PROFILER.pop();
+            return value;
         } catch (FileNotFoundException e) {
+            Allium.PROFILER.pop();
             // This should never happen, but if it does, boy do I want to know.
             Allium.LOGGER.warn("File claimed to exist but threw a not found exception... </3", e);
             return null;
         } catch (CompileException | IOException e) {
+            Allium.PROFILER.pop();
             throw new LuaError(e);
         }
     }

@@ -1,5 +1,6 @@
 package dev.hugeblank.allium.loader.mixin;
 
+import dev.hugeblank.allium.Allium;
 import dev.hugeblank.allium.loader.Script;
 import dev.hugeblank.allium.loader.mixin.annotation.method.InjectorChef;
 import dev.hugeblank.allium.loader.mixin.annotation.method.LuaMethodAnnotation;
@@ -47,6 +48,7 @@ public class MixinClassBuilder {
 
     public MixinClassBuilder(String target, String[] interfaces, @Nullable EnvType targetEnvironment, boolean duck, Script script) throws LuaError {
         checkPhase();
+        Allium.PROFILER.push(script.getID(), "mixin", target);
         this.script = script;
         this.targetEnvironment = targetEnvironment;
         this.duck = duck;
@@ -68,11 +70,13 @@ public class MixinClassBuilder {
         targetArray.visit(null, Type.getObjectType(visitedClass.name()));
         targetArray.visitEnd();
         mixinAnnotation.visitEnd();
+        Allium.PROFILER.pop();
     }
 
     @LuaWrapped
     public void createInjectMethod(String eventName, List<LuaMethodAnnotation> methodAnnotations, @OptionalArg @Nullable List<LuaParameterAnnotation> sugarParameters) throws InvalidMixinException, InvalidArgumentException, LuaError {
         checkPhase();
+        Allium.PROFILER.push("createInjectMethod", eventName);
         if (visitedClass.isInterface() || this.duck)
             throw new InvalidMixinException(InvalidMixinException.Type.INVALID_CLASSTYPE, "class");
 
@@ -86,8 +90,8 @@ public class MixinClassBuilder {
         } else if (chefList.size() > 1) {
             throw new InvalidMixinException(InvalidMixinException.Type.TOO_MANY_INJECTOR_ANNOTATIONS, eventId);
         }
-
         chefList.getFirst().bake(script, eventId, c, visitedClass, methodAnnotations, sugarParameters);
+        Allium.PROFILER.pop();
     }
 
     @LuaWrapped

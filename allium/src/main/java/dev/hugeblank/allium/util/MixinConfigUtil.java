@@ -4,6 +4,7 @@ import com.google.gson.Gson;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
+import dev.hugeblank.allium.Allium;
 import dev.hugeblank.allium.AlliumPreLaunch;
 import dev.hugeblank.allium.loader.mixin.MixinClassBuilder;
 import dev.hugeblank.allium.loader.mixin.MixinClassInfo;
@@ -33,6 +34,7 @@ public class MixinConfigUtil {
     }
 
     public static void applyConfiguration() {
+        Allium.PROFILER.push("applyConfiguration");
         // Create a new mixin config
 
         Map<String, byte[]> mixinConfigMap = new HashMap<>();
@@ -63,20 +65,26 @@ public class MixinConfigUtil {
                 break;
             }
         }
-        if (addUrlMethod == null) throw new IllegalStateException("Could not find URL loader in ClassLoader " + loader);
+        if (addUrlMethod == null) {
+            Allium.PROFILER.pop();
+            throw new IllegalStateException("Could not find URL loader in ClassLoader " + loader);
+        }
         try {
             addUrlMethod.setAccessible(true);
             MethodHandle handle = MethodHandles.lookup().unreflect(addUrlMethod);
             handle.invoke(loader, mixinUrl);
         } catch (IllegalAccessException e) {
+            Allium.PROFILER.pop();
             throw new RuntimeException("Couldn't get handle for " + addUrlMethod, e);
         } catch (Throwable e) {
+            Allium.PROFILER.pop();
             throw new RuntimeException("Error invoking URL handler", e);
         }
 
         Mixins.addConfiguration(MIXIN_CONFIG_NAME);
         VisitedClass.clear();
         complete = true;
+        Allium.PROFILER.pop();
     }
 
     private static JsonArray mixinsToJson(Registry<MixinClassInfo> registry, Map<String, byte[]> configMap) {

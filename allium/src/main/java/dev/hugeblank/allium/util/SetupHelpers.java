@@ -24,6 +24,7 @@ import java.util.stream.Collectors;
 
 public class SetupHelpers {
     public static void initializeEnvironment() {
+        Allium.PROFILER.push("initializeEnvironment");
         ScriptRegistry registry = ScriptRegistry.getInstance();
         registry.forEach(Script::initialize);
         Set<Script> set = registry.getAll().stream()
@@ -32,15 +33,18 @@ public class SetupHelpers {
         list(set, "Initialized " + set.size() + " scripts",
                 (builder, script) -> builder.append(script.getID())
         );
+        Allium.PROFILER.pop();
     }
 
     public static void collectScripts() {
+        Allium.PROFILER.push("collectScripts");
         ImmutableSet.Builder<Script.@NotNull Reference> setBuilder = ImmutableSet.builder();
         setBuilder.addAll(FileHelper.getValidDirScripts(FileHelper.getScriptsDirectory()));
         setBuilder.addAll(FileHelper.getValidModScripts());
         Set<Script.Reference> refs = setBuilder.build();
 
         if (refs.isEmpty()) {
+            Allium.PROFILER.pop();
             return;
         }
 
@@ -52,9 +56,11 @@ public class SetupHelpers {
         );
 
         registry.forEach(Script::preInitialize);
+        Allium.PROFILER.pop();
     }
 
     public static void initializeExtensions(EnvType envType) {
+        Allium.PROFILER.push("initializeExtensions");
         Set<ModContainer> mods = new HashSet<>();
         getExtensionLocations(Allium.ID, mods);
         switch (envType) {
@@ -64,6 +70,7 @@ public class SetupHelpers {
         list(mods, "Initialized " + mods.size() + " extensions",
                 (builder, mod) -> builder.append(mod.getMetadata().getId())
         );
+        Allium.PROFILER.pop();
     }
 
     private static void getExtensionLocations(String id, Set<ModContainer> mods) {
@@ -86,10 +93,12 @@ public class SetupHelpers {
     }
 
     public static void initializeDirectories() {
+        Allium.PROFILER.push("initializeDirectories");
         try {
             if (!Files.exists(FileHelper.PERSISTENCE_DIR)) Files.createDirectory(FileHelper.PERSISTENCE_DIR);
             if (!Files.exists(FileHelper.CONFIG_DIR)) Files.createDirectory(FileHelper.CONFIG_DIR);
         } catch (IOException e) {
+            Allium.PROFILER.pop();
             throw new RuntimeException("Couldn't create config directory", e);
         }
 
@@ -120,8 +129,10 @@ public class SetupHelpers {
                         }
                     });
             } catch (IOException e) {
+                Allium.PROFILER.pop();
                 throw new RuntimeException("Couldn't delete dump directory", e);
             }
         }
+        Allium.PROFILER.pop();
     }
 }

@@ -1,5 +1,6 @@
 package dev.hugeblank.allium.loader;
 
+import dev.hugeblank.allium.Allium;
 import org.squiddev.cobalt.*;
 import org.squiddev.cobalt.compiler.CompileException;
 import org.squiddev.cobalt.compiler.LoadState;
@@ -66,12 +67,15 @@ public class ScriptExecutor extends EnvironmentManager {
     }
 
     public LuaFunction load(InputStream stream, String name) throws CompileException, IOException, LuaError {
-        return LoadState.load(
+        Allium.PROFILER.push(script.getID(), "executor", "load");
+        LuaFunction out = LoadState.load(
                 state,
                 stream,
                 name,
                 state.globals()
         );
+        Allium.PROFILER.pop();
+        return out;
     }
 
 }

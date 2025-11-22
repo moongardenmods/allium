@@ -1,5 +1,6 @@
 package dev.hugeblank.allium.loader.mixin.annotation.method.injectors;
 
+import dev.hugeblank.allium.Allium;
 import dev.hugeblank.allium.loader.Script;
 import dev.hugeblank.allium.loader.mixin.MixinMethodBuilder;
 import dev.hugeblank.allium.loader.mixin.MixinParameter;
@@ -33,6 +34,7 @@ public class LuaInject extends LuaInjectorAnnotation {
 
     @Override
     public void bake(Script script, String eventId, ClassWriter classWriter, VisitedClass mixinClass, List<LuaMethodAnnotation> annotations, @Nullable List<LuaParameterAnnotation> sugarParameters) throws InvalidMixinException, LuaError, InvalidArgumentException {
+        Allium.PROFILER.push("inject", "bake");
         VisitedMethod visitedMethod = getVisitedMethod(mixinClass, luaAnnotation);
         List<MixinParameter> params = new ArrayList<>(visitedMethod.getParams().stream().map(MixinParameter::new).toList());
         Type returnType = Type.getReturnType(visitedMethod.descriptor());
@@ -59,5 +61,6 @@ public class LuaInject extends LuaInjectorAnnotation {
                 .build();
 
         invocationReference.createEvent(eventId);
+        Allium.PROFILER.pop();
     }
 }
