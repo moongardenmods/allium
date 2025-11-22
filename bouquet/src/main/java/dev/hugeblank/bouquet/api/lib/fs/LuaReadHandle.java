@@ -4,84 +4,33 @@ import dev.hugeblank.allium.loader.Script;
 import dev.hugeblank.allium.loader.type.annotation.LuaWrapped;
 import dev.hugeblank.allium.loader.type.annotation.OptionalArg;
 import org.squiddev.cobalt.LuaError;
-import org.squiddev.cobalt.LuaValue;
-import org.squiddev.cobalt.ValueFactory;
 
 import java.io.IOException;
-import java.io.InputStream;
-import java.nio.file.Files;
+import java.nio.ByteBuffer;
+import java.nio.channels.FileChannel;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
+import java.util.Set;
 
 @LuaWrapped
-public class LuaReadHandle extends LuaHandle {
-    private static final char EOF = (char)-1;
+public class LuaReadHandle extends LuaHandleBase {
 
-    protected final InputStream handle;
+    public LuaReadHandle(Script script, Path path) throws IOException {
+        super(script, FileChannel.open(path, Set.of(StandardOpenOption.READ, StandardOpenOption.CREATE)));
+    }
 
-    public LuaReadHandle(Script script, Path path) throws LuaError {
-        super(script);
-        try {
-            this.handle = Files.newInputStream(path, StandardOpenOption.READ, StandardOpenOption.CREATE);
-        } catch (IOException e) {
-            throw new LuaError(e);
-        }
+    @LuaWrapped
+    public String read(@OptionalArg Integer count) throws LuaError {
+        return readInternal(handle, count);
     }
 
     @LuaWrapped
     public String readLine(@OptionalArg Boolean withTrailing) throws LuaError {
-        StringBuilder builder = new StringBuilder();
-        char value;
-        do {
-            try {
-                value = (char) handle.read();
-                if (value == '\n' && withTrailing != null && withTrailing) {
-                    builder.append(value);
-                } else if (value != '\n') {
-                    builder.append(value);
-                }
-            } catch (IOException e) {
-                throw new LuaError(e);
-            }
-        } while(value != EOF && value != '\n');
-        return builder.toString();
+        return readLineInternal(handle, withTrailing);
     }
 
     @LuaWrapped
     public String readAll() throws LuaError {
-        StringBuilder builder = new StringBuilder();
-        try {
-            for (byte b : handle.readAllBytes()) {
-                builder.append((char)b);
-            }
-            return builder.toString();
-        } catch (IOException e) {
-            throw new LuaError(e);
-        }
-    }
-
-    @LuaWrapped
-    public LuaValue read(@OptionalArg Integer count) throws LuaError {
-        StringBuilder builder = new StringBuilder();
-        try {
-            if (count != null) {
-                for (int i = 0; i < count; i++) {
-                    char value = (char) handle.read();
-                    if (value == EOF) return ValueFactory.valueOf(builder.toString());
-                    builder.append(value);
-                }
-                return ValueFactory.valueOf(builder.toString());
-            } else {
-                return ValueFactory.valueOf(handle.read());
-            }
-        } catch (IOException e) {
-            throw new LuaError(e);
-        }
-    }
-
-    @LuaWrapped
-    @Override
-    public void close() throws LuaError {
-        closeInternal(handle);
+        return readAllInternal(handle);
     }
 }

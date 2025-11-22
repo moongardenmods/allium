@@ -12,14 +12,3 @@ CactusBlockMixin:inject("add_flower", { -- Target the randomTick method, at a sp
 })
 
 CactusBlockMixin:build()
-
-local PlayerMixin = mixin.to("net.minecraft.world.entity.player.Player")
-PlayerMixin:modifyArgs("skip_fall_player", {
-    method = { "causeFallDamage(DFLnet/minecraft/world/damagesource/DamageSource;)Z" },
-    at = {
-            value = "INVOKE",
-            target = "Lnet/minecraft/world/entity/Avatar;causeFallDamage(DFLnet/minecraft/world/damagesource/DamageSource;)Z"
-    }
-})
-
-PlayerMixin:build()
