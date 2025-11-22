@@ -14,9 +14,11 @@ local PotionBrewingMixinBuilder = mixin.to("net.minecraft.world.item.alchemy.Pot
     https://github.com/2xsaiko/mixin-cheatsheet It should be possible to extrapolate from this, what an inject would look
     like in Lua.
 --]]
-PotionBrewingMixinBuilder:inject("add_brewing_recipes", { -- Get the point at which potions should be registered.
-    at = { { "TAIL" } },
-    method = { "addVanillaMixes(Lnet/minecraft/world/item/alchemy/PotionBrewing$Builder;)V" }
+PotionBrewingMixinBuilder:createInjectMethod("add_brewing_recipes", {
+    mixin.annotation.inject({ -- Get the point at which potions should be registered.
+        at = { { "TAIL" } },
+        method = { "addVanillaMixes(Lnet/minecraft/world/item/alchemy/PotionBrewing$Builder;)V" }
+    })
 })
 -- Inject returns an event type for us to register to.
 -- It is practice to register mixin events in another entrypoint, so we use it in dynamic!

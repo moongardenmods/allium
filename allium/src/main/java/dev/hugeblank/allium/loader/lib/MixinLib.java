@@ -4,21 +4,26 @@ import dev.hugeblank.allium.api.WrappedLuaLibrary;
 import dev.hugeblank.allium.api.event.MixinEventType;
 import dev.hugeblank.allium.loader.Script;
 import dev.hugeblank.allium.loader.mixin.*;
-import dev.hugeblank.allium.loader.mixin.annotation.sugar.LuaCancellable;
-import dev.hugeblank.allium.loader.mixin.annotation.sugar.LuaLocal;
-import dev.hugeblank.allium.loader.mixin.annotation.sugar.LuaShare;
-import dev.hugeblank.allium.loader.type.annotation.LuaStateArg;
+import dev.hugeblank.allium.loader.mixin.annotation.method.MixinMethodAnnotations;
+import dev.hugeblank.allium.loader.mixin.annotation.sugar.MixinSugars;
+import dev.hugeblank.allium.loader.type.AlliumClassUserdata;
+import dev.hugeblank.allium.loader.type.StaticBinder;
 import dev.hugeblank.allium.loader.type.annotation.LuaWrapped;
 import dev.hugeblank.allium.loader.type.annotation.OptionalArg;
-import dev.hugeblank.allium.loader.type.exception.InvalidArgumentException;
+import me.basiqueevangelist.enhancedreflection.api.EClass;
 import net.fabricmc.api.EnvType;
 import org.jetbrains.annotations.Nullable;
 import org.squiddev.cobalt.LuaError;
-import org.squiddev.cobalt.LuaState;
-import org.squiddev.cobalt.LuaTable;
 
 @LuaWrapped(name = "mixin")
 public record MixinLib(Script script) implements WrappedLuaLibrary {
+
+    // This being the way to define embedded "tables" is hilarious to me.
+    @LuaWrapped(name = "annotation")
+    public static final AlliumClassUserdata<MixinMethodAnnotations> ANNOTATION = StaticBinder.bindClass(EClass.fromJava(MixinMethodAnnotations.class));
+
+    @LuaWrapped(name = "sugar")
+    public static final AlliumClassUserdata<MixinSugars> SUGAR = StaticBinder.bindClass(EClass.fromJava(MixinSugars.class));
 
     @LuaWrapped
     public static MixinEventType get(String eventId) {
@@ -48,23 +53,6 @@ public record MixinLib(Script script) implements WrappedLuaLibrary {
             throw new LuaError("Mixin for " + targetClass + " expects target environment of nil, 'client' or 'server'.");
         }
         return new MixinClassBuilder(targetClass, interfaces == null ? new String[]{} : interfaces, targetEnv, duck != null && duck, script);
-    }
-
-    @LuaWrapped
-    public LuaLocal getLocal(@LuaStateArg LuaState state, String type, @OptionalArg @Nullable LuaTable annotationTable, @OptionalArg @Nullable Boolean mutable) throws InvalidArgumentException, LuaError {
-        return new LuaLocal(state, type,
-                mutable != null && mutable,
-                annotationTable == null ? new LuaTable() : annotationTable);
-    }
-
-    @LuaWrapped
-    public LuaShare getShare(@LuaStateArg LuaState state, String type, LuaTable annotationTable) throws InvalidArgumentException, LuaError {
-        return new LuaShare(state, type, annotationTable);
-    }
-
-    @LuaWrapped
-    public LuaCancellable getCancellable(@LuaStateArg LuaState state) throws InvalidArgumentException, LuaError {
-        return new LuaCancellable(state);
     }
 
 }

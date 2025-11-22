@@ -11,13 +11,13 @@ import org.squiddev.cobalt.LuaTable;
 import java.util.HashMap;
 import java.util.Map;
 
-public abstract class LuaAnnotatedParameter {
+public abstract class LuaParameterAnnotation {
     private static final String LOCALREF_PACKAGE_PREFIX = "Lcom/llamalad7/mixinextras/sugar/ref/";
     private static final Map<Type, String> TYPE_TO_REF;
     protected final String type;
     protected final LuaAnnotation luaAnnotation;
 
-    public LuaAnnotatedParameter(LuaState state, String type, LuaTable annotationTable, Class<?> annotation) throws InvalidArgumentException, LuaError {
+    public LuaParameterAnnotation(LuaState state, String type, LuaTable annotationTable, Class<?> annotation) throws InvalidArgumentException, LuaError {
         this.type = type;
         this.luaAnnotation = new LuaAnnotation(state, annotationTable, EClass.fromJava(annotation));
     }

@@ -19,7 +19,7 @@ public class MixinParameter {
 
     public MixinParameter(Type type, @Nullable List<LuaAnnotation> annotations) {
         this.type = type;
-        this.annotations = annotations != null ? new ArrayList<>(annotations) : new ArrayList<>();
+        this.annotations = annotations != null ? annotations : List.of();
     }
 
     public MixinParameter(Type type) {
@@ -32,10 +32,6 @@ public class MixinParameter {
 
     public Type getType() {
         return type;
-    }
-
-    public void addAnnotation(LuaAnnotation annotation) {
-        annotations.add(annotation);
     }
 
     public void annotate(MethodVisitor methodVisitor, int index) throws LuaError {

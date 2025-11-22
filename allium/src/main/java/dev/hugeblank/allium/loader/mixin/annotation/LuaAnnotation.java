@@ -36,10 +36,10 @@ public class LuaAnnotation implements Annotating {
                 if (arrayComponent == null) {
                     createAnnotating(method.name(), value, returnType, prototype::add);
                 } else {
-                    LuaTable tvalue = value.checkTable();
+                    LuaTable table = value.checkTable();
                     List<Annotating> elements = new ArrayList<>();
-                    for (int i = 1; i <= tvalue.size(); i++) {
-                        createAnnotating(null, tvalue.rawget(i), arrayComponent, elements::add);
+                    for (int i = 1; i <= table.size(); i++) {
+                        createAnnotating(null, table.rawget(i), arrayComponent, elements::add);
                     }
                     prototype.add(new ArrayElement(returnType, method.name(), elements));
                 }
@@ -92,7 +92,7 @@ public class LuaAnnotation implements Annotating {
                         return eClass.cast(element.object());
                     } else if (annotating.type().arrayComponent().equals(eClass) && annotating instanceof ArrayElement arrayElement) {
                         List<Annotating> objects = arrayElement.objects();
-                        if (!objects.isEmpty() && objects.get(0) instanceof Element element) {
+                        if (!objects.isEmpty() && objects.getFirst() instanceof Element element) {
                             return eClass.cast(element.object());
                         } else {
                             throw new LuaError("Annotating element '" + name + "' is empty");

@@ -13,6 +13,16 @@ local active = {}
 
 local leaderboard = {}
 
+local function debugwrap(func)
+    return function(...)
+        local out = {pcall(func, ...)}
+        if table.remove(out, 1) then
+            return table.unpack(out)
+        else
+            print(table.unpack(out))
+        end
+    end
+end
 
 do -- Load the leaderboard from csv if present
     if fs.exists("leaderboard.csv") then

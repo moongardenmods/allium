@@ -6,7 +6,7 @@ import org.squiddev.cobalt.LuaError;
 import org.squiddev.cobalt.LuaState;
 import org.squiddev.cobalt.LuaTable;
 
-public final class LuaShare extends LuaAnnotatedParameter {
+public final class LuaShare extends LuaParameterAnnotation {
 
     public LuaShare(LuaState state, String type, LuaTable annotationTable) throws InvalidArgumentException, LuaError {
         super(state, type, annotationTable, Share.class);

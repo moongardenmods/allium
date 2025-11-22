@@ -6,7 +6,7 @@ import org.squiddev.cobalt.LuaError;
 import org.squiddev.cobalt.LuaState;
 import org.squiddev.cobalt.LuaTable;
 
-public final class LuaLocal extends LuaAnnotatedParameter {
+public final class LuaLocal extends LuaParameterAnnotation {
     private final boolean mutable;
 
     public LuaLocal(LuaState state, String type, boolean mutable, LuaTable annotationTable) throws InvalidArgumentException, LuaError {

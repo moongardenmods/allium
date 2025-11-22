@@ -1,7 +1,8 @@
 package dev.hugeblank.allium.loader.mixin;
 
 import dev.hugeblank.allium.api.event.MixinEventType;
-import dev.hugeblank.allium.loader.mixin.annotation.sugar.LuaAnnotatedParameter;
+import dev.hugeblank.allium.loader.mixin.annotation.method.LuaInjectorAnnotation;
+import dev.hugeblank.allium.loader.mixin.annotation.sugar.LuaParameterAnnotation;
 import dev.hugeblank.allium.loader.mixin.annotation.LuaAnnotation;
 import dev.hugeblank.allium.loader.mixin.annotation.sugar.LuaCancellable;
 import dev.hugeblank.allium.loader.type.exception.InvalidArgumentException;
@@ -34,7 +35,7 @@ public class MixinMethodBuilder {
     private List<LuaAnnotation> methodAnnotations;
     private String signature = null;
     private String[] exceptions = null;
-    private MixinClassBuilder.MethodWriteFactory code;
+    private LuaInjectorAnnotation.MethodWriteFactory code;
     private Type returnType = Type.VOID_TYPE;
 
     private MixinMethodBuilder(ClassWriter classWriter, VisitedElement target, String name, List<MixinParameter> initialParameters) {
@@ -63,9 +64,9 @@ public class MixinMethodBuilder {
         return this;
     }
 
-    public MixinMethodBuilder luaParameters(List<LuaAnnotatedParameter> luaParams) throws InvalidArgumentException {
+    public MixinMethodBuilder luaParameters(List<LuaParameterAnnotation> luaParams) throws InvalidArgumentException {
         if (!luaParams.isEmpty()) {
-            for (LuaAnnotatedParameter lp : luaParams) {
+            for (LuaParameterAnnotation lp : luaParams) {
                 if (lp instanceof LuaCancellable lc) {
                     if (target instanceof VisitedMethod targetMethod) {
                         lc.methodIsReturnable(!Type.getReturnType(targetMethod.descriptor()).equals(Type.VOID_TYPE));
@@ -83,7 +84,7 @@ public class MixinMethodBuilder {
         return this;
     }
 
-    public MixinMethodBuilder code(MixinClassBuilder.MethodWriteFactory methodWriteFactory) {
+    public MixinMethodBuilder code(LuaInjectorAnnotation.MethodWriteFactory methodWriteFactory) {
         this.code = methodWriteFactory;
         return this;
     }

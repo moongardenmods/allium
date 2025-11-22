@@ -11,7 +11,7 @@ import org.squiddev.cobalt.LuaTable;
 
 import java.util.concurrent.atomic.AtomicBoolean;
 
-public class LuaCancellable extends LuaAnnotatedParameter {
+public class LuaCancellable extends LuaParameterAnnotation {
     private final AtomicBoolean methodIsReturnable = new AtomicBoolean(false);
 
     public LuaCancellable(LuaState state) throws InvalidArgumentException, LuaError {

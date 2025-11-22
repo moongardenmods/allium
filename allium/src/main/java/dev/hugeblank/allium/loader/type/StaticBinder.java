@@ -31,7 +31,7 @@ public final class StaticBinder {
 
         metatable.rawset("__index", LibFunction.create((state, arg1, arg2) -> {
             if (arg2.isString()) {
-                String name = arg2.checkString(); // mapped name
+                String name = arg2.checkString();
 
                 PropertyData<? super T> cachedProperty = cachedProperties.get(name);
 
