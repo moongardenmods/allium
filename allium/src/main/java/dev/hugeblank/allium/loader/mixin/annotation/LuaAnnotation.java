@@ -1,7 +1,7 @@
 package dev.hugeblank.allium.loader.mixin.annotation;
 
-import dev.hugeblank.allium.loader.type.exception.InvalidArgumentException;
 import dev.hugeblank.allium.loader.type.coercion.TypeCoercions;
+import dev.hugeblank.allium.loader.type.exception.InvalidArgumentException;
 import me.basiqueevangelist.enhancedreflection.api.ClassType;
 import me.basiqueevangelist.enhancedreflection.api.EClass;
 import me.basiqueevangelist.enhancedreflection.api.EMethod;
@@ -9,7 +9,8 @@ import org.jetbrains.annotations.Nullable;
 import org.objectweb.asm.AnnotationVisitor;
 import org.squiddev.cobalt.*;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.function.Consumer;
 
 public class LuaAnnotation implements Annotating {

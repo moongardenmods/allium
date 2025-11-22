@@ -5,7 +5,6 @@ import dev.hugeblank.allium.loader.type.annotation.LuaWrapped;
 import dev.hugeblank.allium.util.Identifiable;
 import dev.hugeblank.allium.util.MixinConfigUtil;
 import me.basiqueevangelist.enhancedreflection.api.EClass;
-import org.squiddev.cobalt.LuaError;
 import org.squiddev.cobalt.LuaValue;
 
 public record MixinClassInfo(String className, byte[] classBytes, boolean isDuck) implements Identifiable {

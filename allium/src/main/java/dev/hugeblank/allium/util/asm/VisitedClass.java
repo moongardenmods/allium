@@ -64,11 +64,11 @@ public class VisitedClass {
         }
     }
 
-    private void addVisitedField(int access, String name, String descriptor, String signature, Object value) throws LuaError {
+    private void addVisitedField(int access, String name, String descriptor, String signature, Object value) {
         visitedFields.put(name, new VisitedField(this, access, name, descriptor, signature, value));
     }
 
-    private void addVisitedMethod(int access, String name, String descriptor, String signature, String[] exceptions) throws LuaError {
+    private void addVisitedMethod(int access, String name, String descriptor, String signature, String[] exceptions) {
         String key = name;
         if (!name.equals("<init>") && !name.equals("<clinit>")) {
             key = key+descriptor;
@@ -122,11 +122,7 @@ public class VisitedClass {
                             @Override
                             public FieldVisitor visitField(int access, String name, String descriptor, String signature, Object value) {
                                 if (err.get() == null) {
-                                    try {
-                                        instance.addVisitedField(access, name, descriptor, signature, value);
-                                    } catch (LuaError e) {
-                                        err.set(e);
-                                    }
+                                    instance.addVisitedField(access, name, descriptor, signature, value);
                                 }
                                 return super.visitField(access, name, descriptor, signature, value);
                             }
@@ -134,11 +130,7 @@ public class VisitedClass {
                             @Override
                             public MethodVisitor visitMethod(int access, String name, String descriptor, String signature, String[] exceptions) {
                                 if (err.get() == null) {
-                                    try {
-                                        instance.addVisitedMethod(access, name, descriptor, signature, exceptions);
-                                    } catch (LuaError e) {
-                                        err.set(e);
-                                    }
+                                    instance.addVisitedMethod(access, name, descriptor, signature, exceptions);
                                 }
                                 return super.visitMethod(access, name, descriptor, signature, exceptions);
                             }

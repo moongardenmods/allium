@@ -1,7 +1,6 @@
 package dev.hugeblank.allium.api;
 
 import dev.hugeblank.allium.loader.Script;
-import net.fabricmc.api.EnvType;
 
 /**
  * Functional Interface for libraries that depend on the script to function.

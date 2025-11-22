@@ -1,6 +1,5 @@
 package dev.hugeblank.allium.loader.mixin.annotation.method;
 
-import dev.hugeblank.allium.loader.Script;
 import dev.hugeblank.allium.loader.mixin.annotation.LuaAnnotation;
 import dev.hugeblank.allium.loader.type.exception.InvalidArgumentException;
 import me.basiqueevangelist.enhancedreflection.api.EClass;

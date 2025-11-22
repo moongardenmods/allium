@@ -16,10 +16,7 @@ import java.io.InputStream;
 import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodHandles;
 import java.lang.reflect.Method;
-import java.net.MalformedURLException;
-import java.net.URL;
-import java.net.URLConnection;
-import java.net.URLStreamHandler;
+import java.net.*;
 import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.Map;
@@ -110,7 +107,7 @@ public class MixinConfigUtil {
 
         public static URL create(String protocol, Map<String, byte[]> providers) {
             try {
-                return new URL(protocol, null, -1, "/", new ByteArrayStreamHandler(providers));
+                return URL.of(URI.create(protocol + ":/"), new ByteArrayStreamHandler(providers));
             } catch (MalformedURLException e) {
                 throw new RuntimeException(e);
             }

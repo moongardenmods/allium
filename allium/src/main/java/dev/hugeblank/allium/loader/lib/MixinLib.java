@@ -3,7 +3,7 @@ package dev.hugeblank.allium.loader.lib;
 import dev.hugeblank.allium.api.WrappedLuaLibrary;
 import dev.hugeblank.allium.api.event.MixinEventType;
 import dev.hugeblank.allium.loader.Script;
-import dev.hugeblank.allium.loader.mixin.*;
+import dev.hugeblank.allium.loader.mixin.MixinClassBuilder;
 import dev.hugeblank.allium.loader.mixin.annotation.method.MixinMethodAnnotations;
 import dev.hugeblank.allium.loader.mixin.annotation.sugar.MixinSugars;
 import dev.hugeblank.allium.loader.type.AlliumClassUserdata;

@@ -221,7 +221,7 @@ public class ClassBuilder {
     }
 
     @LuaWrapped
-    public LuaValue build() throws LuaError {
+    public LuaValue build() {
         byte[] classBytes = c.toByteArray();
 
         Class<?> klass = AsmUtil.defineClass(className, classBytes);

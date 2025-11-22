@@ -1,17 +1,19 @@
 package dev.hugeblank.allium.loader.lib;
 
 import dev.hugeblank.allium.Allium;
+import dev.hugeblank.allium.api.WrappedLuaLibrary;
 import dev.hugeblank.allium.loader.Entrypoint;
 import dev.hugeblank.allium.loader.Script;
 import dev.hugeblank.allium.loader.ScriptRegistry;
 import dev.hugeblank.allium.loader.type.StaticBinder;
-import dev.hugeblank.allium.api.WrappedLuaLibrary;
 import dev.hugeblank.allium.loader.type.annotation.LuaWrapped;
 import dev.hugeblank.allium.util.JavaHelpers;
 import net.fabricmc.loader.api.FabricLoader;
 import org.squiddev.cobalt.*;
 import org.squiddev.cobalt.debug.DebugFrame;
-import org.squiddev.cobalt.function.*;
+import org.squiddev.cobalt.function.Dispatch;
+import org.squiddev.cobalt.function.LuaFunction;
+import org.squiddev.cobalt.function.RegisteredFunction;
 
 import java.io.IOException;
 import java.nio.file.Files;

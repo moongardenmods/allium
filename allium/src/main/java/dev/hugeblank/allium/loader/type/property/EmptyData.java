@@ -6,10 +6,10 @@ import org.squiddev.cobalt.LuaState;
 import org.squiddev.cobalt.LuaValue;
 
 public class EmptyData implements PropertyData<Object> {
-    public static EmptyData INSTANCE = new EmptyData();
+    public static final EmptyData INSTANCE = new EmptyData();
 
     @Override
-    public LuaValue get(String name, LuaState state, Object instance, boolean noThisArg) throws LuaError {
+    public LuaValue get(String name, LuaState state, Object instance, boolean noThisArg) {
         return Constants.NIL;
     }
 

@@ -16,9 +16,9 @@ import org.squiddev.cobalt.LuaValue;
 import org.squiddev.cobalt.Varargs;
 import org.squiddev.cobalt.function.VarArgFunction;
 
-import java.io.*;
+import java.io.OutputStream;
+import java.io.PrintStream;
 import java.lang.reflect.InvocationTargetException;
-import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 

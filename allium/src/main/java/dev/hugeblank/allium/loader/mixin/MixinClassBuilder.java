@@ -2,29 +2,35 @@ package dev.hugeblank.allium.loader.mixin;
 
 import dev.hugeblank.allium.Allium;
 import dev.hugeblank.allium.loader.Script;
+import dev.hugeblank.allium.loader.mixin.annotation.LuaAnnotation;
 import dev.hugeblank.allium.loader.mixin.annotation.method.InjectorChef;
 import dev.hugeblank.allium.loader.mixin.annotation.method.LuaMethodAnnotation;
-import dev.hugeblank.allium.loader.mixin.annotation.method.MixinMethodAnnotations;
 import dev.hugeblank.allium.loader.mixin.annotation.sugar.LuaParameterAnnotation;
-import dev.hugeblank.allium.loader.mixin.annotation.LuaAnnotation;
-import dev.hugeblank.allium.loader.type.exception.InvalidArgumentException;
-import dev.hugeblank.allium.loader.type.exception.InvalidMixinException;
 import dev.hugeblank.allium.loader.type.annotation.LuaWrapped;
 import dev.hugeblank.allium.loader.type.annotation.OptionalArg;
+import dev.hugeblank.allium.loader.type.exception.InvalidArgumentException;
+import dev.hugeblank.allium.loader.type.exception.InvalidMixinException;
 import dev.hugeblank.allium.util.MixinConfigUtil;
 import dev.hugeblank.allium.util.Registry;
-import dev.hugeblank.allium.util.asm.*;
+import dev.hugeblank.allium.util.asm.AsmUtil;
+import dev.hugeblank.allium.util.asm.VisitedClass;
+import dev.hugeblank.allium.util.asm.VisitedField;
+import dev.hugeblank.allium.util.asm.VisitedMethod;
 import me.basiqueevangelist.enhancedreflection.api.EClass;
 import net.fabricmc.api.EnvType;
 import org.jetbrains.annotations.Nullable;
-import org.objectweb.asm.*;
+import org.objectweb.asm.AnnotationVisitor;
+import org.objectweb.asm.ClassWriter;
+import org.objectweb.asm.Type;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.gen.Accessor;
 import org.spongepowered.asm.mixin.gen.Invoker;
 import org.squiddev.cobalt.LuaError;
 import org.squiddev.cobalt.LuaTable;
 
-import java.util.*;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Locale;
 
 import static org.objectweb.asm.Opcodes.*;
 

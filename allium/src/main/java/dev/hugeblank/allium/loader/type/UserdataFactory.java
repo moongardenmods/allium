@@ -4,19 +4,18 @@
 // If someone wants to SCP this, please by all means do so.
 package dev.hugeblank.allium.loader.type;
 
-import com.mojang.brigadier.builder.ArgumentBuilder;
+import dev.hugeblank.allium.loader.type.annotation.LuaIndex;
 import dev.hugeblank.allium.loader.type.coercion.TypeCoercions;
 import dev.hugeblank.allium.loader.type.exception.InvalidArgumentException;
+import dev.hugeblank.allium.loader.type.property.EmptyData;
 import dev.hugeblank.allium.loader.type.property.PropertyData;
+import dev.hugeblank.allium.loader.type.property.PropertyResolver;
 import dev.hugeblank.allium.util.AnnotationUtils;
 import dev.hugeblank.allium.util.ArgumentUtils;
 import dev.hugeblank.allium.util.JavaHelpers;
 import dev.hugeblank.allium.util.MetatableUtils;
 import me.basiqueevangelist.enhancedreflection.api.EClass;
 import me.basiqueevangelist.enhancedreflection.api.EMethod;
-import dev.hugeblank.allium.loader.type.annotation.LuaIndex;
-import dev.hugeblank.allium.loader.type.property.EmptyData;
-import dev.hugeblank.allium.loader.type.property.PropertyResolver;
 import org.apache.commons.lang3.ArrayUtils;
 import org.jetbrains.annotations.Nullable;
 import org.squiddev.cobalt.*;
@@ -24,7 +23,9 @@ import org.squiddev.cobalt.function.VarArgFunction;
 
 import java.lang.annotation.Annotation;
 import java.lang.reflect.InvocationTargetException;
-import java.util.*;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
@@ -166,7 +167,7 @@ public class UserdataFactory<T> {
 
         var comparableInst = clazz.allInterfaces().stream().filter(x -> x.raw() == Comparable.class).findFirst().orElse(null);
         if (comparableInst != null) {
-            var bound = comparableInst.typeVariableValues().get(0).lowerBound();
+            var bound = comparableInst.typeVariableValues().getFirst().lowerBound();
             metatable.rawset("__lt", new LessFunction(bound));
             metatable.rawset("__le", new LessOrEqualFunction(bound));
         }

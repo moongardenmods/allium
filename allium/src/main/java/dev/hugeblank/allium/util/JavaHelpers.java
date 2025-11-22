@@ -3,7 +3,8 @@ package dev.hugeblank.allium.util;
 import dev.hugeblank.allium.loader.type.AlliumClassUserdata;
 import dev.hugeblank.allium.loader.type.AlliumInstanceUserdata;
 import me.basiqueevangelist.enhancedreflection.api.EClass;
-import org.squiddev.cobalt.*;
+import org.squiddev.cobalt.LuaError;
+import org.squiddev.cobalt.LuaValue;
 
 public class JavaHelpers {
 

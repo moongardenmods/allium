@@ -1,7 +1,6 @@
 package dev.hugeblank.allium.loader.mixin.annotation.method;
 
 import dev.hugeblank.allium.api.event.MixinEventType;
-import dev.hugeblank.allium.loader.Script;
 import dev.hugeblank.allium.loader.mixin.MixinParameter;
 import dev.hugeblank.allium.loader.mixin.annotation.LuaAnnotation;
 import dev.hugeblank.allium.loader.type.exception.InvalidArgumentException;
@@ -19,11 +18,6 @@ import java.util.List;
 import java.util.Map;
 
 import static org.objectweb.asm.Opcodes.*;
-import static org.objectweb.asm.Opcodes.CHECKCAST;
-import static org.objectweb.asm.Opcodes.INVOKEINTERFACE;
-import static org.objectweb.asm.Opcodes.INVOKEVIRTUAL;
-import static org.objectweb.asm.Opcodes.RETURN;
-import static org.objectweb.asm.Opcodes.SWAP;
 
 public abstract class LuaInjectorAnnotation extends LuaMethodAnnotation implements InjectorChef{
     private int methodIndex = 0;
@@ -87,6 +81,6 @@ public abstract class LuaInjectorAnnotation extends LuaMethodAnnotation implemen
 
     @FunctionalInterface
     public interface MethodWriteFactory {
-        void write(MethodVisitor methodVisitor, String descriptor, List<MixinParameter> parameters, int access) throws InvalidArgumentException, LuaError, InvalidMixinException;
+        void write(MethodVisitor methodVisitor, String descriptor, List<MixinParameter> parameters, int access);
     }
 }

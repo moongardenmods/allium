@@ -1,8 +1,8 @@
 package dev.hugeblank.allium.util;
 
-import dev.hugeblank.allium.loader.type.exception.InvalidArgumentException;
 import dev.hugeblank.allium.loader.type.annotation.LuaWrapped;
 import dev.hugeblank.allium.loader.type.coercion.TypeCoercions;
+import dev.hugeblank.allium.loader.type.exception.InvalidArgumentException;
 import dev.hugeblank.allium.loader.type.property.PropertyData;
 import dev.hugeblank.allium.loader.type.property.PropertyResolver;
 import me.basiqueevangelist.enhancedreflection.api.EClass;
@@ -43,7 +43,7 @@ public class MetatableUtils {
                         var target = e.getTargetException();
                         if (target instanceof LuaError err) {
                             throw err;
-                        } else if (target instanceof IndexOutOfBoundsException) {
+                        } else if (target instanceof IndexOutOfBoundsException ignored) {
                             // Continue.
                         } else {
                             throw new LuaError(target);

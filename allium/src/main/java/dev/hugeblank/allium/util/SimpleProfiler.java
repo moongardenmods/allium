@@ -45,7 +45,7 @@ public class SimpleProfiler {
                     stack.peek().children().add(e);
                 }
             }
-        };
+        }
     }
 
     public void print() {

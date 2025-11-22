@@ -1,6 +1,9 @@
 package dev.hugeblank.allium.loader.type.coercion;
 
-import dev.hugeblank.allium.loader.type.*;
+import dev.hugeblank.allium.loader.type.AlliumClassUserdata;
+import dev.hugeblank.allium.loader.type.AlliumInstanceUserdata;
+import dev.hugeblank.allium.loader.type.MethodInvocationFunction;
+import dev.hugeblank.allium.loader.type.UserdataFactory;
 import dev.hugeblank.allium.loader.type.annotation.CoerceToBound;
 import dev.hugeblank.allium.loader.type.annotation.CoerceToNative;
 import dev.hugeblank.allium.loader.type.exception.InvalidArgumentException;
@@ -267,7 +270,7 @@ public class TypeCoercions {
         TypeCoercions.registerComplexJavaToLua(List.class, use -> {
             if (!use.hasAnnotation(CoerceToNative.class)) return null;
 
-            EClassUse<?> componentUse = use.typeVariableValues().get(0).upperBound();
+            EClassUse<?> componentUse = use.typeVariableValues().getFirst().upperBound();
 
             return list -> {
                 LuaTable table = new LuaTable();
@@ -284,7 +287,7 @@ public class TypeCoercions {
         TypeCoercions.registerComplexJavaToLua(Set.class, use -> {
             if (!use.hasAnnotation(CoerceToNative.class)) return null;
 
-            EClassUse<?> componentUse = use.typeVariableValues().get(0).upperBound();
+            EClassUse<?> componentUse = use.typeVariableValues().getFirst().upperBound();
 
             return set -> {
                 LuaTable table = new LuaTable();
@@ -340,7 +343,7 @@ public class TypeCoercions {
         });
 
         TypeCoercions.registerLuaToJava(List.class, klass -> {
-            EClass<?> componentType = klass.typeVariableValues().get(0).upperBound();
+            EClass<?> componentType = klass.typeVariableValues().getFirst().upperBound();
 
             return (state, value) -> {
                 LuaTable table = value.checkTable();
@@ -356,7 +359,7 @@ public class TypeCoercions {
         });
 
         TypeCoercions.registerLuaToJava(Set.class, klass -> {
-            EClass<?> componentType = klass.typeVariableValues().get(0).upperBound();
+            EClass<?> componentType = klass.typeVariableValues().getFirst().upperBound();
 
             return (state, value) -> {
                 LuaTable table = value.checkTable();

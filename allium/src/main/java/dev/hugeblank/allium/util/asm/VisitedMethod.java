@@ -2,7 +2,6 @@ package dev.hugeblank.allium.util.asm;
 
 import org.objectweb.asm.Type;
 
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
