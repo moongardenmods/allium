@@ -20,7 +20,8 @@ public interface LuaHandle {
         try {
             ByteBuffer buf = ByteBuffer.allocateDirect(count == null ? 1 : count);
             handle.read(buf);
-            return buf.asCharBuffer().toString();
+            buf.position(0);
+            return StandardCharsets.UTF_8.decode(buf).toString();
         } catch (IOException e) {
             throw new LuaError(e);
         }
@@ -51,12 +52,13 @@ public interface LuaHandle {
         StringBuilder builder = new StringBuilder();
         try {
             int iterations = Math.toIntExact((handle.size() / (long) Integer.MAX_VALUE) + 1);
-            ByteBuffer buf = ByteBuffer.allocateDirect(Integer.MAX_VALUE);
+            ByteBuffer buf = ByteBuffer.allocateDirect(handle.size() > Integer.MAX_VALUE ? Integer.MAX_VALUE : (int) handle.size());
             for (int i = 0; i < iterations; i++) {
                 long chunk = handle.size()-handle.position();
-                buf.limit(chunk < (long)Integer.MAX_VALUE ? Integer.MAX_VALUE : (int)chunk);
+                buf.limit(chunk < (long)Integer.MAX_VALUE ? (int)chunk : Integer.MAX_VALUE);
                 handle.read(buf);
-                builder.append(buf.asCharBuffer());
+                buf.position(0);
+                builder.append(StandardCharsets.UTF_8.decode(buf));
                 buf.clear();
             }
             return builder.toString();
