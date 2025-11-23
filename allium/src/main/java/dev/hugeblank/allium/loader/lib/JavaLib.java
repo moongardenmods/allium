@@ -85,7 +85,7 @@ public class JavaLib implements WrappedLuaLibrary {
 
     }
 
-    @LuaWrapped
+    @LuaWrapped(name = "throw")
     public void exception(Throwable error) throws Throwable {
         throw error;
     }
