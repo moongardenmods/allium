@@ -5,6 +5,7 @@ import dev.hugeblank.allium.loader.Script;
 import dev.hugeblank.allium.loader.type.annotation.LuaWrapped;
 import dev.hugeblank.allium.loader.type.annotation.OptionalArg;
 import dev.hugeblank.allium.loader.type.coercion.TypeCoercions;
+import dev.hugeblank.allium.loader.type.exception.InvalidArgumentException;
 import me.basiqueevangelist.enhancedreflection.api.EClass;
 import org.squiddev.cobalt.*;
 import org.squiddev.cobalt.function.Dispatch;
@@ -16,18 +17,19 @@ import java.util.List;
 import java.util.Map;
 
 @LuaWrapped
-public class MixinEventType {
-    public static final Map<String, MixinEventType> EVENT_MAP = new HashMap<>();
-
+public class MixinMethodHook {
+    public static final Map<String, MixinMethodHook> EVENT_MAP = new HashMap<>();
+    private final Script script;
     private final String id;
     private final List<String> definitions;
     private final List<EClass<?>> arguments = new ArrayList<>();
-    protected final List<EventHandler> handlers = new ArrayList<>();
+    protected EventHandler handler;
 
     // The purity of EventType has been tainted by the existence of this class.
-    public MixinEventType(String id, List<String> definitions) {
+    public MixinMethodHook(Script script, String id, List<String> definitions) {
         this.id = id;
         this.definitions = definitions;
+        this.script = script;
         EVENT_MAP.put(id, this);
     }
 
@@ -41,15 +43,19 @@ public class MixinEventType {
     }
 
     @LuaWrapped
-    public ScriptResource register(Script source, LuaFunction func, @OptionalArg Boolean destroyOnUnload) {
-        if (destroyOnUnload == null) destroyOnUnload = true;
+    public ScriptResource hook(LuaFunction func, @OptionalArg Boolean destroyOnUnload) {
+        if (handler != null)
+            throw new IllegalStateException("Mixin hook already registered for id '" + id + "' from " + script.getID());
 
-        var handler = new EventHandler(func, source, destroyOnUnload);
-        handlers.add(handler);
+        if (destroyOnUnload == null) destroyOnUnload = true;
+        handler = new EventHandler(func, script, destroyOnUnload);
         return handler;
     }
 
-    public void invoke(Object... objects) throws UnwindThrowable, LuaError {
+    public Object invoke(Object... objects) throws UnwindThrowable, LuaError, InvalidArgumentException {
+        if (handler == null) {
+            script.getLogger().warn("Mixin method '" + id + "' missing hook");
+        }
         if (arguments.isEmpty()) {
             definitions.forEach((def) -> arguments.add(forName(id, def)));
         }
@@ -60,18 +66,16 @@ public class MixinEventType {
             i++;
         }
         Varargs args = ValueFactory.varargsOf(values);
-        for (EventHandler handler : handlers) {
-            handler.handle(args);
-        }
+        return handler == null ? null : handler.handle(args);
     }
 
     protected class EventHandler implements ScriptResource {
-        protected final LuaFunction handler;
+        protected final LuaFunction func;
         protected final Script script;
         private final Script.ResourceRegistration registration;
 
-        private EventHandler(LuaFunction handler, Script script, boolean destroyOnUnload) {
-            this.handler = handler;
+        private EventHandler(LuaFunction func, Script script, boolean destroyOnUnload) {
+            this.func = func;
             this.script = script;
 
             if (destroyOnUnload) {
@@ -81,14 +85,18 @@ public class MixinEventType {
             }
         }
         
-        public void handle(Varargs args) throws UnwindThrowable, LuaError {
+        public Object handle(Varargs args) throws UnwindThrowable, LuaError, InvalidArgumentException {
             LuaState state = script.getExecutor().getState();
-            synchronized (state) { Dispatch.invoke(state, handler, args); }
+            LuaValue ret;
+            synchronized (state) {
+                ret = Dispatch.invoke(state, func, args).first();
+            }
+            return TypeCoercions.toJava(state, ret, Object.class);
         }
 
         @Override
         public void close() {
-            handlers.remove(this);
+            handler = null;
 
             if (this.registration != null) {
                 registration.close();

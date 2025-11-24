@@ -1,6 +1,6 @@
-package dev.hugeblank.allium.loader.mixin;
+package dev.hugeblank.allium.loader.mixin.builder;
 
-import dev.hugeblank.allium.loader.mixin.annotation.LuaAnnotation;
+import dev.hugeblank.allium.loader.mixin.annotation.LuaAnnotationParser;
 import me.basiqueevangelist.enhancedreflection.api.EClass;
 import org.jetbrains.annotations.Nullable;
 import org.objectweb.asm.AnnotationVisitor;
@@ -14,9 +14,9 @@ import java.util.List;
 
 public class MixinParameter {
     private Type type;
-    private final List<LuaAnnotation> annotations;
+    private final List<LuaAnnotationParser> annotations;
 
-    public MixinParameter(Type type, @Nullable List<LuaAnnotation> annotations) {
+    public MixinParameter(Type type, @Nullable List<LuaAnnotationParser> annotations) {
         this.type = type;
         this.annotations = annotations != null ? annotations : List.of();
     }
@@ -34,7 +34,7 @@ public class MixinParameter {
     }
 
     public void annotate(MethodVisitor methodVisitor, int index) throws LuaError {
-        for (LuaAnnotation annotation : annotations) {
+        for (LuaAnnotationParser annotation : annotations) {
             AnnotationVisitor avisitor = attachParameterAnnotation(methodVisitor, index, annotation.type().raw());
             annotation.apply(avisitor);
             avisitor.visitEnd();

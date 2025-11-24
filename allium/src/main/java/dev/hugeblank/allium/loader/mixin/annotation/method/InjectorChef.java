@@ -1,7 +1,7 @@
 package dev.hugeblank.allium.loader.mixin.annotation.method;
 
 import dev.hugeblank.allium.loader.Script;
-import dev.hugeblank.allium.loader.mixin.annotation.sugar.LuaParameterAnnotation;
+import dev.hugeblank.allium.loader.mixin.annotation.sugar.LuaSugar;
 import dev.hugeblank.allium.loader.type.exception.InvalidArgumentException;
 import dev.hugeblank.allium.loader.type.exception.InvalidMixinException;
 import dev.hugeblank.allium.util.asm.VisitedClass;
@@ -14,10 +14,10 @@ import java.util.List;
 public interface InjectorChef {
     void bake(
             Script script,
-            String eventName,
+            String eventId,
             ClassWriter classWriter,
             VisitedClass mixinClass,
             List<LuaMethodAnnotation> annotations,
-            @Nullable List<LuaParameterAnnotation> sugarParameters
+            @Nullable List<? extends LuaSugar> sugarParameters
     ) throws InvalidMixinException, LuaError, InvalidArgumentException;
 }

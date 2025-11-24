@@ -1,14 +1,14 @@
 package dev.hugeblank.allium.loader.mixin.annotation.method;
 
-import dev.hugeblank.allium.api.event.MixinEventType;
-import dev.hugeblank.allium.loader.mixin.MixinParameter;
-import dev.hugeblank.allium.loader.mixin.annotation.LuaAnnotation;
+import dev.hugeblank.allium.api.event.MixinMethodHook;
+import dev.hugeblank.allium.loader.mixin.annotation.LuaAnnotationParser;
+import dev.hugeblank.allium.loader.mixin.builder.MixinMethodBuilder;
+import dev.hugeblank.allium.loader.mixin.builder.MixinParameter;
 import dev.hugeblank.allium.loader.type.exception.InvalidArgumentException;
 import dev.hugeblank.allium.loader.type.exception.InvalidMixinException;
 import dev.hugeblank.allium.util.asm.AsmUtil;
 import dev.hugeblank.allium.util.asm.VisitedClass;
 import dev.hugeblank.allium.util.asm.VisitedMethod;
-import org.objectweb.asm.MethodVisitor;
 import org.objectweb.asm.Type;
 import org.squiddev.cobalt.LuaError;
 import org.squiddev.cobalt.LuaState;
@@ -26,47 +26,49 @@ public abstract class LuaInjectorAnnotation extends LuaMethodAnnotation implemen
         super(state, annotationTable, annotation);
     }
 
-    protected VisitedMethod getVisitedMethod(VisitedClass mixinClass, LuaAnnotation annotation) throws InvalidMixinException, LuaError {
+    protected VisitedMethod getVisitedMethod(VisitedClass mixinClass, LuaAnnotationParser annotation) throws InvalidMixinException, LuaError {
         String descriptor = annotation.findElement("method", String.class);
         if (!mixinClass.containsMethod(descriptor))
             throw new InvalidMixinException(InvalidMixinException.Type.INVALID_DESCRIPTOR, descriptor);
         return mixinClass.getMethod(descriptor);
     }
 
-    protected MethodWriteFactory createInjectWriteFactory(String eventName) {
-        return (methodVisitor, desc, paramTypes, access) -> {
+    protected MixinMethodBuilder.WriteFactory createInjectWriteFactory(String eventName) {
+        final Type objectType = Type.getType(Object.class);
+        return (classWriter, methodVisitor, desc, paramTypes) -> {
             int varPrefix = paramTypes.size();
+            Type returnType = Type.getReturnType(desc);
             List<Type> types = paramTypes.stream().map(MixinParameter::getType).toList();
+            methodVisitor.visitFieldInsn(
+                    GETSTATIC, Type.getInternalName(MixinMethodHook.class),
+                    "EVENT_MAP", Type.getDescriptor(Map.class)
+            ); // <- 0
+            methodVisitor.visitLdcInsn(eventName); // <- 1
+            methodVisitor.visitMethodInsn(
+                    INVOKEINTERFACE,
+                    Type.getInternalName(Map.class),
+                    "get",
+                    Type.getMethodDescriptor(objectType, objectType),
+                    true
+            ); // -> 0, 1 | <- 0
+            methodVisitor.visitTypeInsn(CHECKCAST, Type.getInternalName(MixinMethodHook.class)); // <- 0 | -> 0
             AsmUtil.createArray(methodVisitor, varPrefix, types, Object.class, (visitor, index, arg) -> {
                 visitor.visitVarInsn(arg.getOpcode(ILOAD), index); // <- 2
                 AsmUtil.wrapPrimitive(visitor, arg); // <- 2 | -> 2 (sometimes)
                 if (index == 0) {
                     visitor.visitTypeInsn(CHECKCAST, Type.getInternalName(Object.class)); // <- 2 | -> 2
                 }
-            }); // <- 0
-            methodVisitor.visitFieldInsn(
-                    GETSTATIC, Type.getInternalName(MixinEventType.class),
-                    "EVENT_MAP", Type.getDescriptor(Map.class)
-            ); // <- 1
-            methodVisitor.visitLdcInsn(eventName); // <- 2
-            methodVisitor.visitMethodInsn(
-                    INVOKEINTERFACE,
-                    Type.getInternalName(Map.class),
-                    "get",
-                    Type.getMethodDescriptor(Type.getType(Object.class), Type.getType(Object.class)),
-                    true
-            ); // -> 1, 2 | <- 1
-            methodVisitor.visitTypeInsn(CHECKCAST, Type.getInternalName(MixinEventType.class)); // <- 1 | -> 1
-            methodVisitor.visitInsn(SWAP); // 0 <-> 1
+            }); // <- 1
             methodVisitor.visitMethodInsn(
                     INVOKEVIRTUAL,
-                    Type.getInternalName(MixinEventType.class),
+                    Type.getInternalName(MixinMethodHook.class),
                     "invoke",
-                    Type.getMethodDescriptor(Type.VOID_TYPE, Type.getType(Object[].class)),
+                    Type.getMethodDescriptor(objectType, Type.getType(Object[].class)),
                     false
-            ); // -> 0, 1
-
-            methodVisitor.visitInsn(RETURN);
+            ); // <- 0 (sometimes) | -> 0, 1
+            if (!returnType.equals(Type.VOID_TYPE))
+                methodVisitor.visitTypeInsn(CHECKCAST, returnType.getInternalName()); // <- 0 | -> 0
+            methodVisitor.visitInsn(returnType.getOpcode(IRETURN));
             methodVisitor.visitMaxs(0, 0);
         };
     }
@@ -79,8 +81,4 @@ public abstract class LuaInjectorAnnotation extends LuaMethodAnnotation implemen
                 methodIndex++;
     }
 
-    @FunctionalInterface
-    public interface MethodWriteFactory {
-        void write(MethodVisitor methodVisitor, String descriptor, List<MixinParameter> parameters, int access);
-    }
 }

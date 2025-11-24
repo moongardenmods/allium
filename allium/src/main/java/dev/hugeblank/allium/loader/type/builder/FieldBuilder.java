@@ -1,29 +1,22 @@
-package dev.hugeblank.allium.util;
+package dev.hugeblank.allium.loader.type.builder;
 
 import com.mojang.datafixers.util.Pair;
 import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.MethodVisitor;
 import org.objectweb.asm.Type;
 
-import java.lang.annotation.ElementType;
-import java.lang.annotation.Retention;
-import java.lang.annotation.RetentionPolicy;
-import java.lang.annotation.Target;
 import java.util.HashMap;
 import java.util.function.Function;
 
 import static org.objectweb.asm.Opcodes.*;
 
-public class ClassFieldBuilder {
-    private final String className;
-    private final ClassVisitor c;
+public class FieldBuilder extends AbstractFieldBuilder{
     private int fieldIndex = 0;
     private final HashMap<String, Pair<Object, Class<?>>> storedFields = new HashMap<>();
     private final HashMap<String, Function<Class<?>, ?>> complexFields = new HashMap<>();
 
-    public ClassFieldBuilder(String className, ClassVisitor c) {
-        this.className = className;
-        this.c = c;
+    public FieldBuilder(String className, ClassVisitor c) {
+        super(className, c);
     }
 
     public <T> String store(T o, Class<T> fieldType) {
@@ -78,12 +71,4 @@ public class ClassFieldBuilder {
         }
     }
 
-    @Retention(RetentionPolicy.RUNTIME)
-    @Target(ElementType.FIELD)
-    public @interface GeneratedFieldValue {
-        String DESCRIPTOR = "Lme/hugeblank/allium/util/ClassFieldBuilder$GeneratedFieldValue;";
-
-        String value() default "";
-        String description() default "";
-    }
 }

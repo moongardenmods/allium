@@ -13,14 +13,14 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Consumer;
 
-public class LuaAnnotation implements Annotating {
+public class LuaAnnotationParser implements Annotating {
 
     private final LuaState state;
     private final EClass<?> clazz;
     private final String name;
     private final List<Annotating> prototype = new ArrayList<>();
 
-    public LuaAnnotation(LuaState state, @Nullable String name, LuaTable input, EClass<?> annotationClass) throws InvalidArgumentException, LuaError {
+    public LuaAnnotationParser(LuaState state, @Nullable String name, LuaTable input, EClass<?> annotationClass) throws InvalidArgumentException, LuaError {
         this.state = state;
         this.clazz = annotationClass;
         this.name = name;
@@ -48,19 +48,19 @@ public class LuaAnnotation implements Annotating {
         }
     }
 
+    public LuaAnnotationParser(LuaState state, LuaTable input, EClass<?> annotationClass) throws InvalidArgumentException, LuaError {
+        this(state, null, input, annotationClass);
+    }
+
     private void createAnnotating(@Nullable String key, LuaValue value, EClass<?> returnType, Consumer<Annotating> consumer) throws LuaError, InvalidArgumentException {
         if (returnType.type() == ClassType.ANNOTATION) {
             if (value.type() != Constants.TTABLE) throw new LuaError("Expected table while annotating type " + returnType.name());
-            consumer.accept(new LuaAnnotation(state, key, value.checkTable(), returnType));
+            consumer.accept(new LuaAnnotationParser(state, key, value.checkTable(), returnType));
         } else if (returnType.raw().isEnum() && value.isString()) {
             consumer.accept(new EnumElement(returnType, key, value.checkString()));
         } else if (!value.isNil()) {
             consumer.accept(new Element(returnType, key, TypeCoercions.toJava(state, value, returnType)));
         }
-    }
-
-    public LuaAnnotation(LuaState state, LuaTable input, EClass<?> annotationClass) throws InvalidArgumentException, LuaError {
-        this(state, null, input, annotationClass);
     }
 
     public String name() {
@@ -75,7 +75,7 @@ public class LuaAnnotation implements Annotating {
     @Override
     public void apply(AnnotationVisitor visitor) throws LuaError {
         for (Annotating value : prototype) {
-            if (value instanceof LuaAnnotation annotation) {
+            if (value instanceof LuaAnnotationParser annotation) {
                 AnnotationVisitor nextVisitor = visitor.visitAnnotation(annotation.name(), value.type().raw().descriptorString());
                 annotation.apply(nextVisitor);
                 nextVisitor.visitEnd();
@@ -134,7 +134,7 @@ public class LuaAnnotation implements Annotating {
         public void apply(AnnotationVisitor annotationVisitor) throws LuaError {
             AnnotationVisitor visitor = annotationVisitor.visitArray(name);
             for (Annotating object : objects) {
-                if (object instanceof LuaAnnotation annotation) {
+                if (object instanceof LuaAnnotationParser annotation) {
                     AnnotationVisitor nextVisitor = visitor.visitAnnotation(annotation.name(), object.type().raw().descriptorString());
                     annotation.apply(nextVisitor);
                     nextVisitor.visitEnd();

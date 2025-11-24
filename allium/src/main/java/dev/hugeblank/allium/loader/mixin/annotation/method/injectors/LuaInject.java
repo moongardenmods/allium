@@ -2,11 +2,11 @@ package dev.hugeblank.allium.loader.mixin.annotation.method.injectors;
 
 import dev.hugeblank.allium.Allium;
 import dev.hugeblank.allium.loader.Script;
-import dev.hugeblank.allium.loader.mixin.MixinMethodBuilder;
-import dev.hugeblank.allium.loader.mixin.MixinParameter;
+import dev.hugeblank.allium.loader.mixin.builder.MixinMethodBuilder;
+import dev.hugeblank.allium.loader.mixin.builder.MixinParameter;
 import dev.hugeblank.allium.loader.mixin.annotation.method.LuaInjectorAnnotation;
 import dev.hugeblank.allium.loader.mixin.annotation.method.LuaMethodAnnotation;
-import dev.hugeblank.allium.loader.mixin.annotation.sugar.LuaParameterAnnotation;
+import dev.hugeblank.allium.loader.mixin.annotation.sugar.LuaSugar;
 import dev.hugeblank.allium.loader.type.exception.InvalidArgumentException;
 import dev.hugeblank.allium.loader.type.exception.InvalidMixinException;
 import dev.hugeblank.allium.util.asm.VisitedClass;
@@ -33,9 +33,9 @@ public class LuaInject extends LuaInjectorAnnotation {
     }
 
     @Override
-    public void bake(Script script, String eventId, ClassWriter classWriter, VisitedClass mixinClass, List<LuaMethodAnnotation> annotations, @Nullable List<LuaParameterAnnotation> sugarParameters) throws InvalidMixinException, LuaError, InvalidArgumentException {
+    public void bake(Script script, String eventId, ClassWriter classWriter, VisitedClass mixinClass, List<LuaMethodAnnotation> annotations, @Nullable List<? extends LuaSugar> sugarParameters) throws InvalidMixinException, LuaError, InvalidArgumentException {
         Allium.PROFILER.push("inject", "bake");
-        VisitedMethod visitedMethod = getVisitedMethod(mixinClass, luaAnnotation);
+        VisitedMethod visitedMethod = getVisitedMethod(mixinClass, parser);
         List<MixinParameter> params = new ArrayList<>(visitedMethod.getParams().stream().map(MixinParameter::new).toList());
         Type returnType = Type.getReturnType(visitedMethod.descriptor());
         if (returnType.equals(Type.VOID_TYPE)) {
@@ -49,18 +49,18 @@ public class LuaInject extends LuaInjectorAnnotation {
                 classWriter, visitedMethod, createInjectName(script.getID(), visitedMethod.name()), params
         );
 
-        if (sugarParameters != null) methodBuilder.luaParameters(sugarParameters);
+        if (sugarParameters != null) methodBuilder.sugars(sugarParameters);
 
         MixinMethodBuilder.InvocationReference invocationReference = methodBuilder
                 .access(visitedMethod.access() & ~(ACC_PUBLIC | ACC_PROTECTED) | ACC_PRIVATE)
                 .returnType(Type.VOID_TYPE)
-                .annotations(annotations.stream().map(LuaMethodAnnotation::luaAnnotation).toList())
+                .annotations(annotations.stream().map(LuaMethodAnnotation::parser).toList())
                 .signature(visitedMethod.signature())
                 .exceptions(visitedMethod.exceptions())
                 .code(createInjectWriteFactory(eventId))
                 .build();
 
-        invocationReference.createEvent(eventId);
+        invocationReference.createEvent(script, eventId);
         Allium.PROFILER.pop();
     }
 }

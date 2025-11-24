@@ -5,9 +5,9 @@
 -- Unfortunately here, the brewing recipe registry gets created only once on game start, so this file is not dynamic.
 
 -- Get the event for the mixin we created in mixin.lua
-local addRecipes = mixin.get(script, "add_brewing_recipes")
+local addRecipes = mixin.get("add_brewing_recipes")
 
-addRecipes:register(script, function(builder, ci)
+addRecipes:hook(function(builder, ci)
     local Items = require("net.minecraft.world.item.Items")
     local Potions = require("net.minecraft.world.item.alchemy.Potions")
     print("registering lucky potion!")

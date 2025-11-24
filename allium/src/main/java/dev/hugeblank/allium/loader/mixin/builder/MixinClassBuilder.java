@@ -1,13 +1,15 @@
-package dev.hugeblank.allium.loader.mixin;
+package dev.hugeblank.allium.loader.mixin.builder;
 
 import dev.hugeblank.allium.Allium;
 import dev.hugeblank.allium.loader.Script;
-import dev.hugeblank.allium.loader.mixin.annotation.LuaAnnotation;
+import dev.hugeblank.allium.loader.mixin.MixinClassInfo;
+import dev.hugeblank.allium.loader.mixin.annotation.LuaAnnotationParser;
 import dev.hugeblank.allium.loader.mixin.annotation.method.InjectorChef;
 import dev.hugeblank.allium.loader.mixin.annotation.method.LuaMethodAnnotation;
-import dev.hugeblank.allium.loader.mixin.annotation.sugar.LuaParameterAnnotation;
+import dev.hugeblank.allium.loader.mixin.annotation.sugar.LuaSugar;
 import dev.hugeblank.allium.loader.type.annotation.LuaWrapped;
 import dev.hugeblank.allium.loader.type.annotation.OptionalArg;
+import dev.hugeblank.allium.loader.type.builder.AbstractClassBuilder;
 import dev.hugeblank.allium.loader.type.exception.InvalidArgumentException;
 import dev.hugeblank.allium.loader.type.exception.InvalidMixinException;
 import dev.hugeblank.allium.util.MixinConfigUtil;
@@ -20,7 +22,6 @@ import me.basiqueevangelist.enhancedreflection.api.EClass;
 import net.fabricmc.api.EnvType;
 import org.jetbrains.annotations.Nullable;
 import org.objectweb.asm.AnnotationVisitor;
-import org.objectweb.asm.ClassWriter;
 import org.objectweb.asm.Type;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.gen.Accessor;
@@ -40,36 +41,40 @@ import static org.objectweb.asm.Opcodes.*;
 */
 
 @LuaWrapped
-public class MixinClassBuilder {
+public class MixinClassBuilder extends AbstractClassBuilder {
     public static final Registry<MixinClassInfo> MIXINS = new Registry<>();
     public static final Registry<MixinClassInfo> CLIENT = new Registry<>();
     public static final Registry<MixinClassInfo> SERVER = new Registry<>();
 
-    private final String className = AsmUtil.getUniqueMixinClassName();
     private final EnvType targetEnvironment;
     private final boolean duck;
     private final VisitedClass visitedClass;
-    private final ClassWriter c = new ClassWriter(ClassWriter.COMPUTE_FRAMES | ClassWriter.COMPUTE_MAXS);
     private final Script script;
 
-    public MixinClassBuilder(String target, String[] interfaces, @Nullable EnvType targetEnvironment, boolean duck, Script script) throws LuaError {
+    public static MixinClassBuilder create(String target, String[] interfaces, @Nullable EnvType targetEnvironment, boolean duck, Script script) throws LuaError {
+        return new MixinClassBuilder(
+                VisitedClass.ofClass(target),
+                interfaces,
+                targetEnvironment,
+                duck,
+                script
+        );
+    }
+
+    private MixinClassBuilder(VisitedClass visitedClass, String[] interfaces, @Nullable EnvType targetEnvironment, boolean duck, Script script) {
+        super(
+                AsmUtil.getUniqueMixinClassName(),
+                EClass.fromJava(Object.class).name().replace('.', '/'),
+                interfaces,
+                ACC_PUBLIC | visitedClass.access(),
+                visitedClass.signature()
+        );
         checkPhase();
-        Allium.PROFILER.push(script.getID(), "mixin", target);
+        Allium.PROFILER.push(script.getID(), "mixin", visitedClass.name());
         this.script = script;
         this.targetEnvironment = targetEnvironment;
         this.duck = duck;
-        this.visitedClass = VisitedClass.ofClass(target);
-
-        EClass<?> superClass = EClass.fromJava(Object.class);
-        List<String> ifaces = Arrays.asList(interfaces);
-        this.c.visit(
-                V17,
-                ACC_PUBLIC | visitedClass.access(),
-                className,
-                visitedClass.signature(),
-                superClass.name().replace('.', '/'),
-                ifaces.toArray(String[]::new)
-        );
+        this.visitedClass = visitedClass;
 
         AnnotationVisitor mixinAnnotation = this.c.visitAnnotation(Mixin.class.descriptorString(), false);
         AnnotationVisitor targetArray = mixinAnnotation.visitArray("value");
@@ -80,7 +85,7 @@ public class MixinClassBuilder {
     }
 
     @LuaWrapped
-    public void createInjectMethod(String eventName, List<LuaMethodAnnotation> methodAnnotations, @OptionalArg @Nullable List<LuaParameterAnnotation> sugarParameters) throws InvalidMixinException, InvalidArgumentException, LuaError {
+    public void createInjectMethod(String eventName, List<LuaMethodAnnotation> methodAnnotations, @OptionalArg @Nullable List<? extends LuaSugar> sugarParameters) throws InvalidMixinException, InvalidArgumentException, LuaError {
         checkPhase();
         Allium.PROFILER.push("createInjectMethod", eventName);
         if (visitedClass.isInterface() || this.duck)
@@ -132,14 +137,14 @@ public class MixinClassBuilder {
 
             MixinMethodBuilder methodBuilder = MixinMethodBuilder.of(c, visitedField, name, params);
 
-            methodBuilder.annotations(List.of(new LuaAnnotation(
+            methodBuilder.annotations(List.of(new LuaAnnotationParser(
                     script.getExecutor().getState(),
                     annotations,
                     EClass.fromJava(Accessor.class)
             )));
 
             if (visitedField.needsInstance()) {
-                methodBuilder.code((visitor, desc, mparams, access) -> {
+                methodBuilder.code((classVisitor, visitor, desc, mparams) -> {
                     AsmUtil.visitObjectDefinition(
                             visitor,
                             Type.getInternalName(UnsupportedOperationException.class),
@@ -176,14 +181,14 @@ public class MixinClassBuilder {
 
             MixinMethodBuilder methodBuilder = MixinMethodBuilder.of(c, visitedMethod, name, params);
 
-            methodBuilder.annotations(List.of(new LuaAnnotation(
+            methodBuilder.annotations(List.of(new LuaAnnotationParser(
                     script.getExecutor().getState(),
                     annotations,
                     EClass.fromJava(Invoker.class)
             )));
 
             if (visitedMethod.needsInstance()) {
-                methodBuilder.code((visitor, desc, mparams, access) -> {
+                methodBuilder.code((classVisitor, visitor, desc, mparams) -> {
                     AsmUtil.visitObjectDefinition(visitor, Type.getInternalName(AssertionError.class), "()V").run();
                     visitor.visitInsn(ATHROW);
                     visitor.visitMaxs(0,0);

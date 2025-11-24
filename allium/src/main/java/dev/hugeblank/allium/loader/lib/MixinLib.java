@@ -1,11 +1,11 @@
 package dev.hugeblank.allium.loader.lib;
 
 import dev.hugeblank.allium.api.WrappedLuaLibrary;
-import dev.hugeblank.allium.api.event.MixinEventType;
+import dev.hugeblank.allium.api.event.MixinMethodHook;
 import dev.hugeblank.allium.loader.Script;
-import dev.hugeblank.allium.loader.mixin.MixinClassBuilder;
 import dev.hugeblank.allium.loader.mixin.annotation.method.MixinMethodAnnotations;
 import dev.hugeblank.allium.loader.mixin.annotation.sugar.MixinSugars;
+import dev.hugeblank.allium.loader.mixin.builder.MixinClassBuilder;
 import dev.hugeblank.allium.loader.type.AlliumClassUserdata;
 import dev.hugeblank.allium.loader.type.StaticBinder;
 import dev.hugeblank.allium.loader.type.annotation.LuaWrapped;
@@ -26,18 +26,8 @@ public record MixinLib(Script script) implements WrappedLuaLibrary {
     public static final AlliumClassUserdata<MixinSugars> SUGAR = StaticBinder.bindClass(EClass.fromJava(MixinSugars.class));
 
     @LuaWrapped
-    public static MixinEventType get(String eventId) {
-        return MixinEventType.EVENT_MAP.get(eventId);
-    }
-
-    @LuaWrapped
-    public static MixinEventType get(String name, String path) {
-        return MixinEventType.EVENT_MAP.get(name + ':' + path);
-    }
-
-    @LuaWrapped
-    public static MixinEventType get(Script script, String path) {
-        return MixinEventType.EVENT_MAP.get(script.getID() + ':' + path);
+    public MixinMethodHook get(String eventId) {
+        return MixinMethodHook.EVENT_MAP.get(script.getID() + ':' + eventId);
     }
 
     @LuaWrapped
@@ -52,7 +42,13 @@ public record MixinLib(Script script) implements WrappedLuaLibrary {
         } else {
             throw new LuaError("Mixin for " + targetClass + " expects target environment of nil, 'client' or 'server'.");
         }
-        return new MixinClassBuilder(targetClass, interfaces == null ? new String[]{} : interfaces, targetEnv, duck != null && duck, script);
+        return MixinClassBuilder.create(
+                targetClass,
+                interfaces == null ? new String[]{} : interfaces,
+                targetEnv,
+                duck != null && duck,
+                script
+        );
     }
 
 }

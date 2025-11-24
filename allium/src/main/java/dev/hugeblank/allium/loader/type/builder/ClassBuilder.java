@@ -1,20 +1,17 @@
-package dev.hugeblank.allium.loader.lib;
+package dev.hugeblank.allium.loader.type.builder;
 
 import dev.hugeblank.allium.loader.ScriptRegistry;
 import dev.hugeblank.allium.loader.type.StaticBinder;
-import dev.hugeblank.allium.loader.type.annotation.LuaStateArg;
 import dev.hugeblank.allium.loader.type.annotation.LuaWrapped;
 import dev.hugeblank.allium.loader.type.annotation.OptionalArg;
 import dev.hugeblank.allium.loader.type.coercion.TypeCoercions;
 import dev.hugeblank.allium.loader.type.property.PropertyResolver;
-import dev.hugeblank.allium.util.ClassFieldBuilder;
 import dev.hugeblank.allium.util.asm.AsmUtil;
 import me.basiqueevangelist.enhancedreflection.api.EClass;
 import me.basiqueevangelist.enhancedreflection.api.EConstructor;
 import me.basiqueevangelist.enhancedreflection.api.EMethod;
 import me.basiqueevangelist.enhancedreflection.api.EParameter;
 import org.jetbrains.annotations.Nullable;
-import org.objectweb.asm.ClassWriter;
 import org.objectweb.asm.Type;
 import org.squiddev.cobalt.*;
 import org.squiddev.cobalt.function.Dispatch;
@@ -28,31 +25,31 @@ import java.util.Map;
 import static org.objectweb.asm.Opcodes.*;
 
 @LuaWrapped
-public class ClassBuilder {
-    protected final EClass<?> superClass;
-    protected final String className;
-    protected final LuaState state;
-    protected final ClassWriter c = new ClassWriter(ClassWriter.COMPUTE_FRAMES | ClassWriter.COMPUTE_MAXS);
+public class ClassBuilder extends AbstractClassBuilder {
+    private final LuaState state;
+    private final EClass<?> eSuperClass;
     private final List<EMethod> methods = new ArrayList<>();
-    private final ClassFieldBuilder fields;
+    private final FieldBuilder fields;
 
     @LuaWrapped
-    public ClassBuilder(EClass<?> superClass, List<EClass<?>> interfaces, Map<String, Boolean> access, LuaState state) {
-        this.state = state;
-        this.className = AsmUtil.getUniqueClassName();
-        this.fields = new ClassFieldBuilder(className, c);
-
-        this.c.visit(
-                V17,
-                ACC_PUBLIC | (access.getOrDefault("interface", false) ? ACC_INTERFACE | ACC_ABSTRACT : 0) | (access.getOrDefault("abstract", false) ? ACC_ABSTRACT : 0),
-                className,
-                null,
-                superClass.name().replace('.', '/'),
-                interfaces.stream().map(x -> x.name().replace('.', '/')).toArray(String[]::new)
+    public ClassBuilder(EClass<?> eSuperClass, List<EClass<?>> interfaces, Map<String, Boolean> access, LuaState state) {
+        super(
+                AsmUtil.getUniqueClassName(),
+                eSuperClass.name().replace('.', '/'),
+                interfaces.stream()
+                        .map(x -> x.name().replace('.', '/'))
+                        .toArray(String[]::new),
+                ACC_PUBLIC |
+                        (access.getOrDefault("interface", false) ? ACC_INTERFACE | ACC_ABSTRACT : 0) |
+                        (access.getOrDefault("abstract", false) ? ACC_ABSTRACT : 0),
+                null
         );
+        this.state = state;
+        this.eSuperClass = eSuperClass;
+        this.fields = new FieldBuilder(className, c);
 
         if (!access.getOrDefault("interface", false)){
-            for (EConstructor<?> superCtor : superClass.constructors()) {
+            for (EConstructor<?> superCtor : eSuperClass.constructors()) {
                 if (!superCtor.isPublic()) continue;
 
                 var desc = Type.getConstructorDescriptor(superCtor.raw());
@@ -70,7 +67,7 @@ public class ClassBuilder {
                     argIndex += arg.getSize();
                 }
 
-                m.visitMethodInsn(INVOKESPECIAL, Type.getInternalName(superClass.raw()), "<init>", desc, false);
+                m.visitMethodInsn(INVOKESPECIAL, Type.getInternalName(eSuperClass.raw()), "<init>", desc, false);
                 m.visitInsn(RETURN);
 
                 m.visitMaxs(0, 0);
@@ -78,15 +75,14 @@ public class ClassBuilder {
             }
         }
 
-        this.superClass = superClass;
-        this.methods.addAll(this.superClass.methods());
+        this.methods.addAll(this.eSuperClass.methods());
         for (var inrf : interfaces) {
             this.methods.addAll(inrf.methods());
         }
     }
 
     @LuaWrapped
-    public void overrideMethod(@LuaStateArg LuaState state, String methodName, EClass<?>[] parameters, Map<String, Boolean> access, LuaFunction func) throws LuaError {
+    public void overrideMethod(String methodName, EClass<?>[] parameters, Map<String, Boolean> access, LuaFunction func) throws LuaError {
         var methods = new ArrayList<EMethod>();
         if (access.size() > 1) {
             ScriptRegistry.scriptFromState(state).getLogger().warn("Flags on method override besides 'static' are ignored. For method {}", methodName);
@@ -119,7 +115,7 @@ public class ClassBuilder {
             }
         }
 
-        throw new IllegalArgumentException("Couldn't find method " + methodName + " in parent class " + superClass.name() + "!");
+        throw new IllegalArgumentException("Couldn't find method " + methodName + " in parent class " + eSuperClass.name() + "!");
     }
 
     @LuaWrapped

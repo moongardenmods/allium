@@ -1,0 +1,17 @@
+package dev.hugeblank.allium.loader.type.builder;
+
+import org.objectweb.asm.ClassWriter;
+
+import static org.objectweb.asm.Opcodes.V17;
+
+public class AbstractClassBuilder {
+    protected final String superClass;
+    protected final String className;
+    protected final ClassWriter c = new ClassWriter(ClassWriter.COMPUTE_FRAMES | ClassWriter.COMPUTE_MAXS);
+
+    public AbstractClassBuilder(String className, String superClass, String[] interfaces, int access, String signature) {
+        this.superClass = superClass;
+        this.className = className;
+        this.c.visit(V17, access, className, signature, superClass, interfaces);
+    }
+}

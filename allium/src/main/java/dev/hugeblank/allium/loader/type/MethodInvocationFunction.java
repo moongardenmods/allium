@@ -81,7 +81,7 @@ public final class MethodInvocationFunction<T> extends VarArgFunction {
             }));
             error.append("Could not call function \"").append(name).append("\" in \"")
                     .append(clazz.name()).append("\"\n")
-                    .append("One of the arguments passed into this function may be of the wrong type.\n");
+                    .append("Something could actually be wrong, or one of the arguments passed into this function may be of the wrong type.\n");
             writeGivenAndExpectedTypes(args, error);
             error.append("\nJava Trace:\n").append(trace).append("\nLua Error:");
             throw new LuaError(error.toString());

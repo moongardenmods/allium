@@ -1,25 +1,25 @@
-package dev.hugeblank.allium.loader.mixin;
+package dev.hugeblank.allium.loader.mixin.builder;
 
-import dev.hugeblank.allium.api.event.MixinEventType;
-import dev.hugeblank.allium.loader.mixin.annotation.LuaAnnotation;
-import dev.hugeblank.allium.loader.mixin.annotation.method.LuaInjectorAnnotation;
+import dev.hugeblank.allium.api.event.MixinMethodHook;
+import dev.hugeblank.allium.loader.Script;
+import dev.hugeblank.allium.loader.mixin.annotation.LuaAnnotationParser;
 import dev.hugeblank.allium.loader.mixin.annotation.sugar.LuaCancellable;
 import dev.hugeblank.allium.loader.mixin.annotation.sugar.LuaParameterAnnotation;
+import dev.hugeblank.allium.loader.mixin.annotation.sugar.LuaSugar;
+import dev.hugeblank.allium.loader.mixin.annotation.sugar.LuaThrows;
 import dev.hugeblank.allium.loader.type.exception.InvalidArgumentException;
 import dev.hugeblank.allium.loader.type.exception.InvalidMixinException;
 import dev.hugeblank.allium.util.asm.AsmUtil;
 import dev.hugeblank.allium.util.asm.VisitedElement;
 import dev.hugeblank.allium.util.asm.VisitedMethod;
 import me.basiqueevangelist.enhancedreflection.api.EClass;
-import org.objectweb.asm.AnnotationVisitor;
-import org.objectweb.asm.ClassWriter;
-import org.objectweb.asm.MethodVisitor;
-import org.objectweb.asm.Type;
+import org.objectweb.asm.*;
 import org.squiddev.cobalt.LuaError;
 
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 import static org.objectweb.asm.Opcodes.ACC_STATIC;
@@ -32,10 +32,10 @@ public class MixinMethodBuilder {
     private final String name;
     private final List<MixinParameter> initialParameters;
     private final List<MixinParameter> additionalParameters = new ArrayList<>();
-    private List<LuaAnnotation> methodAnnotations;
+    private List<LuaAnnotationParser> methodAnnotations;
     private String signature = null;
-    private String[] exceptions = null;
-    private LuaInjectorAnnotation.MethodWriteFactory code;
+    private final List<String> exceptions = new ArrayList<>();
+    private WriteFactory code;
     private Type returnType = Type.VOID_TYPE;
 
     private MixinMethodBuilder(ClassWriter classWriter, VisitedElement target, String name, List<MixinParameter> initialParameters) {
@@ -64,10 +64,10 @@ public class MixinMethodBuilder {
         return this;
     }
 
-    public MixinMethodBuilder luaParameters(List<LuaParameterAnnotation> luaParams) throws InvalidArgumentException {
-        if (!luaParams.isEmpty()) {
-            for (LuaParameterAnnotation lp : luaParams) {
-                if (lp instanceof LuaCancellable lc) {
+    public MixinMethodBuilder sugars(List<? extends LuaSugar> luaSugars) throws InvalidArgumentException {
+        if (!luaSugars.isEmpty()) {
+            for (LuaSugar ls : luaSugars) {
+                if (ls instanceof LuaCancellable lc) {
                     if (target instanceof VisitedMethod targetMethod) {
                         lc.methodIsReturnable(!Type.getReturnType(targetMethod.descriptor()).equals(Type.VOID_TYPE));
                     } else {
@@ -76,20 +76,25 @@ public class MixinMethodBuilder {
                         );
                     }
                 }
-                parameter(new MixinParameter(
-                        Type.getType(lp.type()), List.of(lp.luaAnnotation())
-                ));
+                if (ls instanceof LuaThrows(String type)) {
+                    exceptions.add(type);
+                }
+                if (ls instanceof LuaParameterAnnotation lp) {
+                    parameter(new MixinParameter(
+                            Type.getType(ls.type()), List.of(lp.luaAnnotation())
+                    ));
+                }
             }
         }
         return this;
     }
 
-    public MixinMethodBuilder code(LuaInjectorAnnotation.MethodWriteFactory methodWriteFactory) {
+    public MixinMethodBuilder code(WriteFactory methodWriteFactory) {
         this.code = methodWriteFactory;
         return this;
     }
 
-    public MixinMethodBuilder annotations(List<LuaAnnotation> annotations) {
+    public MixinMethodBuilder annotations(List<LuaAnnotationParser> annotations) {
         methodAnnotations = annotations;
         return this;
     }
@@ -100,7 +105,9 @@ public class MixinMethodBuilder {
     }
 
     public MixinMethodBuilder exceptions(String[] exceptions) {
-        this.exceptions = exceptions;
+        if (exceptions != null) {
+            this.exceptions.addAll(Arrays.asList(exceptions));
+        }
         return this;
     }
 
@@ -111,10 +118,16 @@ public class MixinMethodBuilder {
         params.addAll(additionalParameters);
 
         String descriptor = Type.getMethodDescriptor(returnType, params.stream().map(MixinParameter::getType).toArray(Type[]::new));
-        final MethodVisitor methodVisitor = classWriter.visitMethod(access, name, descriptor, signature, exceptions);
+        final MethodVisitor methodVisitor = classWriter.visitMethod(
+                access,
+                name,
+                descriptor,
+                signature,
+                exceptions.toArray(String[]::new)
+        );
 
         if (methodAnnotations != null) {
-            for (LuaAnnotation annotation : methodAnnotations) {
+            for (LuaAnnotationParser annotation : methodAnnotations) {
                 Class<?> cAnnotation = annotation.type().raw();
                 EClass<?> eAnnotation = EClass.fromJava(cAnnotation);
                 AnnotationVisitor annotationVisitor = methodVisitor.visitAnnotation(
@@ -137,16 +150,21 @@ public class MixinMethodBuilder {
 
         if (code != null) {
             methodVisitor.visitCode();
-            code.write(methodVisitor, descriptor, params, access);
+            code.write(classWriter, methodVisitor, descriptor, params);
         }
 
         methodVisitor.visitEnd();
         return new InvocationReference(params.stream().map(MixinParameter::getType).toList());
     }
 
+    @FunctionalInterface
+    public interface WriteFactory {
+        void write(ClassWriter classWriter, MethodVisitor methodVisitor, String descriptor, List<MixinParameter> parameters);
+    }
+
     public record InvocationReference(List<Type> paramTypes) {
-        public void createEvent(String id) {
-            new MixinEventType(id, paramTypes.stream().map(AsmUtil::getWrappedTypeName).toList());
+        public void createEvent(Script script, String id) {
+            new MixinMethodHook(script, id, paramTypes.stream().map(AsmUtil::getWrappedTypeName).toList());
         }
     }
 

@@ -1,6 +1,6 @@
 package dev.hugeblank.allium.loader.mixin.annotation.sugar;
 
-import dev.hugeblank.allium.loader.mixin.annotation.LuaAnnotation;
+import dev.hugeblank.allium.loader.mixin.annotation.LuaAnnotationParser;
 import dev.hugeblank.allium.loader.type.exception.InvalidArgumentException;
 import me.basiqueevangelist.enhancedreflection.api.EClass;
 import org.objectweb.asm.Type;
@@ -11,23 +11,23 @@ import org.squiddev.cobalt.LuaTable;
 import java.util.HashMap;
 import java.util.Map;
 
-public abstract class LuaParameterAnnotation {
+public abstract class LuaParameterAnnotation implements LuaSugar {
     private static final String LOCALREF_PACKAGE_PREFIX = "Lcom/llamalad7/mixinextras/sugar/ref/";
     private static final Map<Type, String> TYPE_TO_REF;
     protected final String type;
-    protected final LuaAnnotation luaAnnotation;
+    protected final LuaAnnotationParser parser;
 
     public LuaParameterAnnotation(LuaState state, String type, LuaTable annotationTable, Class<?> annotation) throws InvalidArgumentException, LuaError {
         this.type = type;
-        this.luaAnnotation = new LuaAnnotation(state, annotationTable, EClass.fromJava(annotation));
+        this.parser = new LuaAnnotationParser(state, annotationTable, EClass.fromJava(annotation));
     }
 
     public String type() {
         return type;
     }
 
-    public LuaAnnotation luaAnnotation() {
-        return luaAnnotation;
+    public LuaAnnotationParser luaAnnotation() {
+        return parser;
     }
 
 

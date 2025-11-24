@@ -7,6 +7,7 @@ import dev.hugeblank.allium.loader.type.annotation.OptionalArg;
 import dev.hugeblank.allium.loader.type.coercion.TypeCoercions;
 import dev.hugeblank.allium.loader.type.exception.InvalidArgumentException;
 import dev.hugeblank.allium.util.JavaHelpers;
+import dev.hugeblank.allium.loader.type.builder.ClassBuilder;
 import me.basiqueevangelist.enhancedreflection.api.EClass;
 import org.squiddev.cobalt.LuaError;
 import org.squiddev.cobalt.LuaState;

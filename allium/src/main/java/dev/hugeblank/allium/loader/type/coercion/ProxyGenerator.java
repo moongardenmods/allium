@@ -1,6 +1,6 @@
 package dev.hugeblank.allium.loader.type.coercion;
 
-import dev.hugeblank.allium.util.ClassFieldBuilder;
+import dev.hugeblank.allium.loader.type.builder.FieldBuilder;
 import dev.hugeblank.allium.util.asm.AsmUtil;
 import me.basiqueevangelist.enhancedreflection.api.EClass;
 import me.basiqueevangelist.enhancedreflection.api.EMethod;
@@ -39,7 +39,7 @@ public class ProxyGenerator {
     private static BiFunction<LuaState, LuaFunction, Object> generateProxyClass(EClass<?> iface, EMethod method) {
         String className = AsmUtil.getUniqueClassName();
         ClassWriter c = new ClassWriter(ClassWriter.COMPUTE_FRAMES | ClassWriter.COMPUTE_MAXS);
-        ClassFieldBuilder fields = new ClassFieldBuilder(className, c);
+        FieldBuilder fields = new FieldBuilder(className, c);
 
         c.visit(
             V17,
