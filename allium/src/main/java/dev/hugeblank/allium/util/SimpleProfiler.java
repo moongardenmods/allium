@@ -50,10 +50,11 @@ public class SimpleProfiler {
 
     public void print() {
         if (Allium.DEVELOPMENT && enable) {
+            long total = roots.stream().map(e -> e.time().get()).reduce(0L, Long::sum);
             StringBuilder log = new StringBuilder("\n");
-            printHelper(log, roots, 0);
+            printHelper(log, roots, total, 0);
             log.append(" = [total] ")
-                    .append(roots.stream().map(e -> e.time().get()).reduce(0L, Long::sum))
+                    .append(total)
                     .append("ms\n");
 
             Allium.LOGGER.info(log.toString());
@@ -62,11 +63,12 @@ public class SimpleProfiler {
         }
     }
 
-    public void printHelper(StringBuilder log, List<Entry> entries, int depth) {
+    public void printHelper(StringBuilder log, List<Entry> entries, long total, int depth) {
         for (Entry entry : entries) {
-            Message msg = FACTORY.newMessage("{} - [{}] {}ms\n", (" ").repeat(depth*2), entry.id(), entry.time());
+            long time = entry.time().get();
+            Message msg = FACTORY.newMessage("{} - [{}] {}ms {}%\n", (" ").repeat(depth*2), entry.id(), time, Math.round((time/(float)total)*100));
             log.append(msg.getFormattedMessage());
-            printHelper(log, entry.children(), depth+1);
+            printHelper(log, entry.children(), total, depth+1);
         }
     }
 
