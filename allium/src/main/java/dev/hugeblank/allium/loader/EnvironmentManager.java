@@ -68,10 +68,16 @@ public class EnvironmentManager {
     }
 
 
+    /// Register a lua library for scripts in the global table. Key in global table is provided by `name`
+    /// in the library class' LuaWrapped annotation.
+    ///
+    /// This specific method overload is for libraries that expect a `script` on instantiation.
     public static void registerLibrary(LibraryInitializer initializer) {
         INITIALIZERS.add(initializer);
     }
 
+    /// Register a lua library for scripts in the global table. Key in global table is provided by `name`
+    /// in the library class' LuaWrapped annotation.
     public static void registerLibrary(WrappedLuaLibrary library) {
         LIBRARIES.add(library);
     }

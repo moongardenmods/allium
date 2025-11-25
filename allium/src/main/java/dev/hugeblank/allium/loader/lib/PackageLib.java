@@ -140,7 +140,8 @@ public class PackageLib implements WrappedLuaLibrary {
                 }
             } catch (IOException ignored) {}
             // Sometimes the loader returns the module *as well* as the path they were loaded from.
-            return ValueFactory.varargsOf(script.loadLibrary(state, path), ValueFactory.valueOf(path.toString()));
+            Varargs res = ValueFactory.varargsOf(script.loadLibrary(state, path), ValueFactory.valueOf(path.toString()));
+            return res.first().equals(Constants.NIL) ? Constants.TRUE : res;
         }
         return Constants.NIL;
     }
@@ -165,8 +166,9 @@ public class PackageLib implements WrappedLuaLibrary {
             if (loader instanceof LuaFunction f) {
                 Varargs contents = Dispatch.call(state, f, mod);
                 if (contents != Constants.NIL) {
-                    loaded.rawset(mod, contents.arg(1));
-                    return contents;
+                    LuaValue out = contents.first();
+                    loaded.rawset(mod, out);
+                    return out;
                 }
             }
         }

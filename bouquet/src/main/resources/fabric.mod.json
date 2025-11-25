@@ -28,7 +28,8 @@
   "custom": {
     "allium": {
       "entrypoints": {
-        "static": "script/main.lua"
+        "static": "script/main.lua",
+        "mixin": "script/mixin.lua"
       }
     }
   },

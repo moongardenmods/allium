@@ -25,7 +25,6 @@ public class MixinMethodHook {
     private final List<EClass<?>> arguments = new ArrayList<>();
     protected EventHandler handler;
 
-    // The purity of EventType has been tainted by the existence of this class.
     public MixinMethodHook(Script script, String id, List<String> definitions) {
         this.id = id;
         this.definitions = definitions;
@@ -54,7 +53,7 @@ public class MixinMethodHook {
 
     public Object invoke(Object... objects) throws UnwindThrowable, LuaError, InvalidArgumentException {
         if (handler == null) {
-            script.getLogger().warn("Mixin method '" + id + "' missing hook");
+            script.getLogger().warn("Mixin method '{}' missing hook", id);
         }
         if (arguments.isEmpty()) {
             definitions.forEach((def) -> arguments.add(forName(id, def)));
