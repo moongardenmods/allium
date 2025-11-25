@@ -1,4 +1,4 @@
-require("script.mixinit")
+require("script.hooks")
 print("Hello from Bouquet's Script!")
 local command = require("script.command")
 for k, v in pairs(command.arguments) do
