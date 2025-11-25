@@ -37,6 +37,10 @@ public final class StaticBinder {
             if (arg2.isString()) {
                 String name = arg2.checkString();
 
+                if (name.equals("class")) {
+                    return TypeCoercions.toLuaValue(clazz.raw());
+                }
+
                 PropertyData<? super T> cachedProperty = cachedProperties.get(name);
 
                 if (cachedProperty == null) {
