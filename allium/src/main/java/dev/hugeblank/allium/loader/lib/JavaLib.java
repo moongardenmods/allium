@@ -29,9 +29,6 @@ public class JavaLib implements WrappedLuaLibrary {
         }
     }
 
-    // This doesn't work because of generics being stripped. Let's just manually parse the types in one function...
-
-
     @LuaWrapped
     public static <T> LuaValue coerce(@LuaStateArg LuaState state, AlliumInstanceUserdata<T> tableLike, EClass<T> klass) throws LuaError {
         LuaTable out = new LuaTable();
