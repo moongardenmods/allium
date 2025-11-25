@@ -28,6 +28,8 @@ import org.objectweb.asm.Type;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.gen.Accessor;
 import org.spongepowered.asm.mixin.gen.Invoker;
+import org.spongepowered.asm.mixin.injection.At;
+import org.spongepowered.asm.mixin.injection.Inject;
 import org.squiddev.cobalt.LuaError;
 import org.squiddev.cobalt.LuaTable;
 
@@ -230,7 +232,18 @@ public class MixinClassBuilder extends AbstractClassBuilder {
 
     @LuaWrapped
     public MixinClassInfo build() {
-        MethodVisitor clinit = c.visitMethod(ACC_STATIC, "<clinit>", "()V", null, null);
+        // In case the class being mixed into loads, we initialize the script so it has a chance to hook before anything else runs.
+        MethodVisitor clinit = c.visitMethod(ACC_PRIVATE|ACC_STATIC, "clinit", "(Lorg/spongepowered/asm/mixin/injection/callback/CallbackInfo;)V", null, null);
+        AnnotationVisitor inject = clinit.visitAnnotation(Type.getDescriptor(Inject.class), true);
+        AnnotationVisitor method = inject.visitArray("method");
+        method.visit(null, "<clinit>()V");
+        method.visitEnd();
+        AnnotationVisitor atArray = inject.visitArray("at");
+        AnnotationVisitor at = atArray.visitAnnotation(null, Type.getDescriptor(At.class));
+        at.visit("value", "HEAD");
+        at.visitEnd();
+        atArray.visitEnd();
+        inject.visitEnd();
         clinit.visitCode();
         clinit.visitMethodInsn(INVOKESTATIC, Type.getInternalName(ScriptRegistry.class), "getInstance", "()Ldev/hugeblank/allium/loader/ScriptRegistry;", false);
         clinit.visitLdcInsn(script.getID());
@@ -238,6 +251,7 @@ public class MixinClassBuilder extends AbstractClassBuilder {
         String scriptName = Type.getInternalName(Script.class);
         clinit.visitTypeInsn(CHECKCAST, scriptName);
         clinit.visitMethodInsn(INVOKEVIRTUAL, scriptName, "initialize", "()V", false);
+        clinit.visitInsn(RETURN);
         clinit.visitEnd();
 
         c.visitEnd();
