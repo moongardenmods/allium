@@ -2,6 +2,7 @@ package dev.hugeblank.allium.loader.mixin.builder;
 
 import dev.hugeblank.allium.Allium;
 import dev.hugeblank.allium.loader.Script;
+import dev.hugeblank.allium.loader.ScriptRegistry;
 import dev.hugeblank.allium.loader.mixin.MixinClassInfo;
 import dev.hugeblank.allium.loader.mixin.annotation.LuaAnnotationParser;
 import dev.hugeblank.allium.loader.mixin.annotation.method.InjectorChef;
@@ -22,6 +23,7 @@ import me.basiqueevangelist.enhancedreflection.api.EClass;
 import net.fabricmc.api.EnvType;
 import org.jetbrains.annotations.Nullable;
 import org.objectweb.asm.AnnotationVisitor;
+import org.objectweb.asm.MethodVisitor;
 import org.objectweb.asm.Type;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.gen.Accessor;
@@ -228,6 +230,16 @@ public class MixinClassBuilder extends AbstractClassBuilder {
 
     @LuaWrapped
     public MixinClassInfo build() {
+        MethodVisitor clinit = c.visitMethod(ACC_STATIC, "<clinit>", "()V", null, null);
+        clinit.visitCode();
+        clinit.visitMethodInsn(INVOKESTATIC, Type.getInternalName(ScriptRegistry.class), "getInstance", "()Ldev/hugeblank/allium/loader/ScriptRegistry;", false);
+        clinit.visitLdcInsn(script.getID());
+        clinit.visitMethodInsn(INVOKEVIRTUAL, Type.getInternalName(Registry.class), "get", "(Ljava/lang/String;)Ldev/hugeblank/allium/util/Identifiable;", false);
+        String scriptName = Type.getInternalName(Script.class);
+        clinit.visitTypeInsn(CHECKCAST, scriptName);
+        clinit.visitMethodInsn(INVOKEVIRTUAL, scriptName, "initialize", "()V", false);
+        clinit.visitEnd();
+
         c.visitEnd();
         byte[] classBytes = c.toByteArray();
         AsmUtil.dumpClass(className, classBytes);

@@ -122,22 +122,19 @@ public class Script implements Identifiable {
 
     public void initialize() {
         Allium.PROFILER.push(getID(), "initialize");
-        switch (initialized) {
-            case UNINITIALIZED -> {
-                try {
-                    // Initialize and set module used by require
-                    this.module = getExecutor().initialize().arg(1);
-                    this.initialized = State.INITIALIZED; // If all these steps are successful, we can update the state
-                } catch (Throwable e) {
-                    this.module = Constants.NIL;
-                    //noinspection StringConcatenationArgumentToLogCall
-                    getLogger().error("Could not initialize allium script " + getID(), e);
-                    unload();
-                    this.initialized = State.INVALID;
-                }
-
+        if (initialized == State.UNINITIALIZED) {
+            try {
+                // Initialize and set module used by require
+                this.initialized = State.INITIALIZING; // Guard against duplicate initializations
+                this.module = getExecutor().initialize().arg(1);
+                this.initialized = State.INITIALIZED; // If all these steps are successful, we can update the state
+            } catch (Throwable e) {
+                this.module = Constants.NIL;
+                //noinspection StringConcatenationArgumentToLogCall
+                getLogger().error("Could not initialize allium script " + getID(), e);
+                unload();
+                this.initialized = State.INVALID;
             }
-            case INITIALIZED -> getLogger().warn("Attempted to initialize while already active");
         }
         Allium.PROFILER.pop();
     }
@@ -219,6 +216,7 @@ public class Script implements Identifiable {
 
     public enum State {
         UNINITIALIZED,
+        INITIALIZING,
         INITIALIZED,
         INVALID
     }
