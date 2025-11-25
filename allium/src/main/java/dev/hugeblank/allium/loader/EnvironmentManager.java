@@ -3,6 +3,7 @@ package dev.hugeblank.allium.loader;
 import dev.hugeblank.allium.Allium;
 import dev.hugeblank.allium.api.LibraryInitializer;
 import dev.hugeblank.allium.api.WrappedLuaLibrary;
+import dev.hugeblank.allium.loader.lib.AlliumLib;
 import dev.hugeblank.allium.loader.lib.JavaLib;
 import dev.hugeblank.allium.loader.lib.MixinLib;
 import dev.hugeblank.allium.loader.lib.PackageLib;
@@ -44,6 +45,7 @@ public class EnvironmentManager {
             loadLibrary(script, state, new PackageLib(script));
             loadLibrary(script, state, new JavaLib());
             loadLibrary(script, state, new MixinLib(script));
+            loadLibrary(script, state, new AlliumLib());
         } catch (LuaError error) {
             script.getLogger().error("Error loading library:", error);
         }

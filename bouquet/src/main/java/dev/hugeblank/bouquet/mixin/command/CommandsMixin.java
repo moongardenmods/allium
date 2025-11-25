@@ -2,11 +2,8 @@ package dev.hugeblank.bouquet.mixin.command;
 
 import com.mojang.brigadier.CommandDispatcher;
 import dev.hugeblank.bouquet.api.event.ServerEvents;
-import dev.hugeblank.bouquet.api.lib.AlliumLib;
+import dev.hugeblank.bouquet.api.lib.commands.CommandLib;
 import dev.hugeblank.bouquet.api.lib.commands.CommandRegisterEntry;
-import net.minecraft.advancements.criterion.SummonedEntityTrigger;
-import net.minecraft.advancements.criterion.UsedTotemTrigger;
-import net.minecraft.advancements.criterion.UsedEnderEyeTrigger;
 import net.minecraft.commands.CommandBuildContext;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.commands.Commands;
@@ -25,7 +22,7 @@ public class CommandsMixin {
 
     @Inject(at = @At("TAIL"), method = "<init>")
     private void init(Commands.CommandSelection commandSelection, CommandBuildContext context, CallbackInfo ci) {
-        AlliumLib.COMMANDS.forEach((entry) -> {
+        CommandLib.COMMANDS.forEach((entry) -> {
             if (
                     (
                             commandSelection.equals(entry.environment()) ||

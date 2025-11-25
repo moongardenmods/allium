@@ -9,10 +9,12 @@ import dev.hugeblank.allium.loader.type.annotation.OptionalArg;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.commands.Commands;
 
-import static dev.hugeblank.bouquet.api.lib.AlliumLib.COMMANDS;
+import java.util.ArrayList;
+import java.util.List;
 
 @LuaWrapped(name = "command")
 public record CommandLib(Script script) implements WrappedLuaLibrary {
+    public static final List<CommandRegisterEntry> COMMANDS = new ArrayList<>();
 
     @LuaWrapped
     public void register(LiteralArgumentBuilder<CommandSourceStack> builder, @OptionalArg Commands.CommandSelection environment) {
