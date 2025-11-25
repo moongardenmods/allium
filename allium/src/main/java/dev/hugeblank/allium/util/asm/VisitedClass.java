@@ -69,11 +69,7 @@ public class VisitedClass {
     }
 
     private void addVisitedMethod(int access, String name, String descriptor, String signature, String[] exceptions) {
-        String key = name;
-        if (!name.equals("<init>") && !name.equals("<clinit>")) {
-            key = key+descriptor;
-        }
-        visitedMethods.put(key, new VisitedMethod(this, access, name, descriptor, signature, exceptions));
+        visitedMethods.put(name+descriptor, new VisitedMethod(this, access, name, descriptor, signature, exceptions));
     }
 
     public boolean isInterface() {
