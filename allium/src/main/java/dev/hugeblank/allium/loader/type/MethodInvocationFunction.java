@@ -45,14 +45,14 @@ public final class MethodInvocationFunction<T> extends VarArgFunction {
             for (EMethod method : matches) { // For each matched method from the index call
                 var parameters = method.parameters();
                 try {
-                    var jargs = ArgumentUtils.toJavaArguments(state, args, boundReceiver == null && !isStatic ? 2 : 1, parameters);
+                    var javaArgs = ArgumentUtils.toJavaArguments(state, args, boundReceiver == null && !isStatic ? 2 : 1, parameters);
 
-                    if (jargs.length == parameters.size()) { // Found a match!
+                    if (javaArgs.length == parameters.size()) { // Found a match!
                         try { // Get the return type, invoke method, cast returned value, cry.
                             EClassUse<?> ret = method.returnTypeUse().upperBound();
                             // Some public methods are "inaccessible" despite being public. setAccessible coerces that.
                             method.raw().setAccessible(true);
-                            Object out = method.invoke(instance, jargs);
+                            Object out = method.invoke(instance, javaArgs);
                             if (ret.type().raw() == Varargs.class)
                                 return (Varargs) out;
                             else

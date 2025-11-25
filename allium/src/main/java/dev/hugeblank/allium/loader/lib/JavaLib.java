@@ -1,19 +1,19 @@
 package dev.hugeblank.allium.loader.lib;
 
 import dev.hugeblank.allium.api.WrappedLuaLibrary;
+import dev.hugeblank.allium.loader.type.AlliumInstanceUserdata;
 import dev.hugeblank.allium.loader.type.annotation.LuaStateArg;
 import dev.hugeblank.allium.loader.type.annotation.LuaWrapped;
 import dev.hugeblank.allium.loader.type.annotation.OptionalArg;
+import dev.hugeblank.allium.loader.type.builder.ClassBuilder;
 import dev.hugeblank.allium.loader.type.coercion.TypeCoercions;
 import dev.hugeblank.allium.loader.type.exception.InvalidArgumentException;
 import dev.hugeblank.allium.util.JavaHelpers;
-import dev.hugeblank.allium.loader.type.builder.ClassBuilder;
 import me.basiqueevangelist.enhancedreflection.api.EClass;
-import org.squiddev.cobalt.LuaError;
-import org.squiddev.cobalt.LuaState;
-import org.squiddev.cobalt.LuaUserdata;
-import org.squiddev.cobalt.LuaValue;
+import me.basiqueevangelist.enhancedreflection.api.EType;
+import org.squiddev.cobalt.*;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 
@@ -24,9 +24,44 @@ public class JavaLib implements WrappedLuaLibrary {
     public static LuaValue cast(@LuaStateArg LuaState state, LuaUserdata object, EClass<?> klass) throws LuaError {
         try {
             return TypeCoercions.toLuaValue(TypeCoercions.toJava(state, object, klass), klass);
-        } catch (InvalidArgumentException e) {
+        } catch (InvalidArgumentException | LuaError e) {
             throw new LuaError(e);
         }
+    }
+
+    // This doesn't work because of generics being stripped. Let's just manually parse the types in one function...
+
+
+    @LuaWrapped
+    public static <T> LuaValue coerce(@LuaStateArg LuaState state, AlliumInstanceUserdata<T> tableLike, EClass<T> klass) throws LuaError {
+        LuaTable out = new LuaTable();
+        List<EType> typeVars = klass.typeVariableValues();
+        final LuaError err = new LuaError("Could not coerce type '" + tableLike.instance.getClass().getName() + "' to '" + klass.name() + "'");
+        return switch (typeVars.size()) {
+            case 1 -> {
+                if (tableLike.instance instanceof Collection<?> collection) {
+                    EClass<?> type = typeVars.getFirst().upperBound();
+                    collection.forEach((val) -> out.rawset(out.length()+1, TypeCoercions.toLuaValue(val, type)));
+                    yield out;
+                }
+                throw err;
+            }
+            case 2 -> {
+                if (tableLike.instance instanceof Map<?,?> map) {
+                    EClass<?> keyType = typeVars.getFirst().upperBound();
+                    EClass<?> valType = typeVars.getLast().upperBound();
+                    for (Map.Entry<?, ?> entry : map.entrySet()) {
+                        out.rawset(
+                                TypeCoercions.toLuaValue(entry.getKey(), keyType),
+                                TypeCoercions.toLuaValue(entry.getValue(), valType)
+                        );
+                    }
+                    yield out;
+                }
+                throw err;
+            }
+            default -> throw err;
+        };
     }
 
     @LuaWrapped
@@ -90,5 +125,6 @@ public class JavaLib implements WrappedLuaLibrary {
     public void exception(Throwable error) throws Throwable {
         throw error;
     }
+
 }
 

@@ -25,6 +25,13 @@
 			"dev.hugeblank.bouquet.BouquetAlliumExtensionClient"
 		]
 	},
+  "custom": {
+    "allium": {
+      "entrypoints": {
+        "static": "script/main.lua"
+      }
+    }
+  },
 	"mixins": [
 		"bouquet.mixins.json",
 		{

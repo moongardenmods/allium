@@ -15,21 +15,22 @@ import org.squiddev.cobalt.function.LuaFunction;
 
 import java.lang.reflect.Array;
 import java.util.*;
+import java.util.function.BiFunction;
 import java.util.function.Function;
 
 public class TypeCoercions {
     private static final Map<Class<?>, Function<EClass<?>, LuaToJavaConverter<?>>> FROM_LUA = new HashMap<>();
     private static final Map<Class<?>, Function<EClass<?>, LuaToJavaConverter<?>>> FROM_LUA_WRAPPERS = new HashMap<>();
-    private static final Map<Class<?>, Function<EClassUse<?>, JavaToLuaConverter<?>>> TO_LUA = new HashMap<>();
+    private static final Map<Class<?>, BiFunction<Object, EClassUse<?>, JavaToLuaConverter<?>>> TO_LUA = new HashMap<>();
     
     public static <T> void registerJavaToLua(Class<T> klass, JavaToLuaConverter<T> serializer) {
-        if (TO_LUA.put(klass, unused -> serializer) != null)
+        if (TO_LUA.put(klass, (unused, ignored) -> serializer) != null)
             throw new IllegalStateException("Converter already registered for " + klass);
     }
 
     @SuppressWarnings("unchecked")
-    public static <T> void registerComplexJavaToLua(Class<T> klass, Function<EClassUse<T>, JavaToLuaConverter<T>> serializerFactory) {
-        if (TO_LUA.put(klass, (Function<EClassUse<?>, JavaToLuaConverter<?>>)(Object) serializerFactory) != null)
+    public static <T> void registerComplexJavaToLua(Class<T> klass, BiFunction<T, EClassUse<T>, JavaToLuaConverter<T>> serializerFactory) {
+        if (TO_LUA.put(klass, (a, b) -> serializerFactory.apply((T)a, (EClassUse<T>) b)) != null)
             throw new IllegalStateException("Converter already registered for " + klass);
     }
 
@@ -140,6 +141,15 @@ public class TypeCoercions {
             }
         }
 
+        if (clatz.equals(CommonTypes.OBJECT)) { // Attempt to throw boxed type at the problem
+            for (Map.Entry<Class<?>, Function<EClass<?>, LuaToJavaConverter<?>>> mapperEntry : FROM_LUA_WRAPPERS.entrySet()) {
+                Object wrapped = mapperEntry.getValue().apply(EClass.fromJava(mapperEntry.getKey())).fromLua(state, value);
+                if (wrapped != null) {
+                    return wrapped;
+                }
+            }
+        }
+
         throw new InvalidArgumentException("Couldn't convert " + value + " to java! Target type is " + clatz);
     }
 
@@ -173,7 +183,7 @@ public class TypeCoercions {
 
         var serializerFactory = TO_LUA.get(klass.raw());
         if (serializerFactory != null) {
-            var serializer = (JavaToLuaConverter<Object>) serializerFactory.apply(ret);
+            var serializer = (JavaToLuaConverter<Object>) serializerFactory.apply(out, ret);
 
             if (serializer != null) {
                 LuaValue result = serializer.toLua(out);
@@ -267,7 +277,7 @@ public class TypeCoercions {
         TypeCoercions.registerJavaToLua(boolean.class, ValueFactory::valueOf);
         TypeCoercions.registerJavaToLua(String.class, ValueFactory::valueOf);
 
-        TypeCoercions.registerComplexJavaToLua(List.class, use -> {
+        TypeCoercions.registerComplexJavaToLua(List.class, (val, use) -> {
             if (!use.hasAnnotation(CoerceToNative.class)) return null;
 
             EClassUse<?> componentUse = use.typeVariableValues().getFirst().upperBound();
@@ -284,7 +294,7 @@ public class TypeCoercions {
             };
         });
 
-        TypeCoercions.registerComplexJavaToLua(Set.class, use -> {
+        TypeCoercions.registerComplexJavaToLua(Set.class, (val, use) -> {
             if (!use.hasAnnotation(CoerceToNative.class)) return null;
 
             EClassUse<?> componentUse = use.typeVariableValues().getFirst().upperBound();
@@ -300,7 +310,7 @@ public class TypeCoercions {
             };
         });
 
-        TypeCoercions.registerComplexJavaToLua(Map.class, use -> {
+        TypeCoercions.registerComplexJavaToLua(Map.class, (val, use) -> {
             if (!use.hasAnnotation(CoerceToNative.class)) return null;
 
             EClassUse<?> keyUse = use.typeVariableValues().get(0).upperBound();
@@ -310,7 +320,15 @@ public class TypeCoercions {
                 LuaTable table = new LuaTable();
 
                 for (Map.Entry<?, ?> entry : ((Map<?, ?>) map).entrySet()) {
-                    table.rawsetImpl(TypeCoercions.toLuaValue(entry.getKey(), keyUse), TypeCoercions.toLuaValue(entry.getValue(), valueUse));
+                    Object key = entry.getKey();
+                    table.rawsetImpl(
+                            TypeCoercions.toLuaValue(
+                                    key,
+//                                    key instanceof String ? CommonTypes.STRING.asEmptyUse() : keyUse
+                                    keyUse
+                            ),
+                            TypeCoercions.toLuaValue(entry.getValue(), valueUse)
+                    );
                 }
 
                 return table;
@@ -335,6 +353,7 @@ public class TypeCoercions {
         TypeCoercions.registerLuaToJavaWrapper(Float.class, (state, val) -> suppressError(() -> (float)val.checkDouble()));
         TypeCoercions.registerLuaToJavaWrapper(Long.class, (state, val) -> suppressError(val::checkLong));
         TypeCoercions.registerLuaToJavaWrapper(Boolean.class, (state, val) -> suppressError(val::checkBoolean));
+        TypeCoercions.registerLuaToJavaWrapper(String.class, (state, val) -> suppressError(val::checkString));
 
         TypeCoercions.registerLuaToJava(Class.class, (state, val) -> {
             EClass<?> klass = JavaHelpers.asClass(val);

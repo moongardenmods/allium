@@ -178,7 +178,7 @@ public class FileHelper {
     }
 
     private static <T> T getOrDefault(CustomValue.CvObject source, String key, T def, Function<CustomValue, T> getAs) {
-        return source.get(key).getType() == CustomValue.CvType.STRING ? getAs.apply(source.get(key)) : def;
+        return source.containsKey(key) ? getAs.apply(source.get(key)) : def;
     }
 
     private static Entrypoint makeEntrypointContainer(CustomValue.CvObject entrypointsObject) {
