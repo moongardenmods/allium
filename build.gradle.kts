@@ -2,7 +2,7 @@ import java.util.*
 
 plugins {
     id("maven-publish")
-    id("net.fabricmc.fabric-loom-no-remap") version "1.14.0-alpha.25"
+    id("net.fabricmc.fabric-loom-no-remap") version "1.14.0-alpha.29"
 }
 // Common Mod Properties
 val mavenGroup: String by project
