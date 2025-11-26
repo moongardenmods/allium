@@ -22,7 +22,6 @@ val placeholderApi: String by project
 
 dependencies {
     minecraft("com.mojang", "minecraft", minecraftVersion)
-//    mappings(loom.officialMojangMappings())
 }
 
 subprojects {

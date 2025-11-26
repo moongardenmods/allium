@@ -1,7 +1,12 @@
 return {
     assertType = function(i, input, class)
         assert(class, "bouquet internal - cannot assert type - missing class argument")
-        assert(input and java.instanceOf(input, class), "Argument #"..i..": Expected type "..class.class:getName()..", got ".. type(input))
+        local errStr = "Argument #"..i..": Expected type "..class.class:getName()..", got ".. type(input)
+        if type(class) == "function" then
+            assert(input and class(), errStr)
+        else
+            assert(input and java.instanceOf(input, class), errStr)
+        end
     end,
     assertServer = function()
         assert(package.environment() == "server", "Operation cannot be performed on client")

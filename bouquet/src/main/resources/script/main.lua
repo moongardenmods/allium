@@ -5,8 +5,10 @@ for k, v in pairs(command.arguments) do
     print(k, v)
 end
 return {
-    game = require("script.game"),
-    fabric = require("script.fabric"),
+    command = require("script.command"),
     commands = require("script.commands"),
-    command = require("script.command")
+    fabric = require("script.fabric"),
+    game = require("script.game"),
+    json = require("script.json"),
+    tag = require("script.tag"),
 }
