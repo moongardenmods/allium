@@ -8,8 +8,8 @@ end)
 
 local function queueRegisterEvent(entry, result)
     ServerEvents.COMMAND_REGISTER:invoker():onCommandRegistration(
-            entry:script():getID(),
-            entry:builder():getLiteral(),
+            entry.script:getID(),
+            entry.builder:getLiteral(),
             result
     )
 end
@@ -17,10 +17,10 @@ end
 mixin.get("commands_init"):hook(function(self, commandSelection, context, ci)
     for _, entry in ipairs(util.holders.commands) do
         if (
-                (commandSelection:equals(entry:environment()) or entry:environment():equals(CommandSelection.ALL)) and
-                        self:getDispatcher():getRoot():getChild(entry:builder():getLiteral()) == nil
+                (commandSelection:equals(entry.environment) or entry.environment:equals(CommandSelection.ALL)) and
+                        self:getDispatcher():getRoot():getChild(entry.builder:getLiteral()) == nil
         ) then
-            self:getDispatcher():register(entry:builder())
+            self:getDispatcher():register(entry.builder)
             queueRegisterEvent(entry, true)
             return
         end

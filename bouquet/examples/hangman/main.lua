@@ -7,6 +7,7 @@
 
 local words = require("words")
 local Commands = require("net.minecraft.commands.Commands") -- We need the java command manager for creating commands.
+local command = require("bouquet").command
 local arguments = command.arguments -- Create shortcut for command argument types
 
 local active = {}
@@ -251,4 +252,4 @@ builder:m_then(Commands.literal("guess"):m_then(Commands.argument("guess", argum
 end)
 ))
 
-command.register(builder) -- Register the command
+command.register(script, builder) -- Register the command
