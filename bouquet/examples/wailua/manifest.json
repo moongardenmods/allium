@@ -4,6 +4,5 @@
   "name": "WAILA in Lua",
   "entrypoints": {
     "dynamic": "main.lua"
-  },
-  "mappings": "yarn"
+  }
 }

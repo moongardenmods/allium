@@ -3,7 +3,7 @@
 	"package": "dev.hugeblank.bouquet.mixin",
 	"compatibilityLevel": "JAVA_21",
 	"client": [
-		"client.gui.hud.InGameHudMixin",
+      "client.gui.hud.GuiMixin",
 		"server.integrated.IntegratedServerMixin"
 	],
 	"injectors": {

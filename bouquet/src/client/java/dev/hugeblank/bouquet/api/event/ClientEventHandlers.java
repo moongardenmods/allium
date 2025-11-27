@@ -1,10 +1,9 @@
 package dev.hugeblank.bouquet.api.event;
 
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.font.TextRenderer;
-import net.minecraft.client.gui.DrawContext;
-import net.minecraft.client.gui.hud.InGameHud;
-import net.minecraft.client.network.ClientPlayerEntity;
+import net.minecraft.client.DeltaTracker;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.Gui;
+import net.minecraft.client.gui.GuiGraphics;
 
 // For all events that use classes that the server doesn't have.
 // Make sure to provide a dummy method with no parameters for it.
@@ -13,6 +12,6 @@ import net.minecraft.client.network.ClientPlayerEntity;
 public class ClientEventHandlers {
 
     public interface GuiRender {
-        void onGuiRender(MinecraftClient client, DrawContext context, InGameHud hud);
+        void onGuiRender(Minecraft client, GuiGraphics context,  DeltaTracker deltaTracker, Gui hud);
     }
 }

@@ -6,14 +6,14 @@ import io.netty.bootstrap.Bootstrap;
 import io.netty.buffer.Unpooled;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInitializer;
+import io.netty.channel.EventLoopGroup;
 import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.channel.socket.SocketChannel;
-import io.netty.channel.socket.nio.NioSocketChannel;
+import io.netty.channel.socket.nio.NioServerSocketChannel;
 import io.netty.handler.codec.http.*;
 import io.netty.handler.ssl.SslContext;
 import io.netty.handler.ssl.SslContextBuilder;
 import io.netty.handler.ssl.SslProvider;
-import net.minecraft.server.ServerNetworkIo;
 import org.squiddev.cobalt.LuaError;
 
 import javax.net.ssl.SSLException;
@@ -44,6 +44,7 @@ public class HttpRequest extends ChannelInitializer<SocketChannel> {
     }
 
     private final URI uri;
+    private final EventLoopGroup group;
     private final DefaultFullHttpRequest rawRequest;
     @LuaWrapped public final LuaByteBuf body;
     private int maxFollowedRedirects = 3;
@@ -51,7 +52,7 @@ public class HttpRequest extends ChannelInitializer<SocketChannel> {
 
     private CompletableFuture<HttpResponse> sendFuture;
 
-    public HttpRequest(URI uri) {
+    public HttpRequest(URI uri, EventLoopGroup group) {
         this.uri = uri;
         this.body = new LuaByteBuf(Unpooled.buffer(), StandardCharsets.UTF_8);
         this.rawRequest = new DefaultFullHttpRequest(HttpVersion.HTTP_1_1, HttpMethod.GET, uri.getRawPath(), this.body.getRaw());
@@ -60,6 +61,8 @@ public class HttpRequest extends ChannelInitializer<SocketChannel> {
         this.rawRequest.headers().set(HttpHeaderNames.USER_AGENT, "Allium/" + Allium.VERSION);
         this.rawRequest.headers().set(HttpHeaderNames.CONNECTION, HttpHeaderValues.CLOSE);
         this.rawRequest.headers().set(HttpHeaderNames.ACCEPT_ENCODING, HttpHeaderValues.GZIP_DEFLATE);
+
+        this.group = group;
     }
 
     @LuaWrapped
@@ -99,8 +102,8 @@ public class HttpRequest extends ChannelInitializer<SocketChannel> {
     private void doRequestTo(URI newUri) {
         Bootstrap bootstrap = new Bootstrap();
         bootstrap
-            .group(ServerNetworkIo.DEFAULT_CHANNEL.get())
-            .channel(NioSocketChannel.class)
+            .group(group)
+            .channel(NioServerSocketChannel.class)
             .handler(this);
 
         var port = newUri.getPort();
@@ -134,7 +137,7 @@ public class HttpRequest extends ChannelInitializer<SocketChannel> {
             p.addLast(SSL_CONTEXT.newHandler(ch.alloc(), uri.getHost(), uri.getPort()));
 
         p.addLast(new HttpClientCodec());
-        p.addLast(new HttpContentDecompressor());
+        p.addLast(new HttpContentDecompressor(0));
         p.addLast(new HttpObjectAggregator(1048576));
         p.addLast(new Handler());
     }

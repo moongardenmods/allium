@@ -29,6 +29,7 @@ public class HttpResponse {
 
     @LuaWrapped
     public @CoerceToNative Map<String, String> headers() {
+        //noinspection DataFlowIssue
         return Streams.stream(raw.headers()).collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
     }
 }

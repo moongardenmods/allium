@@ -1,11 +1,14 @@
 package dev.hugeblank.allium.api;
 
 
-import dev.hugeblank.allium.loader.api.PackageLib;
+import dev.hugeblank.allium.loader.lib.PackageLib;
 import dev.hugeblank.allium.loader.type.UserdataFactory;
 import dev.hugeblank.allium.loader.type.annotation.LuaWrapped;
 import me.basiqueevangelist.enhancedreflection.api.EClass;
-import org.squiddev.cobalt.*;
+import org.squiddev.cobalt.LuaError;
+import org.squiddev.cobalt.LuaState;
+import org.squiddev.cobalt.LuaTable;
+import org.squiddev.cobalt.LuaValue;
 import org.squiddev.cobalt.function.LibFunction;
 
 /**

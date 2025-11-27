@@ -1,10 +1,8 @@
 package dev.hugeblank.allium.util;
 
-import dev.hugeblank.allium.Allium;
-import dev.hugeblank.allium.loader.ScriptRegistry;
-import dev.hugeblank.allium.loader.type.InvalidArgumentException;
 import dev.hugeblank.allium.loader.type.annotation.LuaWrapped;
 import dev.hugeblank.allium.loader.type.coercion.TypeCoercions;
+import dev.hugeblank.allium.loader.type.exception.InvalidArgumentException;
 import dev.hugeblank.allium.loader.type.property.PropertyData;
 import dev.hugeblank.allium.loader.type.property.PropertyResolver;
 import me.basiqueevangelist.enhancedreflection.api.EClass;
@@ -45,7 +43,7 @@ public class MetatableUtils {
                         var target = e.getTargetException();
                         if (target instanceof LuaError err) {
                             throw err;
-                        } else if (target instanceof IndexOutOfBoundsException) {
+                        } else if (target instanceof IndexOutOfBoundsException ignored) {
                             // Continue.
                         } else {
                             throw new LuaError(target);
@@ -74,12 +72,9 @@ public class MetatableUtils {
             } else {
                 instance = null;
             }
+            final boolean classHasAnnotation = clazz.hasAnnotation(LuaWrapped.class);
             List<EMember> members = memberBuilder.build().filter((member)->
-                    !clazz.hasAnnotation(LuaWrapped.class) ||
-                            (
-                                    clazz.hasAnnotation(LuaWrapped.class) &&
-                                            member.hasAnnotation(LuaWrapped.class)
-                            )
+                    !classHasAnnotation || member.hasAnnotation(LuaWrapped.class)
             ).toList();
             List<Varargs> varargs = new ArrayList<>();
             for (EMember member : members) {
@@ -94,12 +89,9 @@ public class MetatableUtils {
                     PropertyData<? super T> propertyData = cachedProperties.get(memberName);
 
                     if (propertyData == null) { // caching
-                        propertyData = PropertyResolver.resolveProperty(state, clazz, memberName, member.isStatic());
+                        propertyData = PropertyResolver.resolveProperty(clazz, memberName, member.isStatic());
                         cachedProperties.put(memberName, propertyData);
                     }
-
-                    if (!Allium.DEVELOPMENT)
-                        memberName = ScriptRegistry.scriptFromState(state).getMappings().getMapped(memberName);
 
                     varargs.add(ValueFactory.varargsOf(LuaString.valueOf(memberName), propertyData.get(
                             memberName,

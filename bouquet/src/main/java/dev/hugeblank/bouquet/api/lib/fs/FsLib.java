@@ -1,6 +1,5 @@
 package dev.hugeblank.bouquet.api.lib.fs;
 
-import dev.hugeblank.allium.Allium;
 import dev.hugeblank.allium.api.WrappedLuaLibrary;
 import dev.hugeblank.allium.loader.Script;
 import dev.hugeblank.allium.loader.type.annotation.CoerceToNative;
@@ -30,7 +29,8 @@ public class FsLib implements WrappedLuaLibrary {
 
     // Creates a persistent file storage outside of the script, since the scripts path could be in a mod or zip
     // Files cannot be created in mods/zips from what I can tell.
-    public FsLib(Script script, Allium.EnvType envType) {
+    @LuaWrapped
+    public FsLib(Script script) {
         this(script, FileHelper.PERSISTENCE_DIR.resolve(script.getID()));
     }
 
@@ -62,9 +62,11 @@ public class FsLib implements WrappedLuaLibrary {
         LuaTable out = new LuaTable();
         try {
             int i = 1;
-            for (Path p : Files.list(contents).toList()) {
+            Stream<Path> list = Files.list(contents);
+            for (Path p : list.toList()) {
                 out.rawset(i++, ValueFactory.valueOf(String.valueOf(p.getFileName())));
             }
+            list.close();
             return out;
         } catch (IOException e) {
             throw new LuaError(e);
@@ -155,6 +157,7 @@ public class FsLib implements WrappedLuaLibrary {
                 for (Path p : list.toList()) {
                     deleteInternal(p);
                 }
+                list.close();
             } catch (IOException ex) {
                 throw new LuaError(e);
             }
@@ -162,25 +165,25 @@ public class FsLib implements WrappedLuaLibrary {
     }
 
     @LuaWrapped
-    public LuaHandle open(String path, String mode) throws LuaError {
-        if (mode.length() == 1) {
-            Path p = sanitize(path);
-            try {
-                Files.createDirectories(p.getParent());
-            } catch (IOException e) {
-                throw new LuaError(e);
-            }
-            return switch (mode.charAt(0)) {
-                case 'r' -> new LuaReadHandle(script, p);
-                case 'w' -> new LuaWriteHandle(script, p, false);
-                case 'a' -> new LuaWriteHandle(script, p, true);
-                default -> null;
+    public LuaHandleBase open(String path, String mode) throws LuaError {
+        Path p = sanitize(path);
+        try {
+            Files.createDirectories(p.getParent());
+        } catch (IOException e) {
+            throw new LuaError(e);
+        }
+        try {
+            return switch (mode) {
+                case "r" -> new LuaReadHandle(script, p);
+                case "w" -> new LuaWriteHandle(script, p, false);
+                case "a" -> new LuaWriteHandle(script, p, true);
+                case "r+" -> new LuaReadWriteHandle(script, p, false, false);
+                case "w+" -> new LuaReadWriteHandle(script, p, false, true);
+                case "a+" -> new LuaReadWriteHandle(script, p, true, true);
+                default -> throw new LuaError("Invalid mode " + mode);
             };
-        } else if (mode.length() == 2) {
-            // TODO binary handles
-            return null;
-        } else {
-            throw new LuaError("Invalid mode " + mode);
+        } catch (IOException e) {
+            throw new LuaError(e);
         }
     }
 
@@ -216,7 +219,7 @@ public class FsLib implements WrappedLuaLibrary {
                 if (path.getFileName().toString().matches(expr))
                     findInternal(base.resolve(path), subPath(routes), out);
             }
-
+            list.close();
         } catch (IOException e) {
             throw new LuaError(e);
         }
@@ -241,7 +244,6 @@ public class FsLib implements WrappedLuaLibrary {
         }
     }
 
-    // TODO: Move from map to lua table
     @LuaWrapped
     public @CoerceToNative Map<String, LuaValue> attributes(String p) throws LuaError {
         Path path = sanitize(p);

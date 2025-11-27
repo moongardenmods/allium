@@ -23,19 +23,13 @@
     ],
     "main": [
       "dev.hugeblank.allium.Allium"
-    ],
-    "client": [
-      "dev.hugeblank.allium.AlliumClient"
-    ],
-    "server": [
-      "dev.hugeblank.allium.AlliumServer"
     ]
   },
   "mixins": [],
 
   "depends": {
-    "minecraft": ">=1.19.4",
-    "java": ">=17",
-    "fabricloader": ">=0.11.3"
+    "minecraft": ">=1.21.11-",
+    "java": ">=21",
+    "fabricloader": ">=0.18.0"
   }
 }

@@ -2,7 +2,6 @@ val mavenGroup: String by project
 
 // Common Dependencies
 val cobalt: String by project
-val tinyParser: String by project
 val enhancedReflections: String by project
 
 val bouquetVersion: String by project
@@ -32,13 +31,14 @@ loom {
 }
 
 dependencies {
-	modImplementation("cc.tweaked", "cobalt", cobalt)
-	modImplementation("me.basiqueevangelist","enhanced-reflection", enhancedReflections)
-	modImplementation("net.fabricmc", "tiny-mappings-parser", tinyParser)
+	implementation("cc.tweaked", "cobalt", cobalt)
+	implementation("me.basiqueevangelist","enhanced-reflection", enhancedReflections)
+//	implementation("eu.pb4", "placeholder-api", placeholderApi)
 
-	implementation(include("io.netty", "netty-codec-http", nettyHttp))
-	modImplementation("eu.pb4", "placeholder-api", placeholderApi)
-	implementation(project(path = ":allium", configuration = "namedElements"))
+    // Probably don't need anymore now that it's bundled with game
+//	implementation(include("io.netty", "netty-codec-http", nettyHttp))
+
+	implementation(project(path = ":allium"))
 }
 
 java {

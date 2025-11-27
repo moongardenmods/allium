@@ -16,7 +16,7 @@ public class BouquetMixinPlugin implements IMixinConfigPlugin {
 
     @Override
     public void onLoad(String mixinPackage) {
-        LOGGER.info("Loading Allium API on {}", QUILT_LOADED ? "Quilt" : "Fabric");
+        LOGGER.info("Loading Bouquet on {}", QUILT_LOADED ? "Quilt" : "Fabric");
     }
 
     @Override
