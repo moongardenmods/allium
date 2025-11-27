@@ -14,22 +14,12 @@
 	"license": "MIT",
 	"icon": "assets/bouquet/icon.png",
 	"environment": "*",
-	"entrypoints": {
-		"main": [
-          "dev.hugeblank.bouquet.Bouquet"
-		],
-		"allium": [
-			"dev.hugeblank.bouquet.BouquetAlliumExtension"
-		],
-		"allium-client": [
-			"dev.hugeblank.bouquet.BouquetAlliumExtensionClient"
-		]
-	},
+	"entrypoints": {},
   "custom": {
     "allium": {
       "entrypoints": {
-        "static": "script/main.lua",
-        "mixin": "script/mixin.lua"
+        "static": "bouquet/init.lua",
+        "mixin": "bouquet/mixin.lua"
       }
     }
   },

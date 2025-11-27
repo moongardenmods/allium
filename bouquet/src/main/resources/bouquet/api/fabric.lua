@@ -4,7 +4,7 @@ local ModContainer = require("net.fabricmc.loader.api.ModContainer")
 local String = require("java.lang.String")
 local List = require("java.util.List")
 
-local assertType = require("script.util").assertType
+local assertType = require("bouquet.util").assertType
 
 local loader = FabricLoader.getInstance()
 

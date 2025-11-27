@@ -6,11 +6,13 @@
 
 local Component = require("net.minecraft.network.chat.Component")
 
+local events = require("bouquet").events
+
 local text
 
 -- Get the string out of the wrapped text object and print it on server start.
 -- This is silly, but for debugging Allium's internals invoking game logic is useful.
-events.server.SERVER_START:register(script, function()
+events.server.serverStart:register(script, function()
     print(text:getString())
 end)
 

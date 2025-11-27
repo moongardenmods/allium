@@ -5,7 +5,7 @@ local CommandSelection = require("net.minecraft.commands.Commands$CommandSelecti
 local StaticBinder = require("dev.hugeblank.allium.loader.type.StaticBinder")
 local EClass = require("me.basiqueevangelist.enhancedreflection.api.EClass")
 
-local util = require("script.util")
+local util = require("bouquet.util")
 
 return {
     register = function(script, builder, environment)
@@ -13,9 +13,9 @@ return {
         util.assertType(2, builder, LiteralArgumentBuilder[{CommandSourceStack}])
         if environment ~= nil then util.assertType(3, environment, CommandSelection) end
         table.insert(util.holders.commands, {
-            script,
-            builder,
-            environment or CommandSelection.ALL
+            script = script,
+            builder = builder,
+            environment = environment or CommandSelection.ALL
         })
     end,
     arguments = setmetatable(util.holders.argumentTypes, {

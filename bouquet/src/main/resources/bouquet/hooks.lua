@@ -1,13 +1,15 @@
-local ServerEvents = require("dev.hugeblank.bouquet.api.event.ServerEvents")
+local CommandSelection = require("net.minecraft.commands.Commands$CommandSelection")
 
-local util = require("script.util")
+local events = require("bouquet.api.events")
+
+local util = require("bouquet.util")
 
 mixin.get("argument_type_infos_register"):hook(function(registry, id, brigadierType, info, cir)
     util.holders.argumentTypes[id] = brigadierType
 end)
 
 local function queueRegisterEvent(entry, result)
-    ServerEvents.COMMAND_REGISTER:invoker():onCommandRegistration(
+    events.server.commandRegister:invoker():onCommandRegistration(
             entry.script:getID(),
             entry.builder:getLiteral(),
             result

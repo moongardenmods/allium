@@ -37,7 +37,7 @@ public class MixinMethodHook {
             // Surely this won't cause any issues in the future!
             return EClass.fromJava(Class.forName(name));
         } catch (ClassNotFoundException e) {
-            throw new RuntimeException("in event "+id, e);
+            throw new RuntimeException("in hook "+id, e);
         }
     }
 
@@ -87,10 +87,15 @@ public class MixinMethodHook {
         public Object handle(Varargs args) throws UnwindThrowable, LuaError, InvalidArgumentException {
             LuaState state = script.getExecutor().getState();
             LuaValue ret;
-            synchronized (state) {
-                ret = Dispatch.invoke(state, func, args).first();
+            try {
+                synchronized (state) {
+                        ret = Dispatch.invoke(state, func, args).first();
+                }
+                return TypeCoercions.toJava(state, ret, Object.class);
+            } catch (LuaError e) {
+                script.getLogger().error("Error in mixin hook '{}'", id);
+                throw e;
             }
-            return TypeCoercions.toJava(state, ret, Object.class);
         }
 
         @Override

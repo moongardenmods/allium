@@ -6,7 +6,7 @@ local JsonObject = require("com.google.gson.JsonObject")
 local JsonPrimitive = require("com.google.gson.JsonPrimitive")
 local JsonNull = require("com.google.gson.JsonNull")
 
-local util = require("script.util")
+local util = require("bouquet.util")
 
 local pretty = GsonBuilder():setPrettyPrinting():disableHtmlEscaping():create()
 local compact = GsonBuilder():disableHtmlEscaping():create()

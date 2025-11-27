@@ -7,8 +7,9 @@
 
 local words = require("words")
 local Commands = require("net.minecraft.commands.Commands") -- We need the java command manager for creating commands.
-local command = require("bouquet").command
-local arguments = command.arguments -- Create shortcut for command argument types
+local bouquet = require("bouquet")
+local arguments = bouquet.command.arguments -- Create shortcut for command argument types
+local fs = bouquet.fs.as(script)
 
 local active = {}
 
@@ -85,7 +86,7 @@ local function parseGuess(word, guessed)
 end
 
 local function sendMessage(context, data) -- easily broadcast a message to all players
-    local out = text.format(data)
+    local out = bouquet.text.format(data)
     context
             :getSource()
             :getPlayer()
@@ -94,7 +95,7 @@ end
 
 local builder = Commands.literal("hangman") -- Create the builder for the hangman command
 
-events.server.COMMAND_REGISTER:register(script, function(_, name, success)
+bouquet.events.server.commandRegister:register(script, function(_, name, success)
     -- Let us know if the command was successfully registered
     if success and name:find("hangman") then
         print("/hangman command registered!")
@@ -246,10 +247,10 @@ builder:m_then(Commands.literal("guess"):m_then(Commands.argument("guess", argum
             flush(player, false)
         end
     else -- No game, tell player how to start one
-        context:getSource():sendFailure(text.format("No game! <gray>Use /hangman start</gray> to play!"))
+        context:getSource():sendFailure(bouquet.text.format("No game! <gray>Use /hangman start</gray> to play!"))
     end
     return 1
 end)
 ))
 
-command.register(script, builder) -- Register the command
+bouquet.command.register(script, builder) -- Register the command

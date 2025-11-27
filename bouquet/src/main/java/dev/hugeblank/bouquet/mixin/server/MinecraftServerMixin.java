@@ -1,6 +1,5 @@
 package dev.hugeblank.bouquet.mixin.server;
 
-import dev.hugeblank.bouquet.api.event.CommonEvents;
 import dev.hugeblank.bouquet.api.event.ServerEvents;
 import net.minecraft.server.MinecraftServer;
 import org.spongepowered.asm.mixin.Mixin;

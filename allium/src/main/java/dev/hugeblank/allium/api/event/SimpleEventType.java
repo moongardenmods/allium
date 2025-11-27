@@ -1,26 +1,23 @@
 package dev.hugeblank.allium.api.event;
 
-import dev.hugeblank.allium.loader.type.annotation.LuaWrapped;
 import me.basiqueevangelist.enhancedreflection.api.EClass;
-import net.minecraft.resources.Identifier;
 
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Proxy;
 
-@LuaWrapped
 public class SimpleEventType<T> extends EventType<T> {
-    private final Identifier id;
+    private final EClass<T> eventType;
     private final T invoker;
 
     @SuppressWarnings("unchecked")
-    public SimpleEventType(Identifier id, T... typeGetter) {
-        this(id, (EClass<T>) EClass.fromJava(typeGetter.getClass().componentType()));
+    public SimpleEventType(T... typeGetter) {
+        this((EClass<T>) EClass.fromJava(typeGetter.getClass().componentType()));
     }
 
     @SuppressWarnings("unchecked")
-    public SimpleEventType(Identifier id, EClass<T> eventType) {
-        this.id = id;
+    public SimpleEventType(EClass<T> eventType) {
+        this.eventType = eventType;
 
         this.invoker = (T) Proxy.newProxyInstance(SimpleEventType.class.getClassLoader(), new Class[]{eventType.raw()}, (proxy, method, args) -> {
             switch (method.getName()) {
@@ -42,7 +39,7 @@ public class SimpleEventType<T> extends EventType<T> {
                 try {
                     method.invoke(handler.handler, args);
                 } catch (InvocationTargetException e) {
-                    handler.script.getLogger().error("Error while handling event {}", id, e.getTargetException());
+                    handler.script.getLogger().error("Error while handling event {}", eventType.name(), e.getTargetException());
                 }
             }
 
@@ -57,7 +54,7 @@ public class SimpleEventType<T> extends EventType<T> {
     @Override
     public String toString() {
         return "SimpleEventType{" +
-            "id=" + id +
+            "type=" + eventType.name() +
             '}';
     }
 }

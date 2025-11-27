@@ -14,7 +14,7 @@ if package.environment() == "server" then
     ServerLevel = require("net.minecraft.server.level.ServerLevel")
 end
 
-local util = require("script.util")
+local util = require("bouquet.util")
 
 local function unwrapRef(optRef)
     return optRef:value()

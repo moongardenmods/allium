@@ -29,6 +29,7 @@ public class FsLib implements WrappedLuaLibrary {
 
     // Creates a persistent file storage outside of the script, since the scripts path could be in a mod or zip
     // Files cannot be created in mods/zips from what I can tell.
+    @LuaWrapped
     public FsLib(Script script) {
         this(script, FileHelper.PERSISTENCE_DIR.resolve(script.getID()));
     }

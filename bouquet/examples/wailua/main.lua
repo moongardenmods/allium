@@ -3,6 +3,8 @@
 -- WAILA-like (What Am I Looking At) script exclusively for the client-side.
 -- This is a demonstration of how allium is not just for server sided use cases.
 
+local events = require("bouquet").events
+
 if package.environment() ~= "client" then return end
 
 local Component = require("net.minecraft.network.chat.Component")
@@ -10,7 +12,7 @@ local BuiltInRegistries = require("net.minecraft.core.registries.BuiltInRegistri
 
 local renderComponent -- The text to be shared between the render event and tick event
 
-events.client.GUI_RENDER_TAIL:register(script, function(client, context, deltaTracker, gui)
+events.client.guiRenderTail:register(script, function(client, context, deltaTracker, gui)
     if renderComponent then -- If there's text, then draw it at the top center
         context:drawCenteredString(gui:getFont(), renderComponent, context:guiWidth()/2, 5, 0xffffffff)
         -- The position 5 was arbitrarily chosen, and was the first value I picked just to test. It worked perfectly.
@@ -19,7 +21,7 @@ events.client.GUI_RENDER_TAIL:register(script, function(client, context, deltaTr
     end
 end)
 
-events.common.PLAYER_TICK:register(script, function(player)
+events.common.playerTick:register(script, function(player)
     local level = player:level()
     if level:isClientSide() then
         -- Finally, use the block to get the identifier of the block

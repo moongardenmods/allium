@@ -11,7 +11,7 @@ local StringTag = require("net.minecraft.nbt.StringTag")
 local ListTag = require("net.minecraft.nbt.ListTag")
 local CompoundTag = require("net.minecraft.nbt.CompoundTag")
 
-local util = require("script.util")
+local util = require("bouquet.util")
 
 local function fromTagInternal(element)
     local tag = element:getId()

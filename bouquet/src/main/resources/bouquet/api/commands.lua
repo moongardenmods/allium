@@ -4,7 +4,7 @@ if package.environment() == "server" then
     MinecraftServer = require("net.minecraft.server.MinecraftServer")
 end
 
-local util = require("script.util")
+local util = require("bouquet.util")
 
 return {
     exec = function(server, ...)

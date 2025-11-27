@@ -17,8 +17,10 @@ local PotionContents = require("net.minecraft.world.item.alchemy.PotionContents"
 local Potions = require("net.minecraft.world.item.alchemy.Potions")
 local ParticleTypes = require("net.minecraft.core.particles.ParticleTypes")
 
+local events = require("bouquet").events
+
 -- Return a function that we can modify while the game is playing
-events.common.BLOCK_INTERACT:register(script, function(state, level, pos, player, hand, hitResult)
+events.common.blockInteract:register(script, function(state, level, pos, player, hand, hitResult)
     local concrete = BuiltInRegistries.BLOCK:getKey(state:getBlock()):getPath() -- Get the name of the block interacted with
     local mainHandStack = player:getItemBySlot(EquipmentSlot.MAINHAND) -- Get the main hand itemstack of the player
     local stackComponents = mainHandStack:getComponents()
