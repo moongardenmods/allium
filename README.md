@@ -3,6 +3,7 @@
 [![Github Stars](https://img.shields.io/github/stars/moongardenmods/allium?color=blue&label=Stars&logo=github&style=flat)](https://github.com/moongardenmods/allium/stargazers) 
 [![Allium Modrinth Downloads](https://img.shields.io/modrinth/dt/allium?color=00AF5C&label=allium&style=flat&logo=modrinth)](https://modrinth.com/mod/allium)
 [![Bouquet Modrinth Downloads](https://img.shields.io/modrinth/dt/bouquet?color=00AF5C&label=bouquet&style=flat&logo=modrinth)](https://modrinth.com/mod/bouquet)
+[![Discord](https://img.shields.io/discord/1349267321742557255?logo=discord&logoColor=%23ffffff&color=%237289da)](https://discord.gg/rWSaP222G9)
 
 Lua script loader for Java Minecraft.
 
