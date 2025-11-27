@@ -4,13 +4,15 @@
 -- These scripts are primarily used for debugging Allium, but also happen to demonstrate the versatility of `require`,
 -- being able to load APIs from other scripts.
 
-local Text = require("net.minecraft.text.Text")
+local Component = require("net.minecraft.network.chat.Component")
+
+local events = require("bouquet").events
 
 local text
 
 -- Get the string out of the wrapped text object and print it on server start.
 -- This is silly, but for debugging Allium's internals invoking game logic is useful.
-events.server.SERVER_START:register(script, function()
+events.server.serverStart:register(script, function()
     print(text:getString())
 end)
 
@@ -20,5 +22,5 @@ return function(otherScript, input)
     -- Print our ID, and the invoking script ID
     print(script:getID(), otherScript:getID())
     -- Create a text object to display on server start using a string given by the invoking script.
-    text = Text.of(input)
+    text = Component.literal(input)
 end

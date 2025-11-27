@@ -4,16 +4,27 @@
 -- Derived from the original !hangman command in alpha, for allium-cc
 -- Source: https://github.com/hugeblank/Alpha/blob/master/alpha.lua#L354
 
-if package.environment == "client" then return end
 
 local words = require("words")
-local CommandManager = require("net.minecraft.server.command.CommandManager") -- We need the java command manager for creating commands.
-local arguments = command.arguments -- Create shortcut for command argument types
+local Commands = require("net.minecraft.commands.Commands") -- We need the java command manager for creating commands.
+local bouquet = require("bouquet")
+local arguments = bouquet.command.arguments -- Create shortcut for command argument types
+local fs = bouquet.fs.as(script)
 
 local active = {}
 
 local leaderboard = {}
 
+local function debugwrap(func)
+    return function(...)
+        local out = {pcall(func, ...)}
+        if table.remove(out, 1) then
+            return table.unpack(out)
+        else
+            print(table.unpack(out))
+        end
+    end
+end
 
 do -- Load the leaderboard from csv if present
     if fs.exists("leaderboard.csv") then
@@ -34,11 +45,11 @@ do -- Load the leaderboard from csv if present
 end
 
 local function flush(player, won)
-    local uuid = player:getGameProfile():getId():toString()
+    local uuid = player:getGameProfile():id():toString()
     if not leaderboard[uuid] then
         leaderboard[uuid] = {
             uuid = uuid,
-            username = player:getGameProfile():getName(),
+            username = player:getGameProfile():name(),
             wins = 0,
             losses = 0
         }
@@ -75,16 +86,16 @@ local function parseGuess(word, guessed)
 end
 
 local function sendMessage(context, data) -- easily broadcast a message to all players
-    local out = text.format(data)
+    local out = bouquet.text.format(data)
     context
             :getSource()
             :getPlayer()
-            :sendMessage(out, false)
+            :sendSystemMessage(out)
 end
 
-local builder = CommandManager.literal("hangman") -- Create the builder for the hangman command
+local builder = Commands.literal("hangman") -- Create the builder for the hangman command
 
-events.server.COMMAND_REGISTER:register(script, function(_, name, success)
+bouquet.events.server.commandRegister:register(script, function(_, name, success)
     -- Let us know if the command was successfully registered
     if success and name:find("hangman") then
         print("/hangman command registered!")
@@ -132,9 +143,9 @@ local function getTopPlayers()
     return lb
 end
 
-builder:m_then(CommandManager.literal("leaderboard"):executes(function(context)
+builder:m_then(Commands.literal("leaderboard"):executes(function(context)
     local player = context:getSource():getPlayer()
-    local uuid = player:getGameProfile():getId():toString()
+    local uuid = player:getGameProfile():id():toString()
     local out = { "Your stats:" }
     if leaderboard[uuid] then
         out[#out+1] = getInfo(uuid)
@@ -152,10 +163,10 @@ builder:m_then(CommandManager.literal("leaderboard"):executes(function(context)
     return 1
 end))
 
-builder:m_then(CommandManager.literal("start"):executes(function(context) -- The part of the command with no values attached
+builder:m_then(Commands.literal("start"):executes(function(context) -- The part of the command with no values attached
     local player = context:getSource():getPlayer()
     if active[player] then -- If there's a game being played tell the player to guess
-        context:getSource():sendError(text.format("Game already started, use /hangman guess."))
+        context:getSource():sendFailure(text.format("Game already started, use /hangman guess."))
         return 0 -- Execution handlers expect an integer return value.
         -- We use 0 to indicate error, and 1 to indicate success.
     else -- Start a game, since there's not one currently playing
@@ -189,7 +200,7 @@ local function sendWin(context, game, player) -- easily broadcast win message
     return 1
 end
 
-builder:m_then(CommandManager.literal("guess"):m_then(CommandManager.argument("guess", arguments.string.word()):executes(function(context)
+builder:m_then(Commands.literal("guess"):m_then(Commands.argument("guess", arguments.string.word()):executes(function(context)
     -- The part of the command that handles guesses
     local player = context:getSource():getPlayer()
     local game = active[player]
@@ -236,10 +247,10 @@ builder:m_then(CommandManager.literal("guess"):m_then(CommandManager.argument("g
             flush(player, false)
         end
     else -- No game, tell player how to start one
-        context:getSource():sendError(text.format("No game! <gray>Use /hangman start</gray> to play!"))
+        context:getSource():sendFailure(bouquet.text.format("No game! <gray>Use /hangman start</gray> to play!"))
     end
     return 1
 end)
 ))
 
-command.register(builder) -- Register the command
+bouquet.command.register(script, builder) -- Register the command

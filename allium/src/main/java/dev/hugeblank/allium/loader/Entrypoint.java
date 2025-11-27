@@ -8,13 +8,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 @JsonAdapter(Entrypoint.Adapter.class)
-public class Entrypoint {
-    @Expose(deserialize = false)
-    private final Map<Type, String> initializers;
-
-    public Entrypoint(Map<Type, String> initializers) {
-        this.initializers = initializers;
-    }
+public record Entrypoint(@Expose(deserialize = false) Map<Type, String> initializers) {
 
     public boolean valid() {
         return initializers.containsKey(Type.STATIC) || initializers.containsKey(Type.DYNAMIC);
@@ -30,15 +24,22 @@ public class Entrypoint {
 
     public enum Type {
         STATIC("static"),
-        DYNAMIC("dynamic");
+        DYNAMIC("dynamic"),
+        MIXIN("mixin");
 
         private final String key;
+
         Type(String key) {
             this.key = key;
         }
 
         public String getKey() {
             return key;
+        }
+
+        @Override
+        public String toString() {
+            return this.key;
         }
     }
 

@@ -1,31 +1,27 @@
 package dev.hugeblank.bouquet.api.lib.commands;
 
 import com.mojang.brigadier.builder.LiteralArgumentBuilder;
-import dev.hugeblank.allium.Allium;
 import dev.hugeblank.allium.api.WrappedLuaLibrary;
 import dev.hugeblank.allium.loader.Script;
 import dev.hugeblank.allium.loader.type.annotation.CoerceToBound;
 import dev.hugeblank.allium.loader.type.annotation.LuaWrapped;
 import dev.hugeblank.allium.loader.type.annotation.OptionalArg;
-import net.minecraft.server.command.CommandManager;
-import net.minecraft.server.command.ServerCommandSource;
+import net.minecraft.commands.CommandSourceStack;
+import net.minecraft.commands.Commands;
 
-import static dev.hugeblank.bouquet.api.lib.AlliumLib.COMMANDS;
+import java.util.ArrayList;
+import java.util.List;
 
 @LuaWrapped(name = "command")
-public class CommandLib implements WrappedLuaLibrary {
-    private final Script script;
-
-    public CommandLib(Script script, Allium.EnvType envType) {
-        this.script = script;
-    }
+public record CommandLib(Script script) implements WrappedLuaLibrary {
+    public static final List<CommandRegisterEntry> COMMANDS = new ArrayList<>();
 
     @LuaWrapped
-    public void register(LiteralArgumentBuilder<ServerCommandSource> builder, @OptionalArg CommandManager.RegistrationEnvironment environment) {
+    public void register(LiteralArgumentBuilder<CommandSourceStack> builder, @OptionalArg Commands.CommandSelection environment) {
         COMMANDS.add(new CommandRegisterEntry(
                 script,
                 builder,
-                environment == null ? CommandManager.RegistrationEnvironment.ALL : environment
+                environment == null ? Commands.CommandSelection.ALL : environment
         ));
     }
 

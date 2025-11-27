@@ -4,7 +4,7 @@ import me.basiqueevangelist.enhancedreflection.api.EClass;
 import org.squiddev.cobalt.LuaTable;
 import org.squiddev.cobalt.LuaUserdata;
 
-public class AlliumInstanceUserdata<T> extends AlliumUserdata {
+public class AlliumInstanceUserdata<T> extends LuaUserdata {
     private final EClass<T> clazz;
 
      AlliumInstanceUserdata(T obj, LuaTable metatable, EClass<T> clazz) {
@@ -40,7 +40,6 @@ public class AlliumInstanceUserdata<T> extends AlliumUserdata {
 
     @Override
     public String toString() {
-        // TODO: Mapping
         return super.toString() + " [instance of " + clazz.name() + "]";
     }
 }

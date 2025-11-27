@@ -4,17 +4,18 @@
 // If someone wants to SCP this, please by all means do so.
 package dev.hugeblank.allium.loader.type;
 
+import dev.hugeblank.allium.loader.type.annotation.LuaIndex;
 import dev.hugeblank.allium.loader.type.coercion.TypeCoercions;
+import dev.hugeblank.allium.loader.type.exception.InvalidArgumentException;
+import dev.hugeblank.allium.loader.type.property.EmptyData;
 import dev.hugeblank.allium.loader.type.property.PropertyData;
+import dev.hugeblank.allium.loader.type.property.PropertyResolver;
 import dev.hugeblank.allium.util.AnnotationUtils;
 import dev.hugeblank.allium.util.ArgumentUtils;
 import dev.hugeblank.allium.util.JavaHelpers;
 import dev.hugeblank.allium.util.MetatableUtils;
 import me.basiqueevangelist.enhancedreflection.api.EClass;
 import me.basiqueevangelist.enhancedreflection.api.EMethod;
-import dev.hugeblank.allium.loader.type.annotation.LuaIndex;
-import dev.hugeblank.allium.loader.type.property.EmptyData;
-import dev.hugeblank.allium.loader.type.property.PropertyResolver;
 import org.apache.commons.lang3.ArrayUtils;
 import org.jetbrains.annotations.Nullable;
 import org.squiddev.cobalt.*;
@@ -94,12 +95,20 @@ public class UserdataFactory<T> {
 
             @Override
             public LuaValue invoke(LuaState state, Varargs args) throws LuaError {
-                String name = args.arg(2).checkString(); // mapped name
+//                if (args.arg(2) instanceof LuaTable generics) {
+//                    for (int i = 1; i <= generics.size(); i++) {
+//                        if (generics.rawget(i) instanceof AlliumClassUserdata<?> userdata) {
+//                            genericTypes.add(userdata.toUserdata());
+//                        }
+//                    }
+//                    return args.arg(1);
+//                }
+                String name = args.arg(2).checkString();
 
                 PropertyData<? super T> cachedProperty = cachedProperties.get(name);
 
                 if (cachedProperty == null) {
-                    cachedProperty = PropertyResolver.resolveProperty(state, clazz, name, false);
+                    cachedProperty = PropertyResolver.resolveProperty(clazz, name, false);
 
                     cachedProperties.put(name, cachedProperty);
                 }
@@ -117,12 +126,12 @@ public class UserdataFactory<T> {
         metatable.rawset("__newindex", new VarArgFunction() {
             @Override
             public LuaValue invoke(LuaState state, Varargs args) throws LuaError {
-                String name = args.arg(2).checkString(); // mapped name
+                String name = args.arg(2).checkString();
 
                 PropertyData<? super T> cachedProperty = cachedProperties.get(name);
 
                 if (cachedProperty == null) {
-                    cachedProperty = PropertyResolver.resolveProperty(state, clazz, name, false);
+                    cachedProperty = PropertyResolver.resolveProperty(clazz, name, false);
 
                     cachedProperties.put(name, cachedProperty);
                 }
@@ -158,7 +167,7 @@ public class UserdataFactory<T> {
 
         var comparableInst = clazz.allInterfaces().stream().filter(x -> x.raw() == Comparable.class).findFirst().orElse(null);
         if (comparableInst != null) {
-            var bound = comparableInst.typeVariableValues().get(0).lowerBound();
+            var bound = comparableInst.typeVariableValues().getFirst().lowerBound();
             metatable.rawset("__lt", new LessFunction(bound));
             metatable.rawset("__le", new LessOrEqualFunction(bound));
         }

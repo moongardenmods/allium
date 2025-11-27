@@ -1,18 +1,22 @@
 package dev.hugeblank.bouquet.api.lib.http;
 
+import com.google.gson.*;
+import dev.hugeblank.allium.loader.type.AlliumInstanceUserdata;
 import dev.hugeblank.allium.loader.type.annotation.LuaWrapped;
 import dev.hugeblank.allium.loader.type.annotation.OptionalArg;
+import dev.hugeblank.bouquet.util.TableHelpers;
 import io.netty.buffer.ByteBuf;
 import io.netty.util.ReferenceCounted;
-import dev.hugeblank.bouquet.api.lib.JsonLib;
-import org.squiddev.cobalt.LuaError;
-import org.squiddev.cobalt.LuaValue;
+import it.unimi.dsi.fastutil.objects.ReferenceOpenHashSet;
+import org.squiddev.cobalt.*;
 
 import java.lang.ref.Cleaner;
 import java.nio.charset.Charset;
+import java.util.Set;
 
 @LuaWrapped
 public class LuaByteBuf {
+    private static final Gson COMPACT = new GsonBuilder().disableHtmlEscaping().create();
     private static final Cleaner CLEANER = Cleaner.create();
 
     private final ByteBuf raw;
@@ -179,7 +183,7 @@ public class LuaByteBuf {
 
     @LuaWrapped
     public LuaByteBuf writeJson(LuaValue value, @OptionalArg String charset, @OptionalArg Boolean compact) throws LuaError {
-        return writeString(JsonLib.toJson(value, compact), charset);
+        return writeString(toJson(value), charset);
     }
 
     @LuaWrapped
@@ -194,7 +198,7 @@ public class LuaByteBuf {
 
     @LuaWrapped
     public LuaValue asJson(@OptionalArg String charset) {
-        return JsonLib.fromJson(raw.toString(getCharsetFor(charset)));
+        return fromJson(raw.toString(getCharsetFor(charset)));
     }
 
     private Charset getCharsetFor(String name) {
@@ -227,6 +231,85 @@ public class LuaByteBuf {
         @Override
         public void run() {
             this.obj.release();
+        }
+    }
+
+    private static String toJson(LuaValue value) throws LuaError {
+        JsonElement element = toJsonElementInternal(value, new ReferenceOpenHashSet<>());
+        return COMPACT.toJson(element);
+    }
+
+    private static JsonElement toJsonElementInternal(LuaValue value, Set<LuaValue> seenValues) throws LuaError {
+        if (seenValues.contains(value)) return JsonNull.INSTANCE;
+
+        if (value instanceof AlliumInstanceUserdata<?> userdata && userdata.instanceOf(JsonElement.class)) {
+            return userdata.toUserdata(JsonElement.class);
+        } else if (value instanceof LuaTable table) {
+            if (TableHelpers.isArray(table)) {
+                JsonArray out = new JsonArray();
+                seenValues.add(table);
+                TableHelpers.forEachI(table, (i, v) -> out.add(toJsonElementInternal(v, seenValues)));
+                seenValues.remove(table);
+                return out;
+            } else {
+                JsonObject out = new JsonObject();
+                seenValues.add(table);
+                TableHelpers.forEach(table, (k, v) -> {
+                    if (!k.isString()) {
+                        throw new LuaError("Expected json object key of type 'string', got " + k.typeName());
+                    }
+                    out.add(k.toString(), toJsonElementInternal(v, seenValues));
+                });
+                seenValues.remove(table);
+                return out;
+            }
+        } else if (value instanceof LuaBoolean) {
+            return new JsonPrimitive(value.toBoolean());
+        } else if (value instanceof LuaInteger) {
+            return new JsonPrimitive(value.toInteger());
+        } else if (value instanceof LuaNumber) {
+            return new JsonPrimitive(value.toDouble());
+        } else if (value instanceof LuaString) {
+            return new JsonPrimitive(value.toString());
+        } else if (value instanceof LuaNil) {
+            return JsonNull.INSTANCE;
+        }
+        throw new LuaError("Could not parse value " + value);
+    }
+
+    private static LuaValue fromJson(String json) {
+        return fromJsonElement(JsonParser.parseString(json));
+    }
+
+    private static LuaValue fromJsonElement(JsonElement element) {
+        if (element == null) return Constants.NIL;
+        if (element.isJsonObject()) {
+            LuaTable out = new LuaTable();
+            JsonObject object = element.getAsJsonObject();
+            object.entrySet().forEach((entry) -> out.rawset(
+                    entry.getKey(), fromJsonElement(entry.getValue())
+            ));
+            return out;
+        } else if (element.isJsonArray()) {
+            LuaTable out = new LuaTable();
+            JsonArray array = element.getAsJsonArray();
+            for (int i = 0; i < array.size(); i++) {
+                out.rawset(i+1, fromJsonElement(array.get(i)));
+            }
+            return out;
+        } else if (element.isJsonPrimitive()) {
+            JsonPrimitive primitive = element.getAsJsonPrimitive();
+            if (primitive.isBoolean()) {
+                return primitive.getAsBoolean() ? Constants.TRUE : Constants.FALSE;
+            } else if (primitive.isNumber()) {
+                return ValueFactory.valueOf(primitive.getAsDouble());
+            } else if (primitive.isString()) {
+                return ValueFactory.valueOf(primitive.getAsString());
+            } else {
+                return Constants.NIL;
+            }
+        } else {
+            return Constants.NIL;
         }
     }
 }

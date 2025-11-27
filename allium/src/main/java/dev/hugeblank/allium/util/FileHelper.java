@@ -1,11 +1,10 @@
 package dev.hugeblank.allium.util;
 
 import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
-import com.google.gson.JsonElement;
-import com.google.gson.JsonParser;
 import dev.hugeblank.allium.Allium;
-import dev.hugeblank.allium.loader.*;
+import dev.hugeblank.allium.loader.Entrypoint;
+import dev.hugeblank.allium.loader.Manifest;
+import dev.hugeblank.allium.loader.Script;
 import net.fabricmc.loader.api.FabricLoader;
 import net.fabricmc.loader.api.ModContainer;
 import net.fabricmc.loader.api.metadata.CustomValue;
@@ -14,10 +13,11 @@ import org.jetbrains.annotations.Nullable;
 
 import java.io.BufferedReader;
 import java.io.IOException;
-import java.io.OutputStream;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.*;
-import java.util.*;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
 import java.util.stream.Stream;
@@ -33,7 +33,6 @@ public class FileHelper {
     public static final Path SCRIPT_DIR = FabricLoader.getInstance().getGameDir().resolve(Allium.ID);
     public static final Path CONFIG_DIR = FabricLoader.getInstance().getConfigDir().resolve(Allium.ID);
     public static final Path PERSISTENCE_DIR = FabricLoader.getInstance().getConfigDir().resolve(Allium.ID + "_persistence");
-    public static final Path MAPPINGS_CFG_DIR = FabricLoader.getInstance().getConfigDir().resolve(Allium.ID + "_mappings");
     public static final String MANIFEST_FILE_NAME = "manifest.json";
 
     public static Path getScriptsDirectory() {
@@ -48,17 +47,17 @@ public class FileHelper {
         return SCRIPT_DIR;
     }
 
-    public static Set<Script> getValidDirScripts(Path p, Allium.EnvType containerEnvType) {
-        Set<Script> out = new HashSet<>();
+    public static Set<Script.Reference> getValidDirScripts(Path p) {
+        Set<Script.Reference> out = new HashSet<>();
         try {
             Stream<Path> files = Files.list(p);
             files.forEach((scriptDir) -> {
                 if (Files.isDirectory(scriptDir)) {
-                    buildScript(out, scriptDir, containerEnvType);
+                    addReference(out, scriptDir);
                 } else {
                     try {
                         FileSystem fs = FileSystems.newFileSystem(scriptDir); // zip, tarball, whatever has a provider.
-                        buildScript(out, fs.getPath("/"), containerEnvType);
+                        addReference(out, fs.getPath("/"));
                     } catch (IOException | ProviderNotFoundException ignored) {}
                 }
             });
@@ -69,12 +68,12 @@ public class FileHelper {
         return out;
     }
 
-    private static void buildScript(Set<Script> scripts, Path path, Allium.EnvType containerEnvType) {
+    private static void addReference(Set<Script.Reference> scripts, Path path) {
         try {
             BufferedReader reader = Files.newBufferedReader(path.resolve(MANIFEST_FILE_NAME));
             Manifest manifest = new Gson().fromJson(reader, Manifest.class);
             if (manifest.isComplete()) {
-                scripts.add(new Script(manifest, path, containerEnvType));
+                scripts.add(new Script.Reference(manifest, path));
             } else {
                 Allium.LOGGER.error("Incomplete manifest on path {}", path);
             }
@@ -84,9 +83,8 @@ public class FileHelper {
         }
     }
 
-    // TODO: Test in prod
-    public static Set<Script> getValidModScripts(Allium.EnvType containerEnvType) {
-        Set<Script> out = new HashSet<>();
+    public static Set<Script.Reference> getValidModScripts() {
+        Set<Script.Reference> out = new HashSet<>();
         FabricLoader.getInstance().getAllMods().forEach((container) -> {
             ModMetadata metadata = container.getMetadata();
             if (metadata.containsCustomValue(Allium.ID)) {
@@ -108,12 +106,12 @@ public class FileHelper {
                                 Allium.LOGGER.error("Invalid entrypoints from script with ID {}", metadata.getId());
                                 return;
                             }
-                            Script script = scriptFromContainer(man, container, containerEnvType);
-                            if (script == null) {
+                            Script.Reference ref = referenceFromContainer(man, container);
+                            if (ref == null) {
                                 Allium.LOGGER.error("Could not find entrypoints for script with ID {}", metadata.getId());
                                 return;
                             }
-                            out.add(script);
+                            out.add(ref);
                         }
                     }
                     case ARRAY -> {
@@ -124,9 +122,9 @@ public class FileHelper {
                                 CustomValue.CvObject obj = v.getAsObject();
                                 Manifest man = makeManifest(obj); // No optional arguments here.
                                 if (!man.isComplete()) {
-                                    Script script = scriptFromContainer(man, container, containerEnvType);
-                                    if (script != null) {
-                                        out.add(script);
+                                    Script.Reference ref = referenceFromContainer(man, container);
+                                    if (ref != null) {
+                                        out.add(ref);
                                     }
                                 } else { // a value was missing. Be forgiving, and continue parsing
                                     Allium.LOGGER.warn("Malformed manifest at index {} of allium array block in fabric.mod.json of mod '{}'", i, metadata.getId());
@@ -144,14 +142,14 @@ public class FileHelper {
         return out;
     }
 
-    private static Script scriptFromContainer(Manifest man, ModContainer container, Allium.EnvType containerEnvType) {
-        AtomicReference<Script> out = new AtomicReference<>();
+    private static Script.Reference referenceFromContainer(Manifest man, ModContainer container) {
+        AtomicReference<Script.Reference> out = new AtomicReference<>();
         container.getRootPaths().forEach((path) -> {
             Entrypoint entrypoints = man.entrypoints();
-            if (exists(entrypoints, path, Entrypoint.Type.STATIC) || exists(entrypoints, path, Entrypoint.Type.DYNAMIC)) {
+            if (exists(entrypoints, path, Entrypoint.Type.STATIC) || exists(entrypoints, path, Entrypoint.Type.DYNAMIC) || exists(entrypoints, path, Entrypoint.Type.MIXIN)) {
                 // This has an incidental safeguard in the event that if multiple root paths have the same script
                 // the most recent script loaded will just *overwrite* previous ones.
-                out.set(new Script(man, path, containerEnvType));
+                out.set(new Script.Reference(man, path));
             }
         });
         return out.get();
@@ -159,25 +157,6 @@ public class FileHelper {
 
     private static boolean exists(Entrypoint entrypoints, Path path, Entrypoint.Type type) {
         return entrypoints.has(type) && path.resolve(entrypoints.get(type)).toFile().exists();
-    }
-
-    // TODO: Move this method and the one below to bouquet.
-    public static JsonElement getConfig(Script script) throws IOException {
-        Path path = FileHelper.CONFIG_DIR.resolve(script.getID() + ".json");
-        if (Files.exists(path)) {
-            return JsonParser.parseReader(Files.newBufferedReader(path));
-        }
-        return null;
-    }
-
-    public static void saveConfig(Script script, JsonElement element) throws IOException {
-        Path path = FileHelper.CONFIG_DIR.resolve(script.getID() + ".json");
-        Files.deleteIfExists(path);
-        OutputStream outputStream = Files.newOutputStream(path);
-        String jstr = new GsonBuilder().setPrettyPrinting().disableHtmlEscaping().create().toJson(element);
-        Allium.LOGGER.info(jstr);
-        outputStream.write(jstr.getBytes(StandardCharsets.UTF_8));
-        outputStream.close();
     }
 
     private static Manifest makeManifest(CustomValue.CvObject value) {
@@ -194,13 +173,12 @@ public class FileHelper {
                 getOrDefault(value, "id", optId, CustomValue::getAsString),
                 getOrDefault(value, "version", optVersion, CustomValue::getAsString),
                 getOrDefault(value, "name", optName, CustomValue::getAsString),
-                getOrDefault(value, "mappings", null, CustomValue::getAsString),
                 makeEntrypointContainer(getOrDefault(value, "entrypoints", null, CustomValue::getAsObject))
         );
     }
 
     private static <T> T getOrDefault(CustomValue.CvObject source, String key, T def, Function<CustomValue, T> getAs) {
-        return source.get(key).getType() == CustomValue.CvType.STRING ? getAs.apply(source.get(key)) : def;
+        return source.containsKey(key) ? getAs.apply(source.get(key)) : def;
     }
 
     private static Entrypoint makeEntrypointContainer(CustomValue.CvObject entrypointsObject) {

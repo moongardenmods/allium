@@ -1,33 +1,52 @@
 package dev.hugeblank.bouquet.api.event;
 
-import dev.hugeblank.allium.loader.type.annotation.LuaWrapped;
-import net.minecraft.util.Identifier;
+import dev.hugeblank.allium.api.event.SimpleEventType;
+import net.minecraft.server.MinecraftServer;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.level.block.state.BlockState;
 
-@LuaWrapped
-public class ServerEvents implements Events {
+public class ServerEvents {
 
-    @LuaWrapped public static final SimpleEventType<ServerEventHandlers.ChatMessage> CHAT_MESSAGE;
-    @LuaWrapped public static final SimpleEventType<ServerEventHandlers.PlayerJoin> PLAYER_JOIN;
-    @LuaWrapped public static final SimpleEventType<ServerEventHandlers.PlayerQuit> PLAYER_QUIT;
-    @LuaWrapped public static final SimpleEventType<ServerEventHandlers.PlayerBlockCollision> PLAYER_BLOCK_COLLISION;
-    @LuaWrapped public static final SimpleEventType<ServerEventHandlers.ServerTick> SERVER_TICK;
-    @LuaWrapped public static final SimpleEventType<ServerEventHandlers.CommandRegistration> COMMAND_REGISTER;
-    @LuaWrapped public static final SimpleEventType<ServerEventHandlers.ServerStart> SERVER_START;
+    // server gets a chat message
+    public static final SimpleEventType<ChatMessage> CHAT_MESSAGE = new SimpleEventType<>();
+    // player joins the game
+    public static final SimpleEventType<PlayerJoin> PLAYER_JOIN = new SimpleEventType<>();
+    // player leaves the game
+    public static final SimpleEventType<PlayerQuit> PLAYER_QUIT = new SimpleEventType<>();
+    // player collides with a block
+    public static final SimpleEventType<PlayerBlockCollision> PLAYER_BLOCK_COLLISION = new SimpleEventType<>();
+    // the result of a registered command
+    public static final SimpleEventType<CommandRegistration> COMMAND_REGISTER = new SimpleEventType<>();
+    // server finishes loading
+    public static final SimpleEventType<ServerStart> SERVER_START = new SimpleEventType<>();
+    // server gets ticked
+    public static final SimpleEventType<ServerTick> SERVER_TICK = new SimpleEventType<>();
 
-    static {
-        // server gets a chat message
-        CHAT_MESSAGE = new SimpleEventType<>(Identifier.of("allium:server/chat_message"));
-        // player joins the game
-        PLAYER_JOIN = new SimpleEventType<>(Identifier.of("allium:server/player_join"));
-        // player leaves the game
-        PLAYER_QUIT = new SimpleEventType<>(Identifier.of("allium:server/player_quit"));
-        // player collides with a block
-        PLAYER_BLOCK_COLLISION = new SimpleEventType<>(Identifier.of("allium:server/player_block_collision"));
-        // server gets ticked
-        SERVER_TICK = new SimpleEventType<>(Identifier.of("allium:server/tick"));
-        // the result of a registered command
-        COMMAND_REGISTER = new SimpleEventType<>(Identifier.of("allium:server/command_register"));
-        // server finishes loading
-        SERVER_START = new SimpleEventType<>(Identifier.of("allium:server/start"));
+    public interface ChatMessage {
+        void onChatMessage(ServerPlayer player, String message);
+    }
+
+    public interface PlayerJoin {
+        void onPlayerJoin(ServerPlayer player);
+    }
+
+    public interface PlayerQuit {
+        void onPlayerQuit(ServerPlayer player);
+    }
+
+    public interface PlayerBlockCollision {
+        void onPlayerBlockCollision(ServerPlayer player, BlockState state);
+    }
+
+    public interface ServerStart {
+        void onServerStart(MinecraftServer server);
+    }
+
+    public interface ServerTick {
+        void onServerTick(MinecraftServer server);
+    }
+
+    public interface CommandRegistration {
+        void onCommandRegistration(String scriptId, String commandName, boolean successful);
     }
 }

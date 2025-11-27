@@ -10,7 +10,7 @@ public class Registry<T extends Identifiable> {
 
     protected final Map<String, T> registry = new HashMap<>();
 
-    protected void onRegister(T value) {};
+    protected void onRegister(T value) {}
 
     public void register(T value) {
         String id = value.getID();

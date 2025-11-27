@@ -1,9 +1,9 @@
 package dev.hugeblank.allium.loader.type.coercion;
 
+import dev.hugeblank.allium.loader.type.builder.FieldBuilder;
+import dev.hugeblank.allium.util.asm.AsmUtil;
 import me.basiqueevangelist.enhancedreflection.api.EClass;
 import me.basiqueevangelist.enhancedreflection.api.EMethod;
-import dev.hugeblank.allium.util.AsmUtil;
-import dev.hugeblank.allium.util.ClassFieldBuilder;
 import org.objectweb.asm.ClassWriter;
 import org.objectweb.asm.Handle;
 import org.objectweb.asm.Type;
@@ -16,7 +16,6 @@ import java.util.Map;
 import java.util.function.BiFunction;
 
 import static org.objectweb.asm.Opcodes.*;
-import static org.objectweb.asm.Opcodes.RETURN;
 
 public class ProxyGenerator {
     private static final String STATE_FIELD_NAME = "allium$luaState";
@@ -40,7 +39,7 @@ public class ProxyGenerator {
     private static BiFunction<LuaState, LuaFunction, Object> generateProxyClass(EClass<?> iface, EMethod method) {
         String className = AsmUtil.getUniqueClassName();
         ClassWriter c = new ClassWriter(ClassWriter.COMPUTE_FRAMES | ClassWriter.COMPUTE_MAXS);
-        ClassFieldBuilder fields = new ClassFieldBuilder(className, c);
+        FieldBuilder fields = new FieldBuilder(className, c);
 
         c.visit(
             V17,
@@ -153,6 +152,10 @@ public class ProxyGenerator {
         }
     }
 
+    /**  Invokes a lua function. Used in bytecode.
+     * @see ProxyGenerator#generateProxyClass(EClass, EMethod)
+     */
+    @SuppressWarnings("unused")
     public static Varargs dispatch(LuaState state, LuaValue value, Varargs args) throws UnwindThrowable, LuaError {
         synchronized (state) {
             return Dispatch.invoke(state, value, args);

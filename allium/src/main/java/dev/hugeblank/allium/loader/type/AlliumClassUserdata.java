@@ -2,8 +2,9 @@ package dev.hugeblank.allium.loader.type;
 
 import me.basiqueevangelist.enhancedreflection.api.EClass;
 import org.squiddev.cobalt.LuaTable;
+import org.squiddev.cobalt.LuaUserdata;
 
-public class AlliumClassUserdata<T> extends AlliumUserdata {
+public class AlliumClassUserdata<T> extends LuaUserdata {
     private final EClass<T> clazz;
 
     public AlliumClassUserdata(EClass<T> clazz, LuaTable metatable) {
@@ -24,7 +25,6 @@ public class AlliumClassUserdata<T> extends AlliumUserdata {
 
     @Override
     public String toString() {
-        // TODO: Mapping
         return super.toString() + " [" + clazz.name() + "]";
     }
 }
