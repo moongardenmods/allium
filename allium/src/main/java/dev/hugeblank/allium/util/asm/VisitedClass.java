@@ -7,6 +7,7 @@ import org.squiddev.cobalt.LuaError;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -40,20 +41,46 @@ public class VisitedClass {
         return Type.getType("L"+className+";");
     }
 
-    public boolean containsMethod(String name) {
-        return visitedMethods.containsKey(name);
+    public boolean containsMethod(String descriptor) {
+        if (visitedMethods.containsKey(descriptor)) {
+            return true;
+        } else {
+            List<String> targets = visitedMethods.keySet().stream().filter(k -> k.startsWith(descriptor)).toList();
+            return targets.size() == 1;
+        }
     }
 
-    public VisitedMethod getMethod(String name) {
-        return visitedMethods.get(name);
+    public VisitedMethod getMethod(String descriptor) {
+        if (visitedMethods.containsKey(descriptor)) {
+            return visitedMethods.get(descriptor);
+        } else {
+            List<String> targets = visitedMethods.keySet().stream().filter(k -> k.startsWith(descriptor)).toList();
+            if (targets.size() == 1) {
+                return visitedMethods.get(targets.getFirst());
+            }
+        }
+        return null;
     }
 
-    public boolean containsField(String name) {
-        return visitedFields.containsKey(name);
+    public boolean containsField(String descriptor) {
+        if (visitedFields.containsKey(descriptor)) {
+            return true;
+        } else {
+            List<String> targets = visitedFields.keySet().stream().filter(k -> k.startsWith(descriptor)).toList();
+            return targets.size() == 1;
+        }
     }
 
-    public VisitedField getField(String name) {
-        return visitedFields.get(name);
+    public VisitedField getField(String descriptor) {
+        if (visitedFields.containsKey(descriptor)) {
+            return visitedFields.get(descriptor);
+        } else {
+            List<String> targets = visitedFields.keySet().stream().filter(k -> k.startsWith(descriptor)).toList();
+            if (targets.size() == 1) {
+                return visitedFields.get(targets.getFirst());
+            }
+        }
+        return null;
     }
 
     public VisitedElement get(String name) {
@@ -65,7 +92,7 @@ public class VisitedClass {
     }
 
     private void addVisitedField(int access, String name, String descriptor, String signature, Object value) {
-        visitedFields.put(name, new VisitedField(this, access, name, descriptor, signature, value));
+        visitedFields.put(name+descriptor, new VisitedField(this, access, name, descriptor, signature, value));
     }
 
     private void addVisitedMethod(int access, String name, String descriptor, String signature, String[] exceptions) {

@@ -4,9 +4,12 @@ import dev.hugeblank.allium.loader.mixin.annotation.method.injectors.*;
 import dev.hugeblank.allium.loader.type.annotation.LuaStateArg;
 import dev.hugeblank.allium.loader.type.annotation.LuaWrapped;
 import dev.hugeblank.allium.loader.type.exception.InvalidArgumentException;
+import me.basiqueevangelist.enhancedreflection.api.EClass;
 import org.squiddev.cobalt.LuaError;
 import org.squiddev.cobalt.LuaState;
 import org.squiddev.cobalt.LuaTable;
+
+import java.util.List;
 
 @LuaWrapped
 public class MixinMethodAnnotations {
@@ -67,6 +70,28 @@ public class MixinMethodAnnotations {
     @LuaWrapped
     public static LuaModifyReturnValue modifyReturnValue(@LuaStateArg LuaState state, LuaTable annotation) throws InvalidArgumentException, LuaError {
         return new LuaModifyReturnValue(state, annotation);
+    }
+
+    /// Create a @WrapMethod annotation.
+    ///
+    /// [MixinExtras Wiki](https://github.com/LlamaLad7/MixinExtras/wiki/WrapMethod)
+    ///
+    /// @see com.llamalad7.mixinextras.injector.wrapmethod.WrapMethod
+    @LuaWrapped
+    public static LuaWrapMethod wrapMethod(@LuaStateArg LuaState state, LuaTable annotation) throws InvalidArgumentException, LuaError {
+        return new LuaWrapMethod(state, annotation);
+    }
+
+    /// Supply a custom injector annotation that does not have an existing wrapper function.
+    ///
+    /// Method descriptor, parameter types and return type must be provided using java ASM syntax (ex. Lcom.example.package.ClassName;).
+    ///
+    /// Due to the inability to infer the expected parameters of many mixins, this function is offered as a catch-all.
+    /// One must be incredibly explicit with your descriptor, parameter, and return types, or this will
+    /// generate a method that will crash at the mixin apply phase. Here be dragons, you have been warned.
+    @LuaWrapped
+    public static LuaCustom custom(@LuaStateArg LuaState state, LuaTable annotation, EClass<?> annotationType, String methodDescriptor, List<String> parameterTypes, String returnType) throws InvalidArgumentException, LuaError {
+        return new LuaCustom(state, annotation, annotationType.raw(), methodDescriptor, parameterTypes, returnType);
     }
 
     /// Create an @Expression annotation.

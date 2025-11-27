@@ -1,7 +1,5 @@
 package dev.hugeblank.allium.loader.mixin.annotation.method.injectors;
 
-import com.llamalad7.mixinextras.injector.wrapmethod.WrapMethod;
-import com.llamalad7.mixinextras.injector.wrapoperation.Operation;
 import dev.hugeblank.allium.loader.Script;
 import dev.hugeblank.allium.loader.mixin.annotation.method.LuaInjectorAnnotation;
 import dev.hugeblank.allium.loader.mixin.annotation.method.LuaMethodAnnotation;
@@ -19,24 +17,26 @@ import org.squiddev.cobalt.LuaError;
 import org.squiddev.cobalt.LuaState;
 import org.squiddev.cobalt.LuaTable;
 
-import java.util.ArrayList;
 import java.util.List;
 
 import static org.objectweb.asm.Opcodes.*;
 
-public class LuaWrapMethod extends LuaInjectorAnnotation {
-    public LuaWrapMethod(LuaState state, LuaTable annotationTable) throws InvalidArgumentException, LuaError {
-        super(state, annotationTable, WrapMethod.class);
+public class LuaCustom extends LuaInjectorAnnotation {
+    private final String methodDescriptor;
+    private final List<String> parameters;
+    private final String returnType;
+
+    public LuaCustom(LuaState state, LuaTable annotationTable, Class<?> annotation, String methodDescriptor, List<String> parameters, String returnType) throws InvalidArgumentException, LuaError {
+        super(state, annotationTable, annotation);
+        this.methodDescriptor = methodDescriptor;
+        this.parameters = parameters;
+        this.returnType = returnType;
     }
 
     @Override
     public void bake(Script script, String eventId, ClassWriter classWriter, VisitedClass mixinClass, List<LuaMethodAnnotation> annotations, @Nullable List<? extends LuaSugar> sugarParameters) throws InvalidMixinException, LuaError, InvalidArgumentException {
-        VisitedMethod visitedMethod = getVisitedMethod(mixinClass, parser);
-        List<MixinParameter> params = new ArrayList<>(visitedMethod.getParams().stream().map(MixinParameter::new).toList());
-        Type returnType = Type.getReturnType(visitedMethod.descriptor());
-        if (!returnType.equals(Type.VOID_TYPE)) {
-            params.add(new MixinParameter(Type.getType(Operation.class)));
-        }
+        VisitedMethod visitedMethod = mixinClass.getMethod(methodDescriptor);
+        List<MixinParameter> params = parameters.stream().map(str -> new MixinParameter(Type.getType(str))).toList();
 
         MixinMethodBuilder methodBuilder = MixinMethodBuilder.of(
                 classWriter, visitedMethod, createInjectName(script.getID(), visitedMethod.name()), params
@@ -46,7 +46,7 @@ public class LuaWrapMethod extends LuaInjectorAnnotation {
 
         MixinMethodBuilder.InvocationReference invocationReference = methodBuilder
                 .access(visitedMethod.access() & ~(ACC_PUBLIC | ACC_PROTECTED) | ACC_PRIVATE)
-                .returnType(returnType)
+                .returnType(Type.getType(returnType))
                 .annotations(annotations.stream().map(LuaMethodAnnotation::parser).toList())
                 .signature(visitedMethod.signature())
                 .exceptions(visitedMethod.exceptions())
