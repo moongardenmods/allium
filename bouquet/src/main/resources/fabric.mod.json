@@ -1,20 +1,20 @@
 {
-	"schemaVersion": 1,
-	"id": "bouquet",
-	"version": "${version}",
-	"name": "Bouquet",
-	"description": "Essential hooks for Allium mods",
-	"authors": [
-		"hugeblank"
-	],
-	"contact": {
-		"homepage": "https://allium.hugeblank.dev/api",
-		"sources": "https://github.com/hugeblank/bouquet"
-	},
-	"license": "MIT",
-	"icon": "assets/bouquet/icon.png",
-	"environment": "*",
-	"entrypoints": {},
+  "schemaVersion": 1,
+  "id": "bouquet",
+  "version": "${version}",
+  "name": "Bouquet",
+  "description": "Essential hooks for Allium mods",
+  "authors": [
+      "hugeblank"
+  ],
+  "contact": {
+      "homepage": "https://allium.hugeblank.dev/api",
+      "sources": "https://github.com/hugeblank/bouquet"
+  },
+  "license": "MIT",
+  "icon": "assets/bouquet/icon.png",
+  "environment": "*",
+  "entrypoints": {},
   "custom": {
     "allium": {
       "entrypoints": {
@@ -24,16 +24,16 @@
     }
   },
 	"mixins": [
-		"bouquet.mixins.json",
-		{
-			"config": "bouquet.client.mixins.json",
-			"environment": "client"
-		}
+      "bouquet.mixins.json",
+      {
+        "config": "bouquet.client.mixins.json",
+        "environment": "client"
+      }
 	],
 	"depends": {
-		"minecraft": "~1.21.11-",
-		"fabricloader": ">=0.18.0",
-		"java": ">=21"
+      "minecraft": "~1.21.11-",
+      "fabricloader": ">=0.18.0",
+      "java": ">=21"
 	},
 	"suggests": {
 		"fabric-api": "*"
