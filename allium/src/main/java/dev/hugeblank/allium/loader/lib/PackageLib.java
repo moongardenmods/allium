@@ -49,9 +49,9 @@ public class PackageLib implements WrappedLuaLibrary {
     }
 
     @Override
-    public LuaValue add(LuaState state, LuaTable globals) throws LuaError {
-        globals.rawset("require", RegisteredFunction.ofS("require", this::require).create());
-        return WrappedLuaLibrary.super.add(state, globals);
+    public LuaValue add(LuaState state) throws LuaError {
+        state.globals().rawset("require", RegisteredFunction.ofS("require", this::require).create());
+        return WrappedLuaLibrary.super.add(state);
     }
 
     @LuaWrapped

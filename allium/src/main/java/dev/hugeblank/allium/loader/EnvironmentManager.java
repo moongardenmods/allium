@@ -28,17 +28,16 @@ public class EnvironmentManager {
     }
 
     protected void createEnvironment(Script script) {
-        LuaTable globals = state.globals();
-        BaseLib.add(globals);
+        BaseLib.add(state);
         try {
-            TableLib.add(state, globals);
-            StringLib.add(state, globals);
-            CoroutineLib.add(state, globals);
-            MathLib.add(state, globals);
-            Utf8Lib.add(state, globals);
-            Bit32Lib.add(state, globals);
+            TableLib.add(state);
+            StringLib.add(state);
+            CoroutineLib.add(state);
+            MathLib.add(state);
+            Utf8Lib.add(state);
+            Bit32Lib.add(state);
 
-            LibFunction.setGlobalLibrary(state, globals, "script",
+            LibFunction.setGlobalLibrary(state, "script",
                     TypeCoercions.toLuaValue(script, EClass.fromJava(Script.class))
             );
 
@@ -49,7 +48,7 @@ public class EnvironmentManager {
         } catch (LuaError error) {
             script.getLogger().error("Error loading library:", error);
         }
-
+        LuaTable globals = state.globals();
         globals.rawset( "print", new PrintMethod(script) );
         globals.rawset( "_HOST", ValueFactory.valueOf(Allium.ID + "_" + Allium.VERSION) );
     }
@@ -61,7 +60,7 @@ public class EnvironmentManager {
 
     private static void loadLibrary(Script script, LuaState state, WrappedLuaLibrary adder) {
         try {
-            adder.add(state, state.globals());
+            adder.add(state);
         } catch (LuaError error) {
             script.getLogger().error("Error loading library:", error);
         }
