@@ -60,8 +60,8 @@ public final class MethodInvocationFunction<T> extends VarArgFunction {
                         } catch (IllegalAccessException e) {
                             throw new LuaError(e);
                         } catch (InvocationTargetException e) {
-                            if (e.getTargetException() instanceof Rethrowable)
-                                throw new RethrowException(e.getTargetException());
+                            if (e.getTargetException() instanceof RuntimeException rte && rte instanceof Rethrowable)
+                                throw new RethrowException(rte);
                             throw e;
                         }
                     }
@@ -70,6 +70,8 @@ public final class MethodInvocationFunction<T> extends VarArgFunction {
             }
         } catch (LuaError e) {
             throw e;
+        } catch (RethrowException wrapped) {
+            wrapped.rethrow();
         } catch (Exception e) {
             final StringBuilder error = new StringBuilder();
             final StringBuilder trace = new StringBuilder();
