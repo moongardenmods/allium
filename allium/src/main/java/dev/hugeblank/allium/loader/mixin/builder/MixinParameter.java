@@ -12,8 +12,9 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.util.List;
 
+@SuppressWarnings("ClassCanBeRecord")
 public class MixinParameter {
-    private Type type;
+    private final Type type;
     private final List<LuaAnnotationParser> annotations;
 
     public MixinParameter(Type type, @Nullable List<LuaAnnotationParser> annotations) {
@@ -23,10 +24,6 @@ public class MixinParameter {
 
     public MixinParameter(Type type) {
         this(type, null);
-    }
-
-    public void setType(Type type) {
-        this.type = type;
     }
 
     public Type getType() {

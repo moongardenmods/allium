@@ -4,12 +4,14 @@
 -- beneficial to put it in a dynamic entrypoint, to enable easy modification and reloading!
 -- Unfortunately here, the brewing recipe registry gets created only once on game start, so this file is not dynamic.
 
--- Get the event for the mixin we created in mixin.lua
+-- Get the event for the mixin we created in mixin.lua using the unique name.
 local addRecipes = mixin.get("add_brewing_recipes")
 
+local Items = require("net.minecraft.world.item.Items")
+local Potions = require("net.minecraft.world.item.alchemy.Potions")
+
+-- Create the hook, filling in the body of the method we made.
 addRecipes:hook(function(builder, ci)
-    local Items = require("net.minecraft.world.item.Items")
-    local Potions = require("net.minecraft.world.item.alchemy.Potions")
     print("registering lucky potion!")
     -- Register our lucky little potion
     builder:addMix(Potions.AWKWARD, Items.GOLD_NUGGET, Potions.LUCK)
