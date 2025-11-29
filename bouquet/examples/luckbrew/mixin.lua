@@ -3,24 +3,32 @@ print("I'm feeling lucky!")
 -- We have to be VERY careful about where we register our mixins. If your mixin is client-specific,
 -- make sure to specify in mixin.to(), as well as checking that package.environment() is "client".
 
+-- Furthermore, since the mixin entrypoint is invoked during the preLaunch phase, as a convention, absolutely no game
+-- classes should be `require`d. For more information, see the [fabric wiki](https://wiki.fabricmc.net/documentation:entrypoint?s[]=prelaunch).
+-- Note that the `mixin` script entrypoint corresponds to `preLaunch`, while `static` and `dynamic` corresponds to `main`
+-- and one of `client` or `server` depending on the launch configuration.
+
 -- For registering our recipe in the right location
 local PotionBrewingMixinBuilder = mixin.to("net.minecraft.world.item.alchemy.PotionBrewing")
 
---[[ The following mess of a table is parsed into an annotation on the java side. We have to be very careful
-    with how it's structured so that it doesn't blow up in our face. The important bits are that "method" is a table
-    of strings, and at is a table of further "@At" annotations. Those have a special "value" that can just be the first
-    index of a table if no other fields are necessary for further targetting. If you come from java modding this should
-    make sense. If you come from the Lua side this is confusing. I recommend looking at the mixin cheatsheet for reference.
-    https://github.com/2xsaiko/mixin-cheatsheet It should be possible to extrapolate from this, what an inject would look
-    like in Lua.
---]]
+-- To obtain the hook for this mixin later (during proper initialization), we give it a unique name.
 PotionBrewingMixinBuilder:createInjectMethod("add_brewing_recipes", {
-    mixin.annotation.inject({ -- Get the point at which potions should be registered.
-        at = { { "TAIL" } },
-        method = { "addVanillaMixes(Lnet/minecraft/world/item/alchemy/PotionBrewing$Builder;)V" }
+    -- This table defines an array of annotations to be applied to the mixin method. One of them MUST be an injector,
+    -- which can be determined by looking at the return values of the functions in the `MixinMethodAnnotations` class.
+    -- If the value returned inherits from `LuaInjectorAnnotation`, then it can be used.
+    mixin.annotation.inject({
+        -- The first parameter is a required table with keys and values equivalent to the values expected from the
+        -- respective annotation methods. For the @Inject annotation, `method` and `at` should be provided.
+        at = { -- `at` is an array of @At annotations. Since it's an annotation, we pass another table.
+            { -- Annotations have a property where if the method name is `value`, supplying a key is not necessary.
+                "TAIL" -- For that reason, we can just pass the required `value` string without explicitly defining it.
+            }
+        },
+        method = { -- `method` is how the location to inject is defined. It is a java ASM name and descriptor string.
+            -- Most sane java modding IDEs will provide you a way to copy this descriptor to your clipboard. Use them.
+            "addVanillaMixes(Lnet/minecraft/world/item/alchemy/PotionBrewing$Builder;)V"
+        }
     })
 })
--- Inject returns an event type for us to register to.
--- It is practice to register mixin events in another entrypoint, so we use it in dynamic!
 
 PotionBrewingMixinBuilder:build() -- Don't forget to actually build the mixin!

@@ -5,6 +5,5 @@
   "entrypoints": {
     "dynamic": "main.lua",
     "mixin": "mixin.lua"
-  },
-  "mappings": "yarn"
+  }
 }

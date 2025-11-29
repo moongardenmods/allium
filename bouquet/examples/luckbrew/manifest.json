@@ -5,6 +5,5 @@
   "entrypoints": {
     "static": "main.lua",
     "mixin": "mixin.lua"
-  },
-  "mappings": "yarn"
+  }
 }

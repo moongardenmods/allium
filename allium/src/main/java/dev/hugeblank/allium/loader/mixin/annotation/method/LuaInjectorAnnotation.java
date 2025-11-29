@@ -26,14 +26,22 @@ public abstract class LuaInjectorAnnotation extends LuaMethodAnnotation implemen
         super(state, annotationTable, annotation);
     }
 
-    protected VisitedMethod getVisitedMethod(VisitedClass mixinClass, LuaAnnotationParser annotation) throws InvalidMixinException, LuaError {
+    protected String createInjectName(String scriptId, String visitedMethodName) {
+        return scriptId+ "$" +
+                visitedMethodName
+                        .replace("<", "")
+                        .replace(">", "") +
+                methodIndex++;
+    }
+
+    protected static VisitedMethod getVisitedMethod(VisitedClass mixinClass, LuaAnnotationParser annotation) throws InvalidMixinException, LuaError {
         String descriptor = annotation.findElement("method", String.class);
         if (!mixinClass.containsMethod(descriptor))
             throw new InvalidMixinException(InvalidMixinException.Type.INVALID_DESCRIPTOR, descriptor);
         return mixinClass.getMethod(descriptor);
     }
 
-    protected MixinMethodBuilder.WriteFactory createInjectWriteFactory(String eventName) {
+    protected static MixinMethodBuilder.WriteFactory createInjectWriteFactory(String eventName) {
         final Type objectType = Type.getType(Object.class);
         return (classWriter, methodVisitor, desc, paramTypes) -> {
             int varPrefix = paramTypes.size();
@@ -71,14 +79,6 @@ public abstract class LuaInjectorAnnotation extends LuaMethodAnnotation implemen
             methodVisitor.visitInsn(returnType.getOpcode(IRETURN));
             methodVisitor.visitMaxs(0, 0);
         };
-    }
-
-    protected String createInjectName(String scriptId, String visitedMethodName) {
-        return scriptId+ "$" +
-                visitedMethodName
-                        .replace("<", "")
-                        .replace(">", "") +
-                methodIndex++;
     }
 
 }

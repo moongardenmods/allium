@@ -6,6 +6,11 @@ import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Proxy;
 
+/// Helper class for creating events.
+/// Building off of `EventType`, this class adds a proxy class `invoker` that is derived from a given
+/// factory interface `T`, that wraps around registered lua handlers.
+///
+/// This class and `EventType` are not used internally by Allium and are provided solely for convenience. Use them!
 public class SimpleEventType<T> extends EventType<T> {
     private final EClass<T> eventType;
     private final T invoker;
