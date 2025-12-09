@@ -2,7 +2,7 @@ import java.util.*
 
 plugins {
     id("maven-publish")
-    id("net.fabricmc.fabric-loom-no-remap") version "1.14.0-alpha.29"
+    id("net.fabricmc.fabric-loom") version "1.14-SNAPSHOT"
 }
 // Common Mod Properties
 val mavenGroup: String by project
@@ -26,7 +26,7 @@ dependencies {
 
 subprojects {
     apply(plugin = "maven-publish")
-    apply(plugin = "net.fabricmc.fabric-loom-no-remap")
+    apply(plugin = "net.fabricmc.fabric-loom")
 
     repositories {
         maven("https://maven.hugeblank.dev/releases") {
