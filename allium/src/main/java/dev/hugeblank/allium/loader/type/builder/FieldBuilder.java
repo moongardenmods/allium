@@ -1,6 +1,6 @@
 package dev.hugeblank.allium.loader.type.builder;
 
-import com.mojang.datafixers.util.Pair;
+import dev.hugeblank.allium.util.Pair;
 import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.MethodVisitor;
 import org.objectweb.asm.Type;
@@ -21,7 +21,7 @@ public class FieldBuilder extends AbstractFieldBuilder{
 
     public <T> String store(T o, Class<T> fieldType) {
         for (var entry : storedFields.entrySet()) {
-            if (o == entry.getValue().getFirst() && fieldType.isAssignableFrom(entry.getValue().getSecond())) {
+            if (o == entry.getValue().left() && fieldType.isAssignableFrom(entry.getValue().right())) {
                 return entry.getKey();
             }
         }
@@ -60,7 +60,7 @@ public class FieldBuilder extends AbstractFieldBuilder{
     public void apply(Class<?> builtClass) {
         try {
             for (var entry : storedFields.entrySet()) {
-                builtClass.getField(entry.getKey()).set(null, entry.getValue().getFirst());
+                builtClass.getField(entry.getKey()).set(null, entry.getValue().left());
             }
 
             for (var entry : complexFields.entrySet()) {
