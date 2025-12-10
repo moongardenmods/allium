@@ -18,7 +18,11 @@ import org.squiddev.cobalt.function.VarArgFunction;
 
 import java.io.OutputStream;
 import java.io.PrintStream;
+import java.lang.invoke.MethodHandle;
+import java.lang.invoke.MethodHandles;
+import java.lang.invoke.MethodType;
 import java.lang.reflect.InvocationTargetException;
+import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 
@@ -51,8 +55,24 @@ public final class MethodInvocationFunction<T> extends VarArgFunction {
                         try { // Get the return type, invoke method, cast returned value, cry.
                             EClassUse<?> ret = method.returnTypeUse().upperBound();
                             // Some public methods are "inaccessible" despite being public. setAccessible coerces that.
-                            method.raw().setAccessible(true);
-                            Object out = method.invoke(instance, javaArgs);
+                            Object out;
+                            if (args.arg(1) instanceof AlliumSuperUserdata<?> superData) {
+                                // TODO: Maybe the userdata should have the method invoker?
+                                Class<?> superClass = superData.superClass().raw();
+                                MethodHandles.Lookup lookup = MethodHandles.privateLookupIn(superClass, MethodHandles.lookup());
+                                MethodHandle handle = lookup.findSpecial(superClass, name, MethodType.methodType(method.rawReturnType().raw()), superData.instanceClass().raw());
+                                List<Object> params = new ArrayList<>(List.of(javaArgs));
+                                params.addFirst(instance);
+                                try {
+                                    out = handle.invoke(params.toArray());
+                                } catch (Throwable e) {
+                                    throw new InvocationTargetException(e);
+                                }
+                            } else {
+                                method.raw().setAccessible(true);
+                                out = method.invoke(instance, javaArgs);
+                            }
+
                             if (ret.type().raw() == Varargs.class)
                                 return (Varargs) out;
                             else

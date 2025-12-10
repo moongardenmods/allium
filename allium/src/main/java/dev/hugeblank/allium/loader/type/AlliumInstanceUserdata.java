@@ -5,7 +5,7 @@ import org.squiddev.cobalt.LuaTable;
 import org.squiddev.cobalt.LuaUserdata;
 
 public class AlliumInstanceUserdata<T> extends LuaUserdata {
-    private final EClass<T> clazz;
+    protected final EClass<T> clazz;
 
      AlliumInstanceUserdata(T obj, LuaTable metatable, EClass<T> clazz) {
         super(obj, metatable);
@@ -16,6 +16,7 @@ public class AlliumInstanceUserdata<T> extends LuaUserdata {
         return clazz;
     }
 
+    // TODO: We should probably override get/setmetatable since we reuse one for each class/bound (and it's script indiscriminate!)
 
     public boolean instanceOf(Class<?> test) {
         return clazz.isAssignableFrom(test);
@@ -29,8 +30,9 @@ public class AlliumInstanceUserdata<T> extends LuaUserdata {
         return toUserdata(test.raw());
     }
 
-    public <U> U toUserdata(Class<U> test) {
-        return test.cast(instance);
+    public <U> U toUserdata(Class<? super U> test) {
+        //noinspection unchecked
+        return (U) test.cast(instance);
     }
 
     @Override

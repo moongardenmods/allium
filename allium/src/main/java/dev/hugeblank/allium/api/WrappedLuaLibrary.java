@@ -18,7 +18,7 @@ import org.squiddev.cobalt.function.LibFunction;
 public interface WrappedLuaLibrary {
 
     default LuaValue add(LuaState state) throws LuaError {
-        LuaValue lib = UserdataFactory.of(EClass.fromJava(getClass())).createBound(this);
+        LuaValue lib = UserdataFactory.from(EClass.fromJava(getClass())).createBound(this);
 
         LuaWrapped wrapped = getClass().getAnnotation(LuaWrapped.class);
 

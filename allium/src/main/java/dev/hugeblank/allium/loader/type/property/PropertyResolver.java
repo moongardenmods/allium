@@ -14,25 +14,39 @@ import java.util.function.Predicate;
 
 public final class PropertyResolver {
 
-    public static <T> PropertyData<? super T> resolveProperty(EClass<T> clazz, String name, boolean isStatic) {
+    public static <T> PropertyData<? super T> resolveProperty(EClass<T> clazz, String name, MemberFilter filter) {
+        List<EMethod> methods = new ArrayList<>(clazz.methods());
+        methods.addAll(clazz.declaredMethods());
+        List<EField> fields = new ArrayList<>(clazz.fields());
+        fields.addAll(clazz.declaredFields());
+        return resolvePropertyFrom(
+                clazz,
+                methods.stream().distinct().filter(filter).toList(),
+                fields.stream().distinct().filter(filter).toList(),
+                name,
+                filter
+        );
+    }
+
+    public static <T> PropertyData<? super T> resolvePropertyFrom(EClass<T> clazz, List<EMethod> methods, Collection<EField> fields, String name, MemberFilter filter) {
         List<EMethod> foundMethods = new ArrayList<>();
 
-        collectMethods(clazz.methods(), name, isStatic, foundMethods::add);
+        collectMethods(methods, name, foundMethods::add);
 
         if (!foundMethods.isEmpty())
-            return new MethodData<>(clazz, foundMethods, name, isStatic);
+            return new MethodData<>(clazz, foundMethods, name, filter);
 
-        EMethod getter = findMethod(clazz.methods(), "get" + StringUtils.capitalize(name),
-            method -> AnnotationUtils.countLuaArguments(method) == 0 && (!isStatic || method.isStatic()));
+        EMethod getter = findMethod(methods, "get" + StringUtils.capitalize(name),
+                method -> AnnotationUtils.countLuaArguments(method) == 0 && method.isStatic());
 
         if (getter != null) {
-            EMethod setter = findMethod(clazz.methods(), "set" + StringUtils.capitalize(name),
-                method -> AnnotationUtils.countLuaArguments(method) == 1 && (!isStatic || method.isStatic()));
+            EMethod setter = findMethod(methods, "set" + StringUtils.capitalize(name),
+                    method -> AnnotationUtils.countLuaArguments(method) == 1 && method.isStatic());
 
             return new PropertyMethodData<>(getter, setter);
         }
 
-        EField field = findField(clazz.fields(), name, isStatic);
+        EField field = findField(fields, name);
 
         if (field != null)
             return new FieldData<>(field);
@@ -40,10 +54,9 @@ public final class PropertyResolver {
         return EmptyData.INSTANCE;
     }
 
-    public static void collectMethods(Collection<EMethod> methods, String name, boolean staticOnly, Consumer<EMethod> consumer) {
+    public static void collectMethods(Collection<EMethod> methods, String name, Consumer<EMethod> consumer) {
         for (EMethod method : methods) {
             if (AnnotationUtils.isHiddenFromLua(method)) continue;
-            if (staticOnly && !method.isStatic()) continue;
 
             String[] altNames = AnnotationUtils.findNames(method);
             if (altNames != null) {
@@ -88,10 +101,9 @@ public final class PropertyResolver {
         return null;
     }
 
-    public static EField findField(Collection<EField> fields, String name, boolean staticOnly) {
+    public static EField findField(Collection<EField> fields, String name) {
         for (var field : fields) {
             if (AnnotationUtils.isHiddenFromLua(field)) continue;
-            if (staticOnly && !field.isStatic()) continue;
 
             String[] altNames = AnnotationUtils.findNames(field);
             if (altNames != null) {

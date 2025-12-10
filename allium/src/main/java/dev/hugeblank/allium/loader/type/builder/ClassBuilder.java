@@ -5,6 +5,7 @@ import dev.hugeblank.allium.loader.type.StaticBinder;
 import dev.hugeblank.allium.loader.type.annotation.LuaWrapped;
 import dev.hugeblank.allium.loader.type.annotation.OptionalArg;
 import dev.hugeblank.allium.loader.type.coercion.TypeCoercions;
+import dev.hugeblank.allium.loader.type.property.MemberFilter;
 import dev.hugeblank.allium.loader.type.property.PropertyResolver;
 import dev.hugeblank.allium.util.asm.AsmUtil;
 import me.basiqueevangelist.enhancedreflection.api.EClass;
@@ -85,9 +86,14 @@ public class ClassBuilder extends AbstractClassBuilder {
     public void overrideMethod(String methodName, EClass<?>[] parameters, Map<String, Boolean> access, LuaFunction func) throws LuaError {
         var methods = new ArrayList<EMethod>();
         if (access.size() > 1) {
-            ScriptRegistry.scriptFromState(state).getLogger().warn("Flags on method override besides 'static' are ignored. For method {}", methodName);
+            ScriptRegistry.scriptFromState(state).getLogger().warn("Flags on method override besides 'static', 'public', and 'protected' are ignored. For method {}", methodName);
         }
-        PropertyResolver.collectMethods(this.methods, methodName, access.getOrDefault("static", false), methods::add);
+        PropertyResolver.collectMethods(this.methods.stream().filter(new MemberFilter(
+                access.getOrDefault("static", false),
+                true,
+                true,
+                false
+        )).toList(), methodName, methods::add);
 
         for (var method : methods) {
             var methParams = method.parameters();
