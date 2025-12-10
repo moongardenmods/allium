@@ -1,7 +1,3 @@
-// Eldritch horrors, sponsored by allium!
-// This class converts all public methods from any class from Java -> Lua.
-// Completely unrestrained, interprets everything. I'm sorry.
-// If someone wants to SCP this, please by all means do so.
 package dev.hugeblank.allium.loader.type;
 
 import dev.hugeblank.allium.loader.type.coercion.TypeCoercions;
@@ -15,31 +11,38 @@ import dev.hugeblank.allium.util.JavaHelpers;
 import dev.hugeblank.allium.util.MetatableUtils;
 import me.basiqueevangelist.enhancedreflection.api.EClass;
 import me.basiqueevangelist.enhancedreflection.api.EMethod;
+import me.basiqueevangelist.enhancedreflection.api.ModifierHolder;
 import org.jetbrains.annotations.Nullable;
 import org.squiddev.cobalt.*;
 import org.squiddev.cobalt.function.VarArgFunction;
 
 import java.lang.reflect.InvocationTargetException;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
-public class UserdataFactory<T> extends AbstractUserdataFactory<T, AlliumInstanceUserdata<T>> {
-    private static final ConcurrentMap<EClass<?>, UserdataFactory<?>> FACTORIES = new ConcurrentHashMap<>();
+public class SuperUserdataFactory<T> extends AbstractUserdataFactory<T, AlliumSuperUserdata<T>> {
+    private static final ConcurrentMap<EClass<?>, SuperUserdataFactory<?>> FACTORIES = new ConcurrentHashMap<>();
+
+    private final EClass<? super T> superClass;
     private @Nullable LuaTable boundMetatable;
 
-    protected UserdataFactory(EClass<T> clazz) {
+    SuperUserdataFactory(EClass<T> clazz) {
         super(clazz);
+        this.superClass = clazz.superclass();
     }
 
     @Override
     List<EMethod> collectMetamethodCandidates() {
-        return clazz.methods();
+        List<EMethod> targets = new ArrayList<>(superClass.methods());
+        targets.addAll(superClass.declaredMethods().stream().filter(ModifierHolder::isProtected).toList());
+        return targets;
     }
 
     @Override
-    protected LuaTable createMetatable(boolean isBound) {
+    LuaTable createMetatable(boolean isBound) {
         LuaTable metatable = new LuaTable();
 
         metatable.rawset("__tostring", new VarArgFunction() {
@@ -48,14 +51,14 @@ public class UserdataFactory<T> extends AbstractUserdataFactory<T, AlliumInstanc
             public Varargs invoke(LuaState state, Varargs args) throws LuaError {
                 try {
                     // TODO: Can this be reduced to `args.arg(1).toString()`?
-                    return TypeCoercions.toLuaValue(Objects.requireNonNull(TypeCoercions.toJava(state, args.arg(1), clazz)).toString());
+                    return TypeCoercions.toLuaValue(Objects.requireNonNull(TypeCoercions.toJava(state, args.arg(1), superClass)).toString());
                 } catch (InvalidArgumentException e) {
                     throw new LuaError(e);
                 }
             }
         });
 
-        MetatableUtils.applyPairs(metatable, clazz, cachedProperties, isBound, MemberFilter.PUBLIC_MEMBERS);
+        MetatableUtils.applyPairs(metatable, superClass, cachedProperties, isBound, MemberFilter.CHILD_MEMBER_ACCESS);
 
         metatable.rawset("__index", new VarArgFunction() {
 
@@ -71,21 +74,26 @@ public class UserdataFactory<T> extends AbstractUserdataFactory<T, AlliumInstanc
 //                }
                 String name = args.arg(2).checkString();
 
+                // Indexing a name that can't exist on the java side. Maybe there's a better way to do this?
+                if (name.equals("static")) {
+                    return StaticBinder.bindClass(superClass, MemberFilter.STATIC_CHILD_MEMBER_ACCESS);
+                }
+
                 PropertyData<? super T> cachedProperty = cachedProperties.get(name);
 
                 if (cachedProperty == null) {
-                    cachedProperty = PropertyResolver.resolveProperty(clazz, name, MemberFilter.PUBLIC_MEMBERS);
+                    cachedProperty = PropertyResolver.resolveProperty(superClass, name, MemberFilter.CHILD_MEMBER_ACCESS);
 
                     cachedProperties.put(name, cachedProperty);
                 }
                 if (cachedProperty == EmptyData.INSTANCE) {
-                    LuaValue output = MetatableUtils.getIndexMetamethod(clazz, indexImpl, state, args.arg(1), args.arg(2));
+                    LuaValue output = MetatableUtils.getIndexMetamethod(superClass, indexImpl, state, args.arg(1), args.arg(2));
                     if (output != null) {
                         return output;
                     }
                 }
 
-                return cachedProperty.get(name, state, JavaHelpers.checkUserdata(args.arg(1), clazz.raw()), isBound);
+                return cachedProperty.get(name, state, JavaHelpers.checkUserdata(args.arg(1), superClass.raw()), isBound);
             }
         });
 
@@ -97,7 +105,7 @@ public class UserdataFactory<T> extends AbstractUserdataFactory<T, AlliumInstanc
                 PropertyData<? super T> cachedProperty = cachedProperties.get(name);
 
                 if (cachedProperty == null) {
-                    cachedProperty = PropertyResolver.resolveProperty(clazz, name, MemberFilter.PUBLIC_MEMBERS);
+                    cachedProperty = PropertyResolver.resolveProperty(superClass, name, MemberFilter.CHILD_MEMBER_ACCESS);
 
                     cachedProperties.put(name, cachedProperty);
                 }
@@ -109,7 +117,7 @@ public class UserdataFactory<T> extends AbstractUserdataFactory<T, AlliumInstanc
 
                         if (jargs.length == parameters.size()) {
                             try {
-                                var instance = TypeCoercions.toJava(state, args.arg(1), clazz);
+                                var instance = TypeCoercions.toJava(state, args.arg(1), superClass);
                                 newIndexImpl.invoke(instance, jargs);
                                 return Constants.NIL;
                             } catch (IllegalAccessException e) {
@@ -125,13 +133,13 @@ public class UserdataFactory<T> extends AbstractUserdataFactory<T, AlliumInstanc
                         // Continue.
                     }
                 }
-                cachedProperty.set(name, state, JavaHelpers.checkUserdata(args.arg(1), clazz.raw()), args.arg(3));
+                cachedProperty.set(name, state, JavaHelpers.checkUserdata(args.arg(1), superClass.raw()), args.arg(3));
 
                 return Constants.NIL;
             }
         });
 
-        var comparableInst = clazz.allInterfaces().stream().filter(x -> x.raw() == Comparable.class).findFirst().orElse(null);
+        var comparableInst = superClass.allInterfaces().stream().filter(x -> x.raw() == Comparable.class).findFirst().orElse(null);
         if (comparableInst != null) {
             var bound = comparableInst.typeVariableValues().getFirst().lowerBound();
             metatable.rawset("__lt", new LessFunction(bound));
@@ -141,24 +149,23 @@ public class UserdataFactory<T> extends AbstractUserdataFactory<T, AlliumInstanc
         return metatable;
     }
 
-    @SuppressWarnings("unchecked")
-    public static <T> UserdataFactory<T> from(EClass<T> clazz) {
-        return (UserdataFactory<T>) FACTORIES.computeIfAbsent(clazz, UserdataFactory::new);
-    }
-
     @Override
-    public AlliumInstanceUserdata<T> create(Object instance) {
+    public AlliumSuperUserdata<T> create(Object instance) {
         //noinspection unchecked
-        return new AlliumInstanceUserdata<>((T) instance, metatable, clazz);
+        return new AlliumSuperUserdata<>((T) instance, metatable, clazz);
     }
 
     @Override
-    public AlliumInstanceUserdata<T> createBound(Object instance) {
+    public AlliumSuperUserdata<T> createBound(Object instance) {
         if (boundMetatable == null)
             boundMetatable = createMetatable(true);
 
         //noinspection unchecked
-        return new AlliumInstanceUserdata<>((T) instance, boundMetatable, clazz);
+        return new AlliumSuperUserdata<>((T) instance, boundMetatable, clazz);
     }
 
+    @SuppressWarnings("unchecked")
+    public static <T> SuperUserdataFactory<T> from(EClass<T> clazz) {
+        return (SuperUserdataFactory<T>) FACTORIES.computeIfAbsent(clazz, SuperUserdataFactory::new);
+    }
 }

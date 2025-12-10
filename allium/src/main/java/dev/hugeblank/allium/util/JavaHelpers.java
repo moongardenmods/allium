@@ -9,7 +9,7 @@ import org.squiddev.cobalt.LuaValue;
 public class JavaHelpers {
 
 
-    public static <T> T checkUserdata(LuaValue value, Class<T> clazz) throws LuaError {
+    public static <T> T checkUserdata(LuaValue value, Class<? super T> clazz) throws LuaError {
         if (value instanceof AlliumInstanceUserdata<?> userdata) {
             try {
                 return userdata.toUserdata(clazz);

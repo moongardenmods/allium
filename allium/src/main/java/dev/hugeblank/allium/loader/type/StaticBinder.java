@@ -4,6 +4,7 @@ import dev.hugeblank.allium.loader.type.annotation.LuaIndex;
 import dev.hugeblank.allium.loader.type.coercion.TypeCoercions;
 import dev.hugeblank.allium.loader.type.exception.InvalidArgumentException;
 import dev.hugeblank.allium.loader.type.property.EmptyData;
+import dev.hugeblank.allium.loader.type.property.MemberFilter;
 import dev.hugeblank.allium.loader.type.property.PropertyData;
 import dev.hugeblank.allium.loader.type.property.PropertyResolver;
 import dev.hugeblank.allium.util.AnnotationUtils;
@@ -28,10 +29,14 @@ public final class StaticBinder {
     private StaticBinder() {}
 
     public static <T> AlliumClassUserdata<T> bindClass(EClass<T> clazz) {
+        return bindClass(clazz, MemberFilter.PUBLIC_STATIC_MEMBERS);
+    }
+
+    public static <T> AlliumClassUserdata<T> bindClass(EClass<T> clazz, MemberFilter filter) {
         Map<String, PropertyData<? super T>> cachedProperties = new HashMap<>();
         LuaTable metatable = new LuaTable();
 
-        MetatableUtils.applyPairs(metatable, clazz, cachedProperties, false, true);
+        MetatableUtils.applyPairs(metatable, clazz, cachedProperties, false, filter);
 
         metatable.rawset("__index", LibFunction.create((state, arg1, arg2) -> {
             if (arg2.isString()) {
@@ -44,7 +49,7 @@ public final class StaticBinder {
                 PropertyData<? super T> cachedProperty = cachedProperties.get(name);
 
                 if (cachedProperty == null) {
-                    cachedProperty = PropertyResolver.resolveProperty(clazz, name, true);
+                    cachedProperty = PropertyResolver.resolveProperty(clazz, name, filter);
 
                     cachedProperties.put(name, cachedProperty);
                 }
@@ -83,7 +88,7 @@ public final class StaticBinder {
             PropertyData<? super T> cachedProperty = cachedProperties.get(name);
 
             if (cachedProperty == null) {
-                cachedProperty = PropertyResolver.resolveProperty(clazz, name, false);
+                cachedProperty = PropertyResolver.resolveProperty(clazz, name, filter);
 
                 cachedProperties.put(name, cachedProperty);
             }

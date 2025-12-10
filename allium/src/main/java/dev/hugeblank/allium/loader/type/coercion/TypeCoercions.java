@@ -217,21 +217,21 @@ public class TypeCoercions {
             if (unimplemented == 1) {
                 return new MethodInvocationFunction(klass, Collections.singletonList(ifaceMethod), ifaceMethod.name(), out, false);
             } else {
-                return UserdataFactory.of(klass).create(klass.cast(out));
+                return UserdataFactory.from(klass).create(klass.cast(out));
             }
         } else if (klass.raw().isAssignableFrom(out.getClass())) {
             EClass<?> trueRet = EClass.fromJava(out.getClass());
 
             if (canMatch(trueRet, klass)) {
                 if (ret.hasAnnotation(CoerceToBound.class))
-                    return UserdataFactory.of(trueRet).createBound(out);
+                    return UserdataFactory.from(trueRet).createBound(out);
                 else
-                    return UserdataFactory.of(trueRet).create(out);
+                    return UserdataFactory.from(trueRet).create(out);
             } else {
                 if (ret.hasAnnotation(CoerceToBound.class))
-                    return UserdataFactory.of(klass).createBound(klass.cast(out));
+                    return UserdataFactory.from(klass).createBound(klass.cast(out));
                 else
-                    return UserdataFactory.of(klass).create(klass.cast(out));
+                    return UserdataFactory.from(klass).create(klass.cast(out));
             }
         } else {
             return Constants.NIL;

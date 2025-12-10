@@ -3,6 +3,7 @@ package dev.hugeblank.allium.util;
 import dev.hugeblank.allium.loader.type.annotation.LuaWrapped;
 import dev.hugeblank.allium.loader.type.coercion.TypeCoercions;
 import dev.hugeblank.allium.loader.type.exception.InvalidArgumentException;
+import dev.hugeblank.allium.loader.type.property.MemberFilter;
 import dev.hugeblank.allium.loader.type.property.PropertyData;
 import dev.hugeblank.allium.loader.type.property.PropertyResolver;
 import me.basiqueevangelist.enhancedreflection.api.EClass;
@@ -57,7 +58,7 @@ public class MetatableUtils {
         return null;
     }
 
-    public static <T> void applyPairs(LuaTable metatable, EClass<T> clazz, Map<String, PropertyData<? super T>> cachedProperties, boolean isBound, boolean forceStatic) {
+    public static <T> void applyPairs(LuaTable metatable, EClass<? super T> clazz, Map<String, PropertyData<? super T>> cachedProperties, boolean isBound, MemberFilter filter) {
         metatable.rawset("__pairs", LibFunction.create((state, arg1) -> {
             Stream.Builder<EMember> memberBuilder = Stream.builder();
             clazz.methods().forEach(memberBuilder);
@@ -65,7 +66,8 @@ public class MetatableUtils {
             T instance;
             if (isBound) {
                 try {
-                    instance = clazz.cast(TypeCoercions.toJava(state, arg1, clazz));
+                    //noinspection unchecked
+                    instance = (T) clazz.cast(TypeCoercions.toJava(state, arg1, clazz));
                 } catch (InvalidArgumentException e) {
                     throw new LuaError(e);
                 }
@@ -78,7 +80,7 @@ public class MetatableUtils {
             ).toList();
             List<Varargs> varargs = new ArrayList<>();
             for (EMember member : members) {
-                if (!forceStatic || member.isStatic()) {
+                if (filter.test(member)) {
                     String memberName = member.name();
                     if (member.hasAnnotation(LuaWrapped.class)) {
                         String[] names = AnnotationUtils.findNames(member);
@@ -89,7 +91,7 @@ public class MetatableUtils {
                     PropertyData<? super T> propertyData = cachedProperties.get(memberName);
 
                     if (propertyData == null) { // caching
-                        propertyData = PropertyResolver.resolveProperty(clazz, memberName, member.isStatic());
+                        propertyData = PropertyResolver.resolveProperty(clazz, memberName, filter);
                         cachedProperties.put(memberName, propertyData);
                     }
 
