@@ -1,6 +1,5 @@
 package dev.hugeblank.bouquet.api.lib.fs;
 
-import dev.hugeblank.allium.api.WrappedLuaLibrary;
 import dev.hugeblank.allium.loader.Script;
 import dev.hugeblank.allium.loader.type.annotation.CoerceToNative;
 import dev.hugeblank.allium.loader.type.annotation.LuaWrapped;
@@ -23,11 +22,11 @@ import java.util.Map;
 import java.util.stream.Stream;
 
 @LuaWrapped(name = "fs")
-public class FsLib implements WrappedLuaLibrary {
+public class FsLib {
     private final Script script;
     private final Path root;
 
-    // Creates a persistent file storage outside of the script, since the scripts path could be in a mod or zip
+    // Creates a persistent file storage outside the script, since the scripts path could be in a mod or zip
     // Files cannot be created in mods/zips from what I can tell.
     @LuaWrapped
     public FsLib(Script script) {
