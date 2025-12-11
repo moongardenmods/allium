@@ -3,7 +3,7 @@ package dev.hugeblank.bouquet.mixin.command;
 import com.mojang.brigadier.CommandDispatcher;
 import dev.hugeblank.bouquet.api.event.ServerEvents;
 import dev.hugeblank.bouquet.api.lib.commands.CommandLib;
-import dev.hugeblank.bouquet.api.lib.commands.CommandRegisterEntry;
+import dev.hugeblank.bouquet.api.event.CommandRegisterEntry;
 import net.minecraft.commands.CommandBuildContext;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.commands.Commands;

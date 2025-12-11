@@ -1,10 +1,10 @@
 package dev.hugeblank.bouquet.api.lib;
 
-import dev.hugeblank.allium.api.WrappedLuaLibrary;
+import dev.hugeblank.allium.api.WrappedLibrary;
 import dev.hugeblank.allium.loader.type.annotation.LuaWrapped;
 
 @LuaWrapped(name = "text")
-public class TextLib implements WrappedLuaLibrary {
+public class TextLib implements WrappedLibrary {
 // TODO: Reintroduce when placeholders updates.
     // Something about JsonOps and Codecs will fix the rest.
 
