@@ -1,7 +1,7 @@
 package dev.hugeblank.allium.loader.lib;
 
 import dev.hugeblank.allium.Allium;
-import dev.hugeblank.allium.api.WrappedLuaLibrary;
+import dev.hugeblank.allium.api.WrappedScriptLibrary;
 import dev.hugeblank.allium.loader.Entrypoint;
 import dev.hugeblank.allium.loader.Script;
 import dev.hugeblank.allium.loader.ScriptRegistry;
@@ -22,15 +22,14 @@ import java.util.ArrayList;
 import java.util.List;
 
 @LuaWrapped(name="package")
-public class PackageLib implements WrappedLuaLibrary {
-    private final Script script;
+public class PackageLib extends WrappedScriptLibrary {
     @LuaWrapped public final LuaTable loaders;
     @LuaWrapped public final LuaTable preload;
     @LuaWrapped public final LuaTable loaded;
     @LuaWrapped public String path;
 
     public PackageLib(Script script) {
-        this.script = script;
+        super(script);
         this.path = "./?.lua;./?/init.lua";
         this.preload = new LuaTable();
         this.loaded = new LuaTable();
@@ -51,7 +50,7 @@ public class PackageLib implements WrappedLuaLibrary {
     @Override
     public LuaValue add(LuaState state) throws LuaError {
         state.globals().rawset("require", RegisteredFunction.ofS("require", this::require).create());
-        return WrappedLuaLibrary.super.add(state);
+        return super.add(state);
     }
 
     @LuaWrapped

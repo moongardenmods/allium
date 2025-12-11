@@ -10,7 +10,7 @@ import java.util.function.Function;
 
 import static org.objectweb.asm.Opcodes.*;
 
-public class FieldBuilder extends AbstractFieldBuilder{
+public class FieldBuilder extends AbstractFieldBuilder {
     private int fieldIndex = 0;
     private final HashMap<String, Pair<Object, Class<?>>> storedFields = new HashMap<>();
     private final HashMap<String, Function<Class<?>, ?>> complexFields = new HashMap<>();
@@ -49,12 +49,20 @@ public class FieldBuilder extends AbstractFieldBuilder{
         return fieldName;
     }
 
-    public <T> void storeAndGet(MethodVisitor m, T o, Class<T> type) {
-        m.visitFieldInsn(GETSTATIC, className, store(o, type), Type.getDescriptor(type));
+    public <T> String storeAndGet(MethodVisitor m, T o, Class<T> type) {
+        String field = store(o, type);
+        m.visitFieldInsn(GETSTATIC, className, field, Type.getDescriptor(type));
+        return field;
     }
 
-    public <T> void storeAndGetComplex(MethodVisitor m, Function<Class<?>, T> supplier, Class<T> type, String description) {
-        m.visitFieldInsn(GETSTATIC, className, storeComplex(supplier, type, description), Type.getDescriptor(type));
+    public <T> String storeAndGetComplex(MethodVisitor m, Function<Class<?>, T> supplier, Class<T> type, String description) {
+        String field = storeComplex(supplier, type, description);
+        m.visitFieldInsn(GETSTATIC, className, field, Type.getDescriptor(type));
+        return field;
+    }
+
+    public void get(MethodVisitor m, String fieldName, Class<?> type) {
+        m.visitFieldInsn(GETSTATIC, className, fieldName, Type.getDescriptor(type));
     }
 
     public void apply(Class<?> builtClass) {

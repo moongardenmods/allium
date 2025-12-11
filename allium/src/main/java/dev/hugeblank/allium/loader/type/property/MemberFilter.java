@@ -22,8 +22,8 @@ public record MemberFilter(boolean expectStatic, boolean expectPublic, boolean e
     @Override
     public boolean test(ModifierHolder holder) {
         return (expectStatic == holder.isStatic()) &&
-                (expectPublic == holder.isPublic()) ||
+                ((expectPublic == holder.isPublic()) ||
                 (expectProtected == holder.isProtected()) ||
-                (expectPrivate == holder.isPrivate());
+                (expectPrivate == holder.isPrivate()));
     }
 }

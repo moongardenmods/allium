@@ -1,7 +1,10 @@
 package dev.hugeblank.allium.loader.type.builder;
 
 import dev.hugeblank.allium.loader.ScriptRegistry;
+import dev.hugeblank.allium.loader.type.AlliumInstanceUserdata;
+import dev.hugeblank.allium.loader.type.AlliumSuperUserdata;
 import dev.hugeblank.allium.loader.type.StaticBinder;
+import dev.hugeblank.allium.loader.type.SuperUserdataFactory;
 import dev.hugeblank.allium.loader.type.annotation.LuaWrapped;
 import dev.hugeblank.allium.loader.type.annotation.OptionalArg;
 import dev.hugeblank.allium.loader.type.coercion.TypeCoercions;
@@ -69,6 +72,7 @@ public class ClassBuilder extends AbstractClassBuilder {
                 }
 
                 m.visitMethodInsn(INVOKESPECIAL, Type.getInternalName(eSuperClass.raw()), "<init>", desc, false);
+
                 m.visitInsn(RETURN);
 
                 m.visitMaxs(0, 0);
@@ -76,17 +80,25 @@ public class ClassBuilder extends AbstractClassBuilder {
             }
         }
 
-        this.methods.addAll(this.eSuperClass.methods());
-        for (var inrf : interfaces) {
-            this.methods.addAll(inrf.methods());
+        final List<EMethod> methods = new ArrayList<>(this.eSuperClass.methods());
+        EClass<?> eClass = this.eSuperClass;
+        while (eClass != null) {
+            methods.addAll(eClass.declaredMethods());
+            eClass = eClass.superclass();
         }
+
+        for (var inrf : interfaces) {
+            methods.addAll(inrf.methods());
+        }
+
+        this.methods.addAll(methods.stream().distinct().filter((m) -> m.isPublic() || m.isProtected()).toList());
     }
 
     @LuaWrapped
     public void overrideMethod(String methodName, EClass<?>[] parameters, Map<String, Boolean> access, LuaFunction func) throws LuaError {
         var methods = new ArrayList<EMethod>();
         if (access.size() > 1) {
-            ScriptRegistry.scriptFromState(state).getLogger().warn("Flags on method override besides 'static', 'public', and 'protected' are ignored. For method {}", methodName);
+            ScriptRegistry.scriptFromState(state).getLogger().warn("Flags on method override besides 'static' are ignored. For method {}", methodName);
         }
         PropertyResolver.collectMethods(this.methods.stream().filter(new MemberFilter(
                 access.getOrDefault("static", false),
@@ -101,7 +113,7 @@ public class ClassBuilder extends AbstractClassBuilder {
             if (methParams.size() == parameters.length) {
                 boolean match = true;
                 for (int i = 0; i < parameters.length; i++) {
-                    if (!methParams.get(i).parameterType().upperBound().raw().equals(parameters[i].raw())) {
+                    if (!methParams.get(i).parameterType().upperBound().wrapPrimitive().raw().equals(parameters[i].raw())) {
                         match = false;
                         break;
                     }
@@ -149,33 +161,45 @@ public class ClassBuilder extends AbstractClassBuilder {
 
         var desc = Type.getMethodDescriptor(returnType, paramsType);
         var m = c.visitMethod(access, methodName, desc, null, null);
-        int varPrefix = Type.getArgumentsAndReturnSizes(desc) >> 2;
+        int arrayPos = Type.getArgumentsAndReturnSizes(desc) >> 2;
         int thisVarOffset = isStatic ? 0 : 1;
 
         if (func != null) {
             m.visitCode();
 
-            if (isStatic) varPrefix -= 1;
+            if (isStatic) arrayPos -= 1;
 
             m.visitLdcInsn(params.length + thisVarOffset);
             m.visitTypeInsn(ANEWARRAY, Type.getInternalName(LuaValue.class));
-            m.visitVarInsn(ASTORE, varPrefix);
+            m.visitVarInsn(ASTORE, arrayPos);
 
             if (!isStatic) {
-                m.visitVarInsn(ALOAD, varPrefix);
-                m.visitLdcInsn(0);
-                m.visitVarInsn(ALOAD, 0);
-                fields.storeAndGetComplex(m, EClass::fromJava, EClass.class, className);
-                m.visitMethodInsn(INVOKESTATIC, Type.getInternalName(TypeCoercions.class), "toLuaValue", "(Ljava/lang/Object;Lme/basiqueevangelist/enhancedreflection/api/EClass;)Lorg/squiddev/cobalt/LuaValue;", false);
-                m.visitInsn(AASTORE);
+                m.visitVarInsn(ALOAD, 0); // this
+                String eClass = fields.storeAndGetComplex(m, EClass::fromJava, EClass.class, className); // this, thisEClass
+                m.visitMethodInsn(INVOKESTATIC, Type.getInternalName(TypeCoercions.class), "toLuaValue", "(Ljava/lang/Object;Lme/basiqueevangelist/enhancedreflection/api/EClass;)Lorg/squiddev/cobalt/LuaValue;", false); // luaValue
+                m.visitVarInsn(ASTORE, arrayPos+1); //
+                fields.get(m, eClass, EClass.class); // thisEClass
+                m.visitMethodInsn(INVOKESTATIC, Type.getInternalName(SuperUserdataFactory.class), "from", "(Lme/basiqueevangelist/enhancedreflection/api/EClass;)Ldev/hugeblank/allium/loader/type/SuperUserdataFactory;", false); // superUDF
+                m.visitVarInsn(ALOAD, 0); // superUDF, this
+                m.visitMethodInsn(INVOKEVIRTUAL, Type.getInternalName(SuperUserdataFactory.class), "create", "(Ljava/lang/Object;)Ldev/hugeblank/allium/loader/type/AlliumSuperUserdata;", false); // superLuaValue
+                m.visitTypeInsn(CHECKCAST, Type.getInternalName(AlliumSuperUserdata.class));
+                m.visitVarInsn(ALOAD, arrayPos+1); // superLuaValue, luaValue
+                m.visitTypeInsn(CHECKCAST, Type.getInternalName(AlliumInstanceUserdata.class));
+                m.visitInsn(SWAP); // luaValue, superLuaValue
+                m.visitMethodInsn(INVOKEVIRTUAL, Type.getInternalName(AlliumInstanceUserdata.class), "applySuperInstance", "(Ldev/hugeblank/allium/loader/type/AlliumSuperUserdata;)V", false); //
+
+                m.visitVarInsn(ALOAD, arrayPos); // array
+                m.visitLdcInsn(0); // array, 0
+                m.visitVarInsn(ALOAD, arrayPos+1); // array, 0, luaValue
+                m.visitInsn(AASTORE); //
             }
 
             int argIndex = thisVarOffset;
             var args = Type.getArgumentTypes(desc);
             for (int i = 0; i < args.length; i++) {
-                m.visitVarInsn(ALOAD, varPrefix);
-                m.visitLdcInsn(i + thisVarOffset);
-                m.visitVarInsn(args[i].getOpcode(ILOAD), argIndex);
+                m.visitVarInsn(ALOAD, arrayPos); // param
+                m.visitLdcInsn(i + thisVarOffset); // param, index
+                m.visitVarInsn(args[i].getOpcode(ILOAD), argIndex); // param, index, ???
 
                 if (args[i].getSort() != Type.OBJECT || args[i].getSort() != Type.ARRAY) {
                     AsmUtil.wrapPrimitive(m, args[i]);
@@ -194,7 +218,7 @@ public class ClassBuilder extends AbstractClassBuilder {
             if (!isVoid) m.visitInsn(DUP); // state, state?
             fields.storeAndGet(m, func, LuaFunction.class); // state, state?, function
 //            m.visitInsn(SWAP);
-            m.visitVarInsn(ALOAD, varPrefix); // state, state, function, luavalue[]
+            m.visitVarInsn(ALOAD, arrayPos); // state, state, function, luavalue[]
             m.visitMethodInsn(INVOKESTATIC, Type.getInternalName(ValueFactory.class), "varargsOf", "([Lorg/squiddev/cobalt/LuaValue;)Lorg/squiddev/cobalt/Varargs;", false); // state, state?, function, varargs
 //            m.visitMethodInsn(INVOKEVIRTUAL, Type.getInternalName(LuaFunction.class), "invoke", "(Lorg/squiddev/cobalt/LuaState;Lorg/squiddev/cobalt/Varargs;)Lorg/squiddev/cobalt/Varargs;", false);
             m.visitMethodInsn(INVOKESTATIC, Type.getInternalName(Dispatch.class), "invoke", "(Lorg/squiddev/cobalt/LuaState;Lorg/squiddev/cobalt/LuaValue;Lorg/squiddev/cobalt/Varargs;)Lorg/squiddev/cobalt/Varargs;", false); // state?, varargs

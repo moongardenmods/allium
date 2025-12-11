@@ -1,11 +1,13 @@
 package dev.hugeblank.allium.loader.type;
 
 import me.basiqueevangelist.enhancedreflection.api.EClass;
+import org.jetbrains.annotations.Nullable;
 import org.squiddev.cobalt.LuaTable;
 import org.squiddev.cobalt.LuaUserdata;
 
 public class AlliumInstanceUserdata<T> extends LuaUserdata {
     protected final EClass<T> clazz;
+    private @Nullable AlliumSuperUserdata<? super T> superInstance;
 
      AlliumInstanceUserdata(T obj, LuaTable metatable, EClass<T> clazz) {
         super(obj, metatable);
@@ -17,6 +19,14 @@ public class AlliumInstanceUserdata<T> extends LuaUserdata {
     }
 
     // TODO: We should probably override get/setmetatable since we reuse one for each class/bound (and it's script indiscriminate!)
+
+    public void applySuperInstance(AlliumSuperUserdata<? super T> superInstance) {
+        if (this.superInstance == null) this.superInstance = superInstance;
+    }
+
+    public AlliumSuperUserdata<? super T> superInstance() {
+         return superInstance;
+    }
 
     public boolean instanceOf(Class<?> test) {
         return clazz.isAssignableFrom(test);
