@@ -2,11 +2,14 @@ package dev.hugeblank.allium.loader;
 
 import dev.hugeblank.allium.Allium;
 import dev.hugeblank.allium.api.LibraryInitializer;
-import dev.hugeblank.allium.api.WrappedLuaLibrary;
+import dev.hugeblank.allium.api.WrappedLibrary;
+import dev.hugeblank.allium.api.WrappedScriptLibrary;
 import dev.hugeblank.allium.loader.lib.AlliumLib;
 import dev.hugeblank.allium.loader.lib.JavaLib;
 import dev.hugeblank.allium.loader.lib.MixinLib;
 import dev.hugeblank.allium.loader.lib.PackageLib;
+import dev.hugeblank.allium.loader.type.StaticBinder;
+import dev.hugeblank.allium.loader.type.annotation.LuaWrapped;
 import dev.hugeblank.allium.loader.type.coercion.TypeCoercions;
 import me.basiqueevangelist.enhancedreflection.api.EClass;
 import org.squiddev.cobalt.*;
@@ -21,7 +24,7 @@ public class EnvironmentManager {
     protected final LuaState state;
 
     private static final Set<LibraryInitializer> INITIALIZERS = new HashSet<>();
-    private static final Set<WrappedLuaLibrary> LIBRARIES = new HashSet<>();
+    private static final Set<Class<? extends WrappedLibrary>> LIBRARIES = new HashSet<>();
 
     EnvironmentManager() {
         this.state = new LuaState();
@@ -42,9 +45,9 @@ public class EnvironmentManager {
             );
 
             loadLibrary(script, state, new PackageLib(script));
-            loadLibrary(script, state, new JavaLib());
             loadLibrary(script, state, new MixinLib(script));
-            loadLibrary(script, state, new AlliumLib());
+            loadLibrary(script, state, JavaLib.class);
+            loadLibrary(script, state, AlliumLib.class);
         } catch (LuaError error) {
             script.getLogger().error("Error loading library:", error);
         }
@@ -58,9 +61,26 @@ public class EnvironmentManager {
         LIBRARIES.forEach(library -> loadLibrary(script, state, library));
     }
 
-    private static void loadLibrary(Script script, LuaState state, WrappedLuaLibrary adder) {
+    private static void loadLibrary(Script script, LuaState state, WrappedScriptLibrary adder) {
         try {
             adder.add(state);
+        } catch (LuaError error) {
+            script.getLogger().error("Error loading library:", error);
+        }
+    }
+
+    private static void loadLibrary(Script script, LuaState state, Class<? extends WrappedLibrary> library) {
+        try {
+            LuaValue lib = StaticBinder.bindClass(EClass.fromJava(library));
+
+            LuaWrapped wrapped = library.getAnnotation(LuaWrapped.class);
+
+            if (wrapped == null || wrapped.name().length == 0)
+                throw new IllegalStateException("WrappedLibrary must have a @LuaWrapped annotation with a name!");
+
+            for (String name : wrapped.name()) {
+                LibFunction.setGlobalLibrary(state, name, lib);
+            }
         } catch (LuaError error) {
             script.getLogger().error("Error loading library:", error);
         }
@@ -77,7 +97,7 @@ public class EnvironmentManager {
 
     /// Register a lua library for scripts in the global table. Key in global table is provided by `name`
     /// in the library class' LuaWrapped annotation.
-    public static void registerLibrary(WrappedLuaLibrary library) {
+    public static void registerLibrary(Class<? extends WrappedLibrary> library) {
         LIBRARIES.add(library);
     }
 

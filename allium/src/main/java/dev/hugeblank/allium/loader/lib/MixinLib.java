@@ -1,6 +1,6 @@
 package dev.hugeblank.allium.loader.lib;
 
-import dev.hugeblank.allium.api.WrappedLuaLibrary;
+import dev.hugeblank.allium.api.WrappedScriptLibrary;
 import dev.hugeblank.allium.api.event.MixinMethodHook;
 import dev.hugeblank.allium.loader.Script;
 import dev.hugeblank.allium.loader.mixin.annotation.method.MixinMethodAnnotations;
@@ -16,14 +16,17 @@ import org.jetbrains.annotations.Nullable;
 import org.squiddev.cobalt.LuaError;
 
 @LuaWrapped(name = "mixin")
-public record MixinLib(Script script) implements WrappedLuaLibrary {
-
+public class MixinLib extends WrappedScriptLibrary {
     // This being the way to define embedded "tables" is hilarious to me.
-    @LuaWrapped(name = "annotation")
-    public static final AlliumClassUserdata<MixinMethodAnnotations> ANNOTATION = StaticBinder.bindClass(EClass.fromJava(MixinMethodAnnotations.class));
+    private static final AlliumClassUserdata<MixinMethodAnnotations> ANNOTATION = StaticBinder.bindClass(EClass.fromJava(MixinMethodAnnotations.class));
+    private static final AlliumClassUserdata<MixinSugars> SUGAR = StaticBinder.bindClass(EClass.fromJava(MixinSugars.class));
 
-    @LuaWrapped(name = "sugar")
-    public static final AlliumClassUserdata<MixinSugars> SUGAR = StaticBinder.bindClass(EClass.fromJava(MixinSugars.class));
+    @LuaWrapped public final AlliumClassUserdata<MixinMethodAnnotations> annotation = ANNOTATION;
+    @LuaWrapped public final AlliumClassUserdata<MixinSugars> sugar = SUGAR;
+
+    public MixinLib(Script script) {
+        super(script);
+    }
 
     @LuaWrapped
     public MixinMethodHook get(String eventId) {

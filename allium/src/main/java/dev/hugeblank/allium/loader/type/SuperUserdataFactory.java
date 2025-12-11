@@ -26,16 +26,15 @@ import java.util.concurrent.ConcurrentMap;
 public class SuperUserdataFactory<T> extends AbstractUserdataFactory<T, AlliumSuperUserdata<T>> {
     private static final ConcurrentMap<EClass<?>, SuperUserdataFactory<?>> FACTORIES = new ConcurrentHashMap<>();
 
-    private final EClass<? super T> superClass;
     private @Nullable LuaTable boundMetatable;
 
     SuperUserdataFactory(EClass<T> clazz) {
         super(clazz);
-        this.superClass = clazz.superclass();
     }
 
     @Override
     List<EMethod> collectMetamethodCandidates() {
+        EClass<? super T> superClass = clazz.superclass();
         List<EMethod> targets = new ArrayList<>(superClass.methods());
         targets.addAll(superClass.declaredMethods().stream().filter(ModifierHolder::isProtected).toList());
         return targets;
@@ -44,6 +43,7 @@ public class SuperUserdataFactory<T> extends AbstractUserdataFactory<T, AlliumSu
     @Override
     LuaTable createMetatable(boolean isBound) {
         LuaTable metatable = new LuaTable();
+        EClass<? super T> superClass = clazz.superclass();
 
         metatable.rawset("__tostring", new VarArgFunction() {
 

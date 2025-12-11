@@ -25,11 +25,11 @@ import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
-public class UserdataFactory<T> extends AbstractUserdataFactory<T, AlliumInstanceUserdata<T>> {
-    private static final ConcurrentMap<EClass<?>, UserdataFactory<?>> FACTORIES = new ConcurrentHashMap<>();
+public class InstanceUserdataFactory<T> extends AbstractUserdataFactory<T, AlliumInstanceUserdata<T>> {
+    private static final ConcurrentMap<EClass<?>, InstanceUserdataFactory<?>> FACTORIES = new ConcurrentHashMap<>();
     private @Nullable LuaTable boundMetatable;
 
-    protected UserdataFactory(EClass<T> clazz) {
+    protected InstanceUserdataFactory(EClass<T> clazz) {
         super(clazz);
     }
 
@@ -70,6 +70,10 @@ public class UserdataFactory<T> extends AbstractUserdataFactory<T, AlliumInstanc
 //                    return args.arg(1);
 //                }
                 String name = args.arg(2).checkString();
+
+                if (name.equals("super") && args.arg(1) instanceof AlliumInstanceUserdata<?> instance) {
+                    return instance.superInstance();
+                }
 
                 PropertyData<? super T> cachedProperty = cachedProperties.get(name);
 
@@ -142,8 +146,8 @@ public class UserdataFactory<T> extends AbstractUserdataFactory<T, AlliumInstanc
     }
 
     @SuppressWarnings("unchecked")
-    public static <T> UserdataFactory<T> from(EClass<T> clazz) {
-        return (UserdataFactory<T>) FACTORIES.computeIfAbsent(clazz, UserdataFactory::new);
+    public static <T> InstanceUserdataFactory<T> from(EClass<T> clazz) {
+        return (InstanceUserdataFactory<T>) FACTORIES.computeIfAbsent(clazz, InstanceUserdataFactory::new);
     }
 
     @Override

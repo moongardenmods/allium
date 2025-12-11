@@ -1,6 +1,6 @@
 package dev.hugeblank.allium.loader.lib;
 
-import dev.hugeblank.allium.api.WrappedLuaLibrary;
+import dev.hugeblank.allium.api.WrappedLibrary;
 import dev.hugeblank.allium.loader.type.AlliumInstanceUserdata;
 import dev.hugeblank.allium.loader.type.annotation.LuaStateArg;
 import dev.hugeblank.allium.loader.type.annotation.LuaWrapped;
@@ -18,7 +18,7 @@ import java.util.List;
 import java.util.Map;
 
 @LuaWrapped(name = "java")
-public class JavaLib implements WrappedLuaLibrary {
+public class JavaLib implements WrappedLibrary {
 
     @LuaWrapped
     public static LuaValue cast(@LuaStateArg LuaState state, LuaUserdata object, EClass<?> klass) throws LuaError {
@@ -107,8 +107,9 @@ public class JavaLib implements WrappedLuaLibrary {
     }
 
     @LuaWrapped
-    public static ClassBuilder extendClass(@LuaStateArg LuaState state, EClass<?> superclass, @OptionalArg List<EClass<?>> interfaces, Map<String, Boolean> access) {
+    public static ClassBuilder extendClass(@LuaStateArg LuaState state, EClass<?> superclass, @OptionalArg List<EClass<?>> interfaces, @OptionalArg Map<String, Boolean> access) {
         if (interfaces == null) interfaces = List.of();
+        if (access == null) access = Map.of();
         return new ClassBuilder(superclass, interfaces, access, state);
     }
 

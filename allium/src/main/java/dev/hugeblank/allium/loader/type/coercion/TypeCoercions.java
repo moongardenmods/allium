@@ -2,8 +2,8 @@ package dev.hugeblank.allium.loader.type.coercion;
 
 import dev.hugeblank.allium.loader.type.AlliumClassUserdata;
 import dev.hugeblank.allium.loader.type.AlliumInstanceUserdata;
+import dev.hugeblank.allium.loader.type.InstanceUserdataFactory;
 import dev.hugeblank.allium.loader.type.MethodInvocationFunction;
-import dev.hugeblank.allium.loader.type.UserdataFactory;
 import dev.hugeblank.allium.loader.type.annotation.CoerceToBound;
 import dev.hugeblank.allium.loader.type.annotation.CoerceToNative;
 import dev.hugeblank.allium.loader.type.exception.InvalidArgumentException;
@@ -217,21 +217,21 @@ public class TypeCoercions {
             if (unimplemented == 1) {
                 return new MethodInvocationFunction(klass, Collections.singletonList(ifaceMethod), ifaceMethod.name(), out, false);
             } else {
-                return UserdataFactory.from(klass).create(klass.cast(out));
+                return InstanceUserdataFactory.from(klass).create(klass.cast(out));
             }
         } else if (klass.raw().isAssignableFrom(out.getClass())) {
             EClass<?> trueRet = EClass.fromJava(out.getClass());
 
             if (canMatch(trueRet, klass)) {
                 if (ret.hasAnnotation(CoerceToBound.class))
-                    return UserdataFactory.from(trueRet).createBound(out);
+                    return InstanceUserdataFactory.from(trueRet).createBound(out);
                 else
-                    return UserdataFactory.from(trueRet).create(out);
+                    return InstanceUserdataFactory.from(trueRet).create(out);
             } else {
                 if (ret.hasAnnotation(CoerceToBound.class))
-                    return UserdataFactory.from(klass).createBound(klass.cast(out));
+                    return InstanceUserdataFactory.from(klass).createBound(klass.cast(out));
                 else
-                    return UserdataFactory.from(klass).create(klass.cast(out));
+                    return InstanceUserdataFactory.from(klass).create(klass.cast(out));
             }
         } else {
             return Constants.NIL;
