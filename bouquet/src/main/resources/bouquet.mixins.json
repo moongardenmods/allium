@@ -5,9 +5,7 @@
   "plugin": "dev.hugeblank.bouquet.mixin.BouquetMixinPlugin",
   "mixins": [
     "block.BlockBehaviourMixin",
-    "command.CommandsMixin",
     "command.ReloadCommandMixin",
-    "command.argument.ArgumentTypeInfosMixin",
     "entity.EntityMixin",
     "entity.PlayerMixin",
     "resource.PackRepositoryMixin",
