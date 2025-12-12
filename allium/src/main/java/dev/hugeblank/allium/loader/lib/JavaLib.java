@@ -64,7 +64,7 @@ public class JavaLib implements WrappedLibrary {
     @LuaWrapped
     public static LuaValue wrap(@LuaStateArg LuaState state, LuaValue value, EClass<?> klass) throws LuaError {
         try {
-            return TypeCoercions.toLuaValue(TypeCoercions.toJava(state, value, klass, false), klass, false);
+            return TypeCoercions.toLuaValue(TypeCoercions.toJava(state, value, klass), klass, false);
         } catch (InvalidArgumentException e) {
             throw new LuaError(e);
         }
@@ -73,35 +73,10 @@ public class JavaLib implements WrappedLibrary {
     @LuaWrapped
     public static boolean instanceOf(@LuaStateArg LuaState state, LuaUserdata object, EClass<?> klass) {
         try {
-            Object obj = TypeCoercions.toJava(state, object, Object.class);
+            Object obj = TypeCoercions.toJava(state, object, klass);
+            if (obj == null) return false;
             return klass.isAssignableFrom(obj.getClass());
         } catch (LuaError | InvalidArgumentException e) {
-            return false;
-        }
-    }
-
-    @LuaWrapped
-    public static boolean exists(@LuaStateArg LuaState state, String string, @OptionalArg Class<?>[] value) {
-        try {
-            var parts = string.split("#");
-            var clazz = getRawClass(parts[0]);
-
-            if (parts.length != 2) {
-                return true;
-            }
-
-            if (value != null) {
-                return clazz.method(parts[1], value) != null;
-            } else {
-                for (var method : clazz.methods()) {
-                    if (method.name().equals(parts[1])) {
-                        return true;
-                    }
-                }
-
-                return clazz.field(parts[1]) != null;
-            }
-        } catch (Throwable t) {
             return false;
         }
     }

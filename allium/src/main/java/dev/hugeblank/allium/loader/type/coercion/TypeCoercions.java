@@ -20,8 +20,8 @@ import java.util.function.Function;
 
 public class TypeCoercions {
     private static final Map<Class<?>, Function<EClass<?>, LuaToJavaConverter<?>>> FROM_LUA = new HashMap<>();
-    private static final Map<Class<?>, Function<EClass<?>, LuaToJavaConverter<?>>> FROM_LUA_WRAPPERS = new HashMap<>();
     private static final Map<Class<?>, BiFunction<Object, EClassUse<?>, JavaToLuaConverter<?>>> TO_LUA = new HashMap<>();
+    private static final List<LuaToJavaConverter<?>> FROM_LUA_WRAPPED = new ArrayList<>();
     
     public static <T> void registerJavaToLua(Class<T> klass, JavaToLuaConverter<T> serializer) {
         if (TO_LUA.put(klass, (unused, ignored) -> serializer) != null)
@@ -37,6 +37,9 @@ public class TypeCoercions {
     public static <T> void registerLuaToJava(Class<T> klass, LuaToJavaConverter<T> deserializer) {
         if (FROM_LUA.put(klass, unused -> deserializer) != null)
             throw new IllegalStateException("Converter already registered for " + klass);
+        if (!EClass.fromJava(klass).unwrapPrimitive().raw().equals(klass)) {
+            FROM_LUA_WRAPPED.add(deserializer);
+        }
     }
 
     @SuppressWarnings("unchecked")
@@ -45,20 +48,11 @@ public class TypeCoercions {
             throw new IllegalStateException("Converter already registered for " + klass);
     }
 
-    public static <T> void registerLuaToJavaWrapper(Class<T> klass, LuaToJavaConverter<T> deserializer) {
-        if (FROM_LUA_WRAPPERS.put(klass, unused -> deserializer) != null)
-            throw new IllegalStateException("Converter already registered for " + klass);
-    }
-
     public static Object toJava(LuaState state, LuaValue value, Class<?> clatz) throws InvalidArgumentException, LuaError {
-        return toJava(state, value, EClass.fromJava(clatz), true);
+        return toJava(state, value, EClass.fromJava(clatz));
     }
 
     public static Object toJava(LuaState state, LuaValue value, EClass<?> clatz) throws LuaError, InvalidArgumentException {
-        return toJava(state, value, clatz, true);
-    }
-
-    public static Object toJava(LuaState state, LuaValue value, EClass<?> clatz, boolean unwrapPrimitives) throws LuaError, InvalidArgumentException {
         if (clatz.isAssignableFrom(value.getClass()) && !clatz.equals(CommonTypes.OBJECT)) {
             return value;
         }
@@ -74,21 +68,6 @@ public class TypeCoercions {
             }
         } else if (value instanceof AlliumClassUserdata<?> userdata) {
             return userdata.toUserdata();
-        }
-
-        if (unwrapPrimitives) {
-            clatz = clatz.unwrapPrimitive();
-        } else {
-            var deserializerFactory = FROM_LUA_WRAPPERS.get(clatz.raw());
-            if (deserializerFactory != null) {
-                var deserializer = deserializerFactory.apply(clatz);
-
-                if (deserializer != null) {
-                    Object result = deserializer.fromLua(state, value);
-
-                    if (result != null) return result;
-                }
-            }
         }
 
         var deserializerFactory = FROM_LUA.get(clatz.raw());
@@ -138,15 +117,6 @@ public class TypeCoercions {
 
             if (unimplemented == 1) {
                 return ProxyGenerator.getProxyFactory(clatz, ifaceMethod).apply(state, func);
-            }
-        }
-
-        if (clatz.equals(CommonTypes.OBJECT)) { // Attempt to throw boxed type at the problem
-            for (Map.Entry<Class<?>, Function<EClass<?>, LuaToJavaConverter<?>>> mapperEntry : FROM_LUA_WRAPPERS.entrySet()) {
-                Object wrapped = mapperEntry.getValue().apply(EClass.fromJava(mapperEntry.getKey())).fromLua(state, value);
-                if (wrapped != null) {
-                    return wrapped;
-                }
             }
         }
 
@@ -324,7 +294,6 @@ public class TypeCoercions {
                     table.rawsetImpl(
                             TypeCoercions.toLuaValue(
                                     key,
-//                                    key instanceof String ? CommonTypes.STRING.asEmptyUse() : keyUse
                                     keyUse
                             ),
                             TypeCoercions.toLuaValue(entry.getValue(), valueUse)
@@ -335,25 +304,23 @@ public class TypeCoercions {
             };
         });
 
-        TypeCoercions.registerLuaToJava(int.class, (state, val) -> suppressError(val::checkInteger));
+        TypeCoercions.registerLuaToJava(boolean.class, (state, val) -> suppressError(val::checkBoolean));
         TypeCoercions.registerLuaToJava(byte.class, (state, val) -> suppressError(() -> (byte)val.checkInteger()));
         TypeCoercions.registerLuaToJava(short.class, (state, val) -> suppressError(() -> (short)val.checkInteger()));
-        TypeCoercions.registerLuaToJava(char.class, (state, val) -> suppressError(() -> (char)val.checkInteger()));
-        TypeCoercions.registerLuaToJava(double.class, (state, val) -> suppressError(val::checkDouble));
-        TypeCoercions.registerLuaToJava(float.class, (state, val) -> suppressError(() -> (float)val.checkDouble()));
+        TypeCoercions.registerLuaToJava(int.class, (state, val) -> suppressError(val::checkInteger));
         TypeCoercions.registerLuaToJava(long.class, (state, val) -> suppressError(val::checkLong));
-        TypeCoercions.registerLuaToJava(boolean.class, (state, val) -> suppressError(val::checkBoolean));
+        TypeCoercions.registerLuaToJava(float.class, (state, val) -> suppressError(() -> (float)val.checkDouble()));
+        TypeCoercions.registerLuaToJava(double.class, (state, val) -> suppressError(val::checkDouble));
+        TypeCoercions.registerLuaToJava(char.class, (state, val) -> suppressError(() -> (char)val.checkInteger()));
+        TypeCoercions.registerLuaToJava(Boolean.class, (state, val) -> suppressError(val::checkBoolean));
+        TypeCoercions.registerLuaToJava(Byte.class, (state, val) -> suppressError(() -> (byte)val.checkInteger()));
+        TypeCoercions.registerLuaToJava(Short.class, (state, val) -> suppressError(() -> (short)val.checkInteger()));
+        TypeCoercions.registerLuaToJava(Integer.class, (state, val) -> suppressError(val::checkInteger));
+        TypeCoercions.registerLuaToJava(Long.class, (state, val) -> suppressError(val::checkLong));
+        TypeCoercions.registerLuaToJava(Float.class, (state, val) -> suppressError(() -> (float)val.checkDouble()));
+        TypeCoercions.registerLuaToJava(Double.class, (state, val) -> suppressError(val::checkDouble));
+        TypeCoercions.registerLuaToJava(Character.class, (state, val) -> suppressError(() -> (char)val.checkInteger()));
         TypeCoercions.registerLuaToJava(String.class, (state, val) -> suppressError(val::checkString));
-
-        TypeCoercions.registerLuaToJavaWrapper(Integer.class, (state, val) -> suppressError(val::checkInteger));
-        TypeCoercions.registerLuaToJavaWrapper(Byte.class, (state, val) -> suppressError(() -> (byte)val.checkInteger()));
-        TypeCoercions.registerLuaToJavaWrapper(Short.class, (state, val) -> suppressError(() -> (short)val.checkInteger()));
-        TypeCoercions.registerLuaToJavaWrapper(Character.class, (state, val) -> suppressError(() -> (char)val.checkInteger()));
-        TypeCoercions.registerLuaToJavaWrapper(Double.class, (state, val) -> suppressError(val::checkDouble));
-        TypeCoercions.registerLuaToJavaWrapper(Float.class, (state, val) -> suppressError(() -> (float)val.checkDouble()));
-        TypeCoercions.registerLuaToJavaWrapper(Long.class, (state, val) -> suppressError(val::checkLong));
-        TypeCoercions.registerLuaToJavaWrapper(Boolean.class, (state, val) -> suppressError(val::checkBoolean));
-        TypeCoercions.registerLuaToJavaWrapper(String.class, (state, val) -> suppressError(val::checkString));
 
         TypeCoercions.registerLuaToJava(Class.class, (state, val) -> {
             EClass<?> klass = JavaHelpers.asClass(val);
