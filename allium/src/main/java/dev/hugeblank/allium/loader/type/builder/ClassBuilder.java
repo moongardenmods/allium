@@ -155,6 +155,7 @@ public class ClassBuilder extends AbstractClassBuilder {
     }
 
     private void writeMethod(String methodName, WrappedType[] params, WrappedType returnClass, int access, @Nullable LuaFunction func) {
+        // TODO: Provide a way to pass primitives
         var paramsType = Arrays.stream(params).map(x -> x.raw).map(EClass::raw).map(Type::getType).toArray(Type[]::new);
         var returnType = returnClass == null ? Type.VOID_TYPE : Type.getType(returnClass.raw.raw());
         var isStatic = (access & ACC_STATIC) != 0;
@@ -217,10 +218,8 @@ public class ClassBuilder extends AbstractClassBuilder {
             fields.storeAndGet(m, state, LuaState.class); // state
             if (!isVoid) m.visitInsn(DUP); // state, state?
             fields.storeAndGet(m, func, LuaFunction.class); // state, state?, function
-//            m.visitInsn(SWAP);
             m.visitVarInsn(ALOAD, arrayPos); // state, state, function, luavalue[]
             m.visitMethodInsn(INVOKESTATIC, Type.getInternalName(ValueFactory.class), "varargsOf", "([Lorg/squiddev/cobalt/LuaValue;)Lorg/squiddev/cobalt/Varargs;", false); // state, state?, function, varargs
-//            m.visitMethodInsn(INVOKEVIRTUAL, Type.getInternalName(LuaFunction.class), "invoke", "(Lorg/squiddev/cobalt/LuaState;Lorg/squiddev/cobalt/Varargs;)Lorg/squiddev/cobalt/Varargs;", false);
             m.visitMethodInsn(INVOKESTATIC, Type.getInternalName(Dispatch.class), "invoke", "(Lorg/squiddev/cobalt/LuaState;Lorg/squiddev/cobalt/LuaValue;Lorg/squiddev/cobalt/Varargs;)Lorg/squiddev/cobalt/Varargs;", false); // state?, varargs
 
             if (!isVoid) {

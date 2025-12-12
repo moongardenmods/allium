@@ -29,8 +29,7 @@ end
 local builder = java.extendClass(FlowerBlock)
 
 builder:overrideMethod("onPlace", {BlockState, Level, BlockPos, BlockState, Boolean}, {}, function(this, state, level, pos, oldState, movedByPiston)
-    print("Moonflower placed at pos "..tostring(pos))
-    print("super:", this.super)
+
 end)
 
 local MoonFlowerBlock = builder:build()

@@ -9,11 +9,13 @@ import dev.hugeblank.allium.loader.mixin.annotation.sugar.LuaSugar;
 import dev.hugeblank.allium.loader.mixin.annotation.sugar.LuaThrows;
 import dev.hugeblank.allium.loader.type.exception.InvalidArgumentException;
 import dev.hugeblank.allium.loader.type.exception.InvalidMixinException;
-import dev.hugeblank.allium.util.asm.AsmUtil;
 import dev.hugeblank.allium.util.asm.VisitedElement;
 import dev.hugeblank.allium.util.asm.VisitedMethod;
 import me.basiqueevangelist.enhancedreflection.api.EClass;
-import org.objectweb.asm.*;
+import org.objectweb.asm.AnnotationVisitor;
+import org.objectweb.asm.ClassWriter;
+import org.objectweb.asm.MethodVisitor;
+import org.objectweb.asm.Type;
 import org.squiddev.cobalt.LuaError;
 
 import java.lang.annotation.Retention;
@@ -111,7 +113,7 @@ public class MixinMethodBuilder {
         return this;
     }
 
-    public InvocationReference build() throws LuaError, InvalidArgumentException, InvalidMixinException {
+    public void build(Script script, String id) throws LuaError, InvalidArgumentException, InvalidMixinException {
 
         List<MixinParameter> params = new ArrayList<>(initialParameters);
 
@@ -154,18 +156,12 @@ public class MixinMethodBuilder {
         }
 
         methodVisitor.visitEnd();
-        return new InvocationReference(params.stream().map(MixinParameter::getType).toList());
+        MixinMethodHook.create(script, id, params.stream().map(MixinParameter::getType).toList(), returnType);
     }
 
     @FunctionalInterface
     public interface WriteFactory {
         void write(ClassWriter classWriter, MethodVisitor methodVisitor, String descriptor, List<MixinParameter> parameters);
-    }
-
-    public record InvocationReference(List<Type> paramTypes) {
-        public void createEvent(Script script, String id) {
-            new MixinMethodHook(script, id, paramTypes.stream().map(AsmUtil::getWrappedTypeName).toList());
-        }
     }
 
 }

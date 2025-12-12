@@ -43,15 +43,13 @@ public class ModifyValue extends LuaInjectorAnnotation {
 
         if (sugarParameters != null) methodBuilder.sugars(sugarParameters);
 
-        MixinMethodBuilder.InvocationReference invocationReference = methodBuilder
+        methodBuilder
                 .access(visitedMethod.access() & ~(ACC_PUBLIC | ACC_PROTECTED) | ACC_PRIVATE)
                 .returnType(target)
                 .annotations(List.of(parser))
                 .signature(visitedMethod.signature())
                 .exceptions(visitedMethod.exceptions())
                 .code(createInjectWriteFactory(eventId))
-                .build();
-
-        invocationReference.createEvent(script, eventId);
+                .build(script, eventId);
     }
 }

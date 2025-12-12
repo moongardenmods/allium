@@ -6,7 +6,9 @@ import dev.hugeblank.allium.loader.type.annotation.LuaWrapped;
 import dev.hugeblank.allium.loader.type.annotation.OptionalArg;
 import dev.hugeblank.allium.loader.type.coercion.TypeCoercions;
 import dev.hugeblank.allium.loader.type.exception.InvalidArgumentException;
+import dev.hugeblank.allium.util.asm.AsmUtil;
 import me.basiqueevangelist.enhancedreflection.api.EClass;
+import org.objectweb.asm.Type;
 import org.squiddev.cobalt.*;
 import org.squiddev.cobalt.function.Dispatch;
 import org.squiddev.cobalt.function.LuaFunction;
@@ -21,15 +23,22 @@ public class MixinMethodHook {
     public static final Map<String, MixinMethodHook> EVENT_MAP = new HashMap<>();
     private final Script script;
     private final String id;
-    private final List<String> definitions;
-    private final List<EClass<?>> arguments = new ArrayList<>();
+    private final List<Type> paramTypes;
+    private final Type returnType;
+    private final List<EClass<?>> paramClasses = new ArrayList<>();
+    private EClass<?> returnClass;
     protected EventHandler handler;
 
-    public MixinMethodHook(Script script, String id, List<String> definitions) {
+    public MixinMethodHook(Script script, String id, List<Type> paramTypes, Type returnType) {
         this.id = id;
-        this.definitions = definitions;
+        this.paramTypes = paramTypes;
+        this.returnType = returnType;
         this.script = script;
         EVENT_MAP.put(id, this);
+    }
+
+    public static void create(Script script, String id, List<Type> paramTypes, Type returnType) {
+        EVENT_MAP.put(id, new MixinMethodHook(script, id, paramTypes, returnType));
     }
 
     private static EClass<?> forName(String id, String name) {
@@ -46,6 +55,15 @@ public class MixinMethodHook {
         if (handler != null)
             throw new IllegalStateException("Mixin hook already registered for id '" + id + "' from " + script.getID());
 
+        // This method should only be called once, and after preLaunch. Trusting that that's the case,
+        // load the parameter and return type classes for this method.
+        if (paramClasses.isEmpty()) {
+            paramTypes.stream().map((type) -> forName(id, AsmUtil.getWrappedTypeName(type))).forEach(paramClasses::add);
+        }
+        if (!returnType.equals(Type.VOID_TYPE)) {
+            returnClass = forName(id, AsmUtil.getWrappedTypeName(returnType));
+        }
+
         if (destroyOnUnload == null) destroyOnUnload = true;
         handler = new EventHandler(func, script, destroyOnUnload);
         return handler;
@@ -54,18 +72,16 @@ public class MixinMethodHook {
     public Object invoke(Object... objects) throws UnwindThrowable, LuaError, InvalidArgumentException {
         if (handler == null) {
             script.getLogger().warn("Mixin method '{}' missing hook", id);
-        }
-        if (arguments.isEmpty()) {
-            definitions.forEach((def) -> arguments.add(forName(id, def)));
+            return null;
         }
         List<LuaValue> values = new ArrayList<>();
         int i = 0;
-        for (EClass<?> argument : arguments) {
+        for (EClass<?> argument : paramClasses) {
             values.add(TypeCoercions.toLuaValue(objects[i], argument));
             i++;
         }
         Varargs args = ValueFactory.varargsOf(values);
-        return handler == null ? null : handler.handle(args);
+        return handler.handle(args);
     }
 
     protected class EventHandler implements ScriptResource {
@@ -91,7 +107,8 @@ public class MixinMethodHook {
                 synchronized (state) {
                         ret = Dispatch.invoke(state, func, args).first();
                 }
-                return TypeCoercions.toJava(state, ret, Object.class);
+                if (returnType.equals(Type.VOID_TYPE)) return null;
+                return TypeCoercions.toJava(state, ret, returnClass);
             } catch (LuaError e) {
                 script.getLogger().error("Error in mixin hook '{}'", id);
                 throw e;

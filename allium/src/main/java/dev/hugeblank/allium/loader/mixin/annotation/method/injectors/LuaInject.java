@@ -51,16 +51,15 @@ public class LuaInject extends LuaInjectorAnnotation {
 
         if (sugarParameters != null) methodBuilder.sugars(sugarParameters);
 
-        MixinMethodBuilder.InvocationReference invocationReference = methodBuilder
+        methodBuilder
                 .access(visitedMethod.access() & ~(ACC_PUBLIC | ACC_PROTECTED) | ACC_PRIVATE)
                 .returnType(Type.VOID_TYPE)
                 .annotations(annotations.stream().map(LuaMethodAnnotation::parser).toList())
                 .signature(visitedMethod.signature())
                 .exceptions(visitedMethod.exceptions())
                 .code(createInjectWriteFactory(eventId))
-                .build();
+                .build(script, eventId);
 
-        invocationReference.createEvent(script, eventId);
         Allium.PROFILER.pop();
     }
 }
