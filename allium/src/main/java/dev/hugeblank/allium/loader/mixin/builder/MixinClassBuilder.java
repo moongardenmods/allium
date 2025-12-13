@@ -3,6 +3,7 @@ package dev.hugeblank.allium.loader.mixin.builder;
 import dev.hugeblank.allium.Allium;
 import dev.hugeblank.allium.loader.Script;
 import dev.hugeblank.allium.loader.ScriptRegistry;
+import dev.hugeblank.allium.loader.lib.MixinLib;
 import dev.hugeblank.allium.loader.mixin.MixinClassInfo;
 import dev.hugeblank.allium.loader.mixin.annotation.LuaAnnotationParser;
 import dev.hugeblank.allium.loader.mixin.annotation.method.InjectorChef;
@@ -33,6 +34,7 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.squiddev.cobalt.LuaError;
 import org.squiddev.cobalt.LuaTable;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Locale;
@@ -46,9 +48,9 @@ import static org.objectweb.asm.Opcodes.*;
 
 @LuaWrapped
 public class MixinClassBuilder extends AbstractClassBuilder {
-    public static final Registry<MixinClassInfo> MIXINS = new Registry<>();
-    public static final Registry<MixinClassInfo> CLIENT = new Registry<>();
-    public static final Registry<MixinClassInfo> SERVER = new Registry<>();
+    public static final List<MixinClassInfo> MIXINS = new ArrayList<>();
+    public static final List<MixinClassInfo> CLIENT = new ArrayList<>();
+    public static final List<MixinClassInfo> SERVER = new ArrayList<>();
 
     private final EnvType targetEnvironment;
     private final boolean duck;
@@ -56,6 +58,7 @@ public class MixinClassBuilder extends AbstractClassBuilder {
     private final Script script;
 
     public static MixinClassBuilder create(String target, String[] interfaces, @Nullable EnvType targetEnvironment, boolean duck, Script script) throws LuaError {
+        checkPhase();
         return new MixinClassBuilder(
                 VisitedClass.ofClass(target),
                 interfaces,
@@ -70,10 +73,9 @@ public class MixinClassBuilder extends AbstractClassBuilder {
                 AsmUtil.getUniqueMixinClassName(),
                 EClass.fromJava(Object.class).name().replace('.', '/'),
                 interfaces,
-                ACC_PUBLIC | visitedClass.access(),
+                ACC_PUBLIC | (duck ? ACC_ABSTRACT | ACC_INTERFACE : 0) | visitedClass.access(),
                 visitedClass.signature()
         );
-        checkPhase();
         Allium.PROFILER.push(script.getID(), "mixin", visitedClass.name());
         this.script = script;
         this.targetEnvironment = targetEnvironment;
@@ -129,6 +131,8 @@ public class MixinClassBuilder extends AbstractClassBuilder {
     }
 
     private void writeAccessor(boolean isSetter, LuaTable annotations) throws InvalidMixinException, LuaError, InvalidArgumentException {
+        if (!this.duck)
+            throw new InvalidMixinException(InvalidMixinException.Type.INVALID_CLASSTYPE, "interface");
         String fieldName = getTargetValue(annotations);
         if (visitedClass.containsField(fieldName)) {
             VisitedField visitedField = visitedClass.getField(fieldName);
@@ -231,42 +235,48 @@ public class MixinClassBuilder extends AbstractClassBuilder {
     }
 
     @LuaWrapped
-    public MixinClassInfo build() {
-        // In case the class being mixed into loads, we initialize the script so it has a chance to hook before anything else runs.
-        MethodVisitor clinit = c.visitMethod(ACC_PRIVATE|ACC_STATIC, "clinit", "(Lorg/spongepowered/asm/mixin/injection/callback/CallbackInfo;)V", null, null);
-        AnnotationVisitor inject = clinit.visitAnnotation(Type.getDescriptor(Inject.class), true);
-        AnnotationVisitor method = inject.visitArray("method");
-        method.visit(null, "<clinit>()V");
-        method.visitEnd();
-        AnnotationVisitor atArray = inject.visitArray("at");
-        AnnotationVisitor at = atArray.visitAnnotation(null, Type.getDescriptor(At.class));
-        at.visit("value", "HEAD");
-        at.visitEnd();
-        atArray.visitEnd();
-        inject.visitEnd();
-        clinit.visitCode();
-        clinit.visitMethodInsn(INVOKESTATIC, Type.getInternalName(ScriptRegistry.class), "getInstance", "()Ldev/hugeblank/allium/loader/ScriptRegistry;", false);
-        clinit.visitLdcInsn(script.getID());
-        clinit.visitMethodInsn(INVOKEVIRTUAL, Type.getInternalName(Registry.class), "get", "(Ljava/lang/String;)Ldev/hugeblank/allium/util/Identifiable;", false);
-        String scriptName = Type.getInternalName(Script.class);
-        clinit.visitTypeInsn(CHECKCAST, scriptName);
-        clinit.visitMethodInsn(INVOKEVIRTUAL, scriptName, "initialize", "()V", false);
-        clinit.visitInsn(RETURN);
-        clinit.visitEnd();
+    public void build(@OptionalArg String id) throws LuaError {
+        if (!duck) {
+            // In case the class being mixed into loads, we initialize the script so it has a chance to hook before anything else runs.
+            MethodVisitor clinit = c.visitMethod(ACC_PRIVATE|ACC_STATIC, "clinit", "(Lorg/spongepowered/asm/mixin/injection/callback/CallbackInfo;)V", null, null);
+            AnnotationVisitor inject = clinit.visitAnnotation(Type.getDescriptor(Inject.class), true);
+            AnnotationVisitor method = inject.visitArray("method");
+            method.visit(null, "<clinit>()V");
+            method.visitEnd();
+            AnnotationVisitor atArray = inject.visitArray("at");
+            AnnotationVisitor at = atArray.visitAnnotation(null, Type.getDescriptor(At.class));
+            at.visit("value", "HEAD");
+            at.visitEnd();
+            atArray.visitEnd();
+            inject.visitEnd();
+            clinit.visitCode();
+            clinit.visitMethodInsn(INVOKESTATIC, Type.getInternalName(ScriptRegistry.class), "getInstance", "()Ldev/hugeblank/allium/loader/ScriptRegistry;", false);
+            clinit.visitLdcInsn(script.getID());
+            clinit.visitMethodInsn(INVOKEVIRTUAL, Type.getInternalName(Registry.class), "get", "(Ljava/lang/String;)Ldev/hugeblank/allium/util/Identifiable;", false);
+            String scriptName = Type.getInternalName(Script.class);
+            clinit.visitTypeInsn(CHECKCAST, scriptName);
+            clinit.visitMethodInsn(INVOKEVIRTUAL, scriptName, "initialize", "()V", false);
+            clinit.visitInsn(RETURN);
+            clinit.visitEnd();
+        }
 
         c.visitEnd();
         byte[] classBytes = c.toByteArray();
         AsmUtil.dumpClass(className, classBytes);
 
         // give the class back to the user for later use in the case of an interface.
-        MixinClassInfo info = new MixinClassInfo(className.replace("/", "."), classBytes, this.duck);
+        MixinClassInfo info = new MixinClassInfo(className.replace("/", "."), classBytes);
 
-        Registry<MixinClassInfo> registry = (targetEnvironment == null) ? MIXINS : switch (targetEnvironment) {
+        if (duck) {
+            if (id == null) throw new LuaError("Missing 'id' parameter for duck mixin on " + className);
+            MixinLib.DUCK_MAP.put(script.getID() + ':' + id, className);
+        }
+
+        List<MixinClassInfo> envList = (targetEnvironment == null) ? MIXINS : switch (targetEnvironment) {
             case SERVER -> SERVER;
             case CLIENT -> CLIENT;
         };
-        registry.register(info);
-        return info;
+        envList.add(info);
     }
 
 }

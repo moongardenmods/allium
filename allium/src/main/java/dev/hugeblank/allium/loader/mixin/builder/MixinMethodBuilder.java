@@ -12,6 +12,7 @@ import dev.hugeblank.allium.loader.type.exception.InvalidMixinException;
 import dev.hugeblank.allium.util.asm.VisitedElement;
 import dev.hugeblank.allium.util.asm.VisitedMethod;
 import me.basiqueevangelist.enhancedreflection.api.EClass;
+import org.jetbrains.annotations.Nullable;
 import org.objectweb.asm.AnnotationVisitor;
 import org.objectweb.asm.ClassWriter;
 import org.objectweb.asm.MethodVisitor;
@@ -113,7 +114,11 @@ public class MixinMethodBuilder {
         return this;
     }
 
-    public void build(Script script, String id) throws LuaError, InvalidArgumentException, InvalidMixinException {
+    public void build() throws InvalidArgumentException, InvalidMixinException, LuaError {
+        build(null, null);
+    }
+
+    public void build(@Nullable Script script, @Nullable String id) throws LuaError, InvalidArgumentException, InvalidMixinException {
 
         List<MixinParameter> params = new ArrayList<>(initialParameters);
 
@@ -156,7 +161,7 @@ public class MixinMethodBuilder {
         }
 
         methodVisitor.visitEnd();
-        MixinMethodHook.create(script, id, params.stream().map(MixinParameter::getType).toList(), returnType);
+        if (id != null) MixinMethodHook.create(script, id, params.stream().map(MixinParameter::getType).toList(), returnType);
     }
 
     @FunctionalInterface
