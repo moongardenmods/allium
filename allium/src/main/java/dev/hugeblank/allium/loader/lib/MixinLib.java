@@ -10,13 +10,20 @@ import dev.hugeblank.allium.loader.type.AlliumClassUserdata;
 import dev.hugeblank.allium.loader.type.StaticBinder;
 import dev.hugeblank.allium.loader.type.annotation.LuaWrapped;
 import dev.hugeblank.allium.loader.type.annotation.OptionalArg;
+import dev.hugeblank.allium.util.MixinConfigUtil;
 import me.basiqueevangelist.enhancedreflection.api.EClass;
 import net.fabricmc.api.EnvType;
 import org.jetbrains.annotations.Nullable;
 import org.squiddev.cobalt.LuaError;
+import org.squiddev.cobalt.LuaValue;
+
+import java.util.HashMap;
+import java.util.Map;
 
 @LuaWrapped(name = "mixin")
 public class MixinLib extends WrappedScriptLibrary {
+    public static final Map<String, MixinMethodHook> EVENT_MAP = new HashMap<>();
+    public static final Map<String, String> DUCK_MAP = new HashMap<>();
     // This being the way to define embedded "tables" is hilarious to me.
     private static final AlliumClassUserdata<MixinMethodAnnotations> ANNOTATION = StaticBinder.bindClass(EClass.fromJava(MixinMethodAnnotations.class));
     private static final AlliumClassUserdata<MixinSugars> SUGAR = StaticBinder.bindClass(EClass.fromJava(MixinSugars.class));
@@ -30,7 +37,17 @@ public class MixinLib extends WrappedScriptLibrary {
 
     @LuaWrapped
     public MixinMethodHook get(String eventId) {
-        return MixinMethodHook.EVENT_MAP.get(script.getID() + ':' + eventId);
+        if (!MixinConfigUtil.isComplete())
+            throw new IllegalStateException("Hook cannot be accessed in pre-launch phase.");
+        return EVENT_MAP.get(script.getID() + ':' + eventId);
+    }
+
+    @LuaWrapped
+    public LuaValue quack(String mixinId) throws ClassNotFoundException {
+        if (!MixinConfigUtil.isComplete())
+            throw new IllegalStateException("Duck interface cannot be accessed in pre-launch phase.");
+        EClass<?> clazz = EClass.fromJava(Class.forName(DUCK_MAP.get(script.getID() + ':' + mixinId)));
+        return StaticBinder.bindClass(clazz);
     }
 
     @LuaWrapped

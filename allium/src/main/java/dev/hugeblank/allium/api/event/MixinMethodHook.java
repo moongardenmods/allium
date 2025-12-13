@@ -2,6 +2,7 @@ package dev.hugeblank.allium.api.event;
 
 import dev.hugeblank.allium.api.ScriptResource;
 import dev.hugeblank.allium.loader.Script;
+import dev.hugeblank.allium.loader.lib.MixinLib;
 import dev.hugeblank.allium.loader.type.annotation.LuaWrapped;
 import dev.hugeblank.allium.loader.type.annotation.OptionalArg;
 import dev.hugeblank.allium.loader.type.coercion.TypeCoercions;
@@ -14,13 +15,10 @@ import org.squiddev.cobalt.function.Dispatch;
 import org.squiddev.cobalt.function.LuaFunction;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 @LuaWrapped
 public class MixinMethodHook {
-    public static final Map<String, MixinMethodHook> EVENT_MAP = new HashMap<>();
     private final Script script;
     private final String id;
     private final List<Type> paramTypes;
@@ -30,20 +28,18 @@ public class MixinMethodHook {
     protected EventHandler handler;
 
     public MixinMethodHook(Script script, String id, List<Type> paramTypes, Type returnType) {
+        this.script = script;
         this.id = id;
         this.paramTypes = paramTypes;
         this.returnType = returnType;
-        this.script = script;
-        EVENT_MAP.put(id, this);
     }
 
     public static void create(Script script, String id, List<Type> paramTypes, Type returnType) {
-        EVENT_MAP.put(id, new MixinMethodHook(script, id, paramTypes, returnType));
+        MixinLib.EVENT_MAP.put(id, new MixinMethodHook(script, id, paramTypes, returnType));
     }
 
     private static EClass<?> forName(String id, String name) {
         try {
-            // Surely this won't cause any issues in the future!
             return EClass.fromJava(Class.forName(name));
         } catch (ClassNotFoundException e) {
             throw new RuntimeException("in hook "+id, e);

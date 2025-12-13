@@ -6,8 +6,8 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import dev.hugeblank.allium.Allium;
 import dev.hugeblank.allium.AlliumPreLaunch;
-import dev.hugeblank.allium.loader.mixin.builder.MixinClassBuilder;
 import dev.hugeblank.allium.loader.mixin.MixinClassInfo;
+import dev.hugeblank.allium.loader.mixin.builder.MixinClassBuilder;
 import dev.hugeblank.allium.util.asm.VisitedClass;
 import org.spongepowered.asm.mixin.Mixins;
 
@@ -19,6 +19,7 @@ import java.lang.reflect.Method;
 import java.net.*;
 import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 public class MixinConfigUtil {
@@ -39,7 +40,7 @@ public class MixinConfigUtil {
         JsonObject config = JsonObjectBuilder.of()
                 .add("required", true)
                 .add("compatibilityLevel", "JAVA_21")
-                .add("package", "allium.mixin")
+                .add("package", MIXIN_PACKAGE)
                 .add("injectors", JsonObjectBuilder.of()
                         .add("defaultRequire", 1)
                         .build()
@@ -84,14 +85,14 @@ public class MixinConfigUtil {
         Allium.PROFILER.pop();
     }
 
-    private static JsonArray mixinsToJson(Registry<MixinClassInfo> registry, Map<String, byte[]> configMap) {
+    private static JsonArray mixinsToJson(List<MixinClassInfo> list, Map<String, byte[]> configMap) {
         JsonArray mixins = new JsonArray();
-        registry.forEach((info) -> {
-            String key = info.getID();
-            if (key.matches(".*mixin.*")) {
-                mixins.add(key.replace(MIXIN_PACKAGE + ".", "").replace(".class", ""));
+        list.forEach((info) -> {
+            String className = info.className();
+            if (className.matches(".*mixin.*")) {
+                mixins.add(className.replace(MIXIN_PACKAGE + '.', ""));
             }
-            configMap.put(key.replace(".", "/").replace("/class", ".class"), info.classBytes());
+            configMap.put(className.replace(".", "/") + ".class", info.classBytes());
         });
         return mixins;
     }

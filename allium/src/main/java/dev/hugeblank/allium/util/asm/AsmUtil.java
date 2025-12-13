@@ -1,6 +1,7 @@
 package dev.hugeblank.allium.util.asm;
 
 import dev.hugeblank.allium.Allium;
+import dev.hugeblank.allium.util.MixinConfigUtil;
 import org.objectweb.asm.*;
 import org.objectweb.asm.util.CheckClassAdapter;
 
@@ -22,7 +23,7 @@ public class AsmUtil {
         return "allium/GeneratedClass_" + NEXT_CLASS_ID.incrementAndGet();
     }
     public static String getUniqueMixinClassName() {
-        return "allium/mixin/GeneratedClass_" + NEXT_MIXIN_ID.incrementAndGet();
+        return MixinConfigUtil.MIXIN_PACKAGE.replace('.', '/') + "/GeneratedClass_" + NEXT_MIXIN_ID.incrementAndGet();
     }
 
     public static void dumpClass(String name, byte[] bytes) {
