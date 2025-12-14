@@ -39,11 +39,4 @@ public class MixinSugars {
     public static LuaCancellable cancellable(@LuaStateArg LuaState state) throws InvalidArgumentException, LuaError {
         return new LuaCancellable(state);
     }
-
-    /// Add an exception to the target method's signature.
-    /// This sugar does not add a parameter, it is best to add it last to prevent confusion.
-    @LuaWrapped(name = "throws")
-    public static LuaThrows luaThrows(@LuaStateArg LuaState state, String type) {
-        return new LuaThrows(type);
-    }
 }

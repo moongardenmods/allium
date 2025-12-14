@@ -36,10 +36,10 @@ public class MixinLib extends WrappedScriptLibrary {
     }
 
     @LuaWrapped
-    public MixinMethodHook get(String eventId) {
+    public MixinMethodHook get(String hookId) {
         if (!MixinConfigUtil.isComplete())
             throw new IllegalStateException("Hook cannot be accessed in pre-launch phase.");
-        return EVENT_MAP.get(script.getID() + ':' + eventId);
+        return EVENT_MAP.get(script.getID() + ':' + hookId);
     }
 
     @LuaWrapped
