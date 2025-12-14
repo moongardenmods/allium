@@ -20,6 +20,15 @@ import java.util.Map;
 @LuaWrapped(name = "java")
 public class JavaLib implements WrappedLibrary {
 
+    @LuaWrapped(name = "boolean") public static final Class<?> primitiveBoolean = boolean.class;
+    @LuaWrapped(name = "byte") public static final Class<?> primitiveByte = byte.class;
+    @LuaWrapped(name = "short") public static final Class<?> primitiveShort = short.class;
+    @LuaWrapped(name = "int") public static final Class<?> primitiveInt = int.class;
+    @LuaWrapped(name = "long") public static final Class<?> primitiveLong = long.class;
+    @LuaWrapped(name = "float") public static final Class<?> primitiveFloat = float.class;
+    @LuaWrapped(name = "double") public static final Class<?> primitiveDouble = double.class;
+    @LuaWrapped(name = "char") public static final Class<?> primitiveChar = char.class;
+
     @LuaWrapped
     public static LuaValue cast(@LuaStateArg LuaState state, LuaUserdata object, EClass<?> klass) throws LuaError {
         try {
