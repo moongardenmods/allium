@@ -6,7 +6,6 @@ import dev.hugeblank.allium.loader.mixin.annotation.LuaAnnotationParser;
 import dev.hugeblank.allium.loader.mixin.annotation.sugar.LuaCancellable;
 import dev.hugeblank.allium.loader.mixin.annotation.sugar.LuaParameterAnnotation;
 import dev.hugeblank.allium.loader.mixin.annotation.sugar.LuaSugar;
-import dev.hugeblank.allium.loader.mixin.annotation.sugar.LuaThrows;
 import dev.hugeblank.allium.loader.type.exception.InvalidArgumentException;
 import dev.hugeblank.allium.loader.type.exception.InvalidMixinException;
 import dev.hugeblank.allium.util.asm.VisitedElement;
@@ -78,9 +77,6 @@ public class MixinMethodBuilder {
                                 "Cancellable parameter cannot be applied to field-based mixin methods."
                         );
                     }
-                }
-                if (ls instanceof LuaThrows(String type)) {
-                    exceptions.add(type);
                 }
                 if (ls instanceof LuaParameterAnnotation lp) {
                     parameter(new MixinParameter(

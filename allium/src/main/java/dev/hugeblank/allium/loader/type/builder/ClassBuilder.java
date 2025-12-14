@@ -137,12 +137,12 @@ public class ClassBuilder extends AbstractClassBuilder {
     }
 
     @LuaWrapped
-    public void createMethod(String methodName, EClass<?>[] params, EClass<?> returnClass, Map<String, Boolean> access, @OptionalArg LuaFunction func) throws LuaError {
+    public void createMethod(String methodName, EClass<?>[] parameters, EClass<?> returnClass, Map<String, Boolean> access, @OptionalArg LuaFunction func) throws LuaError {
         if (func == null && !access.getOrDefault("abstract", false)) throw new LuaError("Expected function, got nil");
         if (func != null && access.getOrDefault("abstract", false)) throw new LuaError("Cannot apply function to abstract method");
         writeMethod(
             methodName,
-            Arrays.stream(params).map(x -> new WrappedType(x, x)).toArray(WrappedType[]::new),
+            Arrays.stream(parameters).map(x -> new WrappedType(x, x)).toArray(WrappedType[]::new),
             returnClass == null ? null : new WrappedType(returnClass, returnClass),
             ACC_PUBLIC | handleMethodAccess(access),
             func
@@ -239,10 +239,6 @@ public class ClassBuilder extends AbstractClassBuilder {
         }
 
         m.visitEnd();
-    }
-
-    public byte[] getByteArray() {
-        return c.toByteArray();
     }
 
     @LuaWrapped

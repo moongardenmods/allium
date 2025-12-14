@@ -91,13 +91,13 @@ public class MixinClassBuilder extends AbstractClassBuilder {
     }
 
     @LuaWrapped
-    public void createInjectMethod(String eventName, List<LuaMethodAnnotation> methodAnnotations, @OptionalArg @Nullable List<? extends LuaSugar> sugarParameters) throws InvalidMixinException, InvalidArgumentException, LuaError {
+    public void createInjectMethod(String hookId, List<LuaMethodAnnotation> methodAnnotations, @OptionalArg @Nullable List<? extends LuaSugar> sugarParameters) throws InvalidMixinException, InvalidArgumentException, LuaError {
         checkPhase();
-        Allium.PROFILER.push("createInjectMethod", eventName);
+        Allium.PROFILER.push("createInjectMethod", hookId);
         if (visitedClass.isInterface() || this.duck)
             throw new InvalidMixinException(InvalidMixinException.Type.INVALID_CLASSTYPE, "class");
 
-        String eventId = script.getID() + ':' + eventName;
+        String eventId = script.getID() + ':' + hookId;
 
         List<InjectorChef> chefList = methodAnnotations.stream()
                 .filter((methodAnnotation) -> methodAnnotation instanceof InjectorChef)
