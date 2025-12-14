@@ -137,7 +137,7 @@ public class ClassBuilder extends AbstractClassBuilder {
     }
 
     @LuaWrapped
-    public void createMethod(String methodName, EClass<?>[] parameters, EClass<?> returnClass, Map<String, Boolean> access, @OptionalArg LuaFunction func) throws LuaError {
+    public void createMethod(String methodName, EClass<?>[] parameters, @Nullable EClass<?> returnClass, Map<String, Boolean> access, @OptionalArg LuaFunction func) throws LuaError {
         if (func == null && !access.getOrDefault("abstract", false)) throw new LuaError("Expected function, got nil");
         if (func != null && access.getOrDefault("abstract", false)) throw new LuaError("Cannot apply function to abstract method");
         writeMethod(
@@ -155,7 +155,6 @@ public class ClassBuilder extends AbstractClassBuilder {
     }
 
     private void writeMethod(String methodName, WrappedType[] params, WrappedType returnClass, int access, @Nullable LuaFunction func) {
-        // TODO: Provide a way to pass primitives
         var paramsType = Arrays.stream(params).map(x -> x.raw).map(EClass::raw).map(Type::getType).toArray(Type[]::new);
         var returnType = returnClass == null ? Type.VOID_TYPE : Type.getType(returnClass.raw.raw());
         var isStatic = (access & ACC_STATIC) != 0;

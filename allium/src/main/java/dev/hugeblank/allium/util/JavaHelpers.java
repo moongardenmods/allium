@@ -42,6 +42,13 @@ public class JavaHelpers {
             return null;
         } else if (value instanceof AlliumClassUserdata<?> userdata) {
             return userdata.toUserdata();
+        } else if (value instanceof AlliumInstanceUserdata<?> instance) {
+            Object out = instance.toUserdata();
+            if (out instanceof EClass<?> eClass) {
+                return eClass;
+            } else if (out instanceof Class<?> clazz) {
+                return EClass.fromJava(clazz);
+            }
         }
 
         throw new LuaError(new ClassNotFoundException());
