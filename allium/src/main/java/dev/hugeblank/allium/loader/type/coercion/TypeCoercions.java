@@ -21,7 +21,6 @@ import java.util.function.Function;
 public class TypeCoercions {
     private static final Map<Class<?>, Function<EClass<?>, LuaToJavaConverter<?>>> FROM_LUA = new HashMap<>();
     private static final Map<Class<?>, BiFunction<Object, EClassUse<?>, JavaToLuaConverter<?>>> TO_LUA = new HashMap<>();
-    private static final List<LuaToJavaConverter<?>> FROM_LUA_WRAPPED = new ArrayList<>();
     
     public static <T> void registerJavaToLua(Class<T> klass, JavaToLuaConverter<T> serializer) {
         if (TO_LUA.put(klass, (unused, ignored) -> serializer) != null)
@@ -37,9 +36,6 @@ public class TypeCoercions {
     public static <T> void registerLuaToJava(Class<T> klass, LuaToJavaConverter<T> deserializer) {
         if (FROM_LUA.put(klass, unused -> deserializer) != null)
             throw new IllegalStateException("Converter already registered for " + klass);
-        if (!EClass.fromJava(klass).unwrapPrimitive().raw().equals(klass)) {
-            FROM_LUA_WRAPPED.add(deserializer);
-        }
     }
 
     @SuppressWarnings("unchecked")
