@@ -38,7 +38,7 @@ local moonflower = register("moonflower", function(p)
     return MoonFlowerBlock(MobEffects.NIGHT_VISION, 8.0, p)
 end, Properties.of():mapColor(MapColor.DIAMOND):noCollision():instabreak():sound(SoundType.GRASS):offsetType(OffsetType.XZ):pushReaction(PushReaction.DESTROY))
 
-if package.environment() == "client" then
+if allium.environment() == "client" then
     local BlockRenderLayerMap = require("net.fabricmc.fabric.api.client.rendering.v1.BlockRenderLayerMap")
     local ChunkSectionLayer = require("net.minecraft.client.renderer.chunk.ChunkSectionLayer")
     BlockRenderLayerMap.putBlock(moonflower, ChunkSectionLayer.CUTOUT)

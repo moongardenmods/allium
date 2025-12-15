@@ -5,7 +5,7 @@
 
 local events = require("bouquet").events
 
-if package.environment() ~= "client" then return end
+if allium.environment() ~= "client" then return end
 
 local Component = require("net.minecraft.network.chat.Component")
 local BuiltInRegistries = require("net.minecraft.core.registries.BuiltInRegistries")

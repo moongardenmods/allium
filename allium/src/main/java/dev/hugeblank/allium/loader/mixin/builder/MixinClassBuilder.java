@@ -133,9 +133,10 @@ public class MixinClassBuilder extends AbstractClassBuilder {
     private void writeAccessor(boolean isSetter, LuaTable annotations) throws InvalidMixinException, LuaError, InvalidArgumentException {
         if (!this.duck)
             throw new InvalidMixinException(InvalidMixinException.Type.INVALID_CLASSTYPE, "interface");
-        String fieldName = getTargetValue(annotations);
-        if (visitedClass.containsField(fieldName)) {
-            VisitedField visitedField = visitedClass.getField(fieldName);
+        String descriptor = getTargetValue(annotations);
+        // TODO: if the descriptor starts with the class name remove it!
+        if (visitedClass.containsField(descriptor)) {
+            VisitedField visitedField = visitedClass.getField(descriptor);
             Type visitedFieldType = Type.getType(visitedField.descriptor());
             String name = visitedField.name();
             name = (isSetter ? "set" : "get") + // set or get

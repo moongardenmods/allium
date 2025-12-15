@@ -1,7 +1,7 @@
 print("I'm feeling lucky!")
 
 -- We have to be VERY careful about where we register our mixins. If your mixin is client-specific,
--- make sure to specify in mixin.to(), as well as checking that package.environment() is "client".
+-- make sure to specify in mixin.to(), as well as checking that allium.environment() is "client".
 
 -- Furthermore, since the mixin entrypoint is invoked during the preLaunch phase, as a convention, absolutely no game
 -- classes should be `require`d. For more information, see the [fabric wiki](https://wiki.fabricmc.net/documentation:entrypoint?s[]=prelaunch).
