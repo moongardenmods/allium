@@ -8,7 +8,6 @@ import dev.hugeblank.allium.loader.ScriptRegistry;
 import dev.hugeblank.allium.loader.type.StaticBinder;
 import dev.hugeblank.allium.loader.type.annotation.LuaWrapped;
 import dev.hugeblank.allium.util.JavaHelpers;
-import net.fabricmc.loader.api.FabricLoader;
 import org.squiddev.cobalt.*;
 import org.squiddev.cobalt.debug.DebugFrame;
 import org.squiddev.cobalt.function.Dispatch;
@@ -51,14 +50,6 @@ public class PackageLib extends WrappedScriptLibrary {
     public LuaValue add(LuaState state) throws LuaError {
         state.globals().rawset("require", RegisteredFunction.ofS("require", this::require).create());
         return super.add(state);
-    }
-
-    @LuaWrapped
-    public String environment() {
-        return switch (FabricLoader.getInstance().getEnvironmentType()) {
-            case CLIENT -> "client";
-            case SERVER -> "server";
-        };
     }
 
     public Varargs preloadLoader(LuaState state, DebugFrame frame, Varargs args) throws LuaError, UnwindThrowable {

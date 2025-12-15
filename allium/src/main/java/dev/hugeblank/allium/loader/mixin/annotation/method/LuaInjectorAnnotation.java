@@ -36,6 +36,7 @@ public abstract class LuaInjectorAnnotation extends LuaMethodAnnotation implemen
 
     protected static VisitedMethod getVisitedMethod(VisitedClass mixinClass, LuaAnnotationParser annotation) throws InvalidMixinException, LuaError {
         String descriptor = annotation.findElement("method", String.class);
+        // TODO: if the descriptor starts with the class name remove it!
         if (!mixinClass.containsMethod(descriptor))
             throw new InvalidMixinException(InvalidMixinException.Type.INVALID_DESCRIPTOR, descriptor);
         return mixinClass.getMethod(descriptor);

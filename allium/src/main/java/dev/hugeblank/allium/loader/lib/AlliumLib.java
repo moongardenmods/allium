@@ -5,12 +5,21 @@ import dev.hugeblank.allium.api.WrappedLibrary;
 import dev.hugeblank.allium.loader.ScriptRegistry;
 import dev.hugeblank.allium.loader.type.annotation.CoerceToNative;
 import dev.hugeblank.allium.loader.type.annotation.LuaWrapped;
+import net.fabricmc.loader.api.FabricLoader;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.Set;
 
 @LuaWrapped(name = "allium")
 public class AlliumLib implements WrappedLibrary {
+
+    @LuaWrapped
+    public String environment() {
+        return switch (FabricLoader.getInstance().getEnvironmentType()) {
+            case CLIENT -> "client";
+            case SERVER -> "server";
+        };
+    }
 
     @LuaWrapped
     public boolean isScriptLoaded(String id) {
