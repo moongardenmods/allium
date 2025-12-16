@@ -111,10 +111,11 @@ public class EnvironmentManager {
         @Override
         public Varargs invoke(LuaState state, Varargs args) {
             StringBuilder out = new StringBuilder();
-            for (int i = 1; i <= args.count(); i++) {
+            int count = args.count();
+            for (int i = 1; i <= count; i++) {
                 out.append(args.arg(i).toString());
-                if (i != args.count()) {
-                    out.append(" ");
+                if (i != count && count > 1) {
+                    out.append('\t');
                 }
             }
             script.getLogger().info(out.toString());
