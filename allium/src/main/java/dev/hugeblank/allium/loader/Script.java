@@ -126,7 +126,7 @@ public class Script implements Identifiable {
             try {
                 // Initialize and set module used by require
                 this.initialized = State.INITIALIZING; // Guard against duplicate initializations
-                this.module = getExecutor().initialize().arg(1);
+                this.module = getExecutor().initialize().first();
                 this.initialized = State.INITIALIZED; // If all these steps are successful, we can update the state
             } catch (Throwable e) {
                 this.module = Constants.NIL;

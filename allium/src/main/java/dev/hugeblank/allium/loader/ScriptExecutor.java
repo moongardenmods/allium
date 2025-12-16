@@ -36,9 +36,7 @@ public class ScriptExecutor extends EnvironmentManager {
         } else if (entrypoint.has(Entrypoint.Type.STATIC)) {
             return execute(Entrypoint.Type.STATIC);
         } else if (entrypoint.has(Entrypoint.Type.DYNAMIC)) {
-            return execute(Entrypoint.Type.DYNAMIC);
-        } else if (entrypoint.has(Entrypoint.Type.MIXIN)) {
-            // It's ok to have a script that's just mixins. I guess.
+            execute(Entrypoint.Type.DYNAMIC);
             return Constants.NIL;
         }
         // This should be caught sooner, but who knows maybe a dev (hugeblank) will come along and mess something up
