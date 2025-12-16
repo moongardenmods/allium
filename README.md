@@ -24,12 +24,7 @@ will go. They may come in the form of a `.zip`, but may be expanded, and put int
 tinker with them. If you're at all familiar with the Resource/Data Pack structure, then you'll know that this is 
 similar.
 
-## Limitations
-Allium aims to be a gateway into modding, however there are currently some limitations that stifle its utility. Notably,
-mixins and documentation. There was an attempt to get documentation that a Lua user can approach to understand Java 
-logic, but it wasn't particularly elegant, nor complete. Mixin support on the other hand is in progress, slowly. Both of 
-these limitations will be resolved before version 1.0. While there is not documentation, examples of how scripting works
-can be found in [`bouquet/examples`](bouquet/examples).
+## [Documentation](https://moongardenmods.github.io/allium-docs/)
 
 ## Logos
 Allium's logos are under the same license as the rest of the project. Feel free to use these in your own project.
