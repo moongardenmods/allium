@@ -22,9 +22,9 @@ import java.util.List;
 
 @LuaWrapped(name="package")
 public class PackageLib extends WrappedScriptLibrary {
-    @LuaWrapped public final LuaTable loaders;
-    @LuaWrapped public final LuaTable preload;
-    @LuaWrapped public final LuaTable loaded;
+    @LuaWrapped public LuaTable loaders;
+    @LuaWrapped public LuaTable preload;
+    @LuaWrapped public LuaTable loaded;
     @LuaWrapped public String path;
 
     public PackageLib(Script script) {
