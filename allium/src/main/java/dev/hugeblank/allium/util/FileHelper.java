@@ -14,10 +14,7 @@ import org.jetbrains.annotations.Nullable;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.nio.file.*;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
 import java.util.stream.Stream;
@@ -57,7 +54,18 @@ public class FileHelper {
                 } else {
                     try {
                         FileSystem fs = FileSystems.newFileSystem(scriptDir); // zip, tarball, whatever has a provider.
-                        addReference(out, fs.getPath("/"));
+                        Stream<Path> stream = Files.list(fs.getPath("/"));
+                        List<Path> list = stream.toList();
+                        stream.close();
+                        if (list.size() == 1) {
+                            Path internalPath = list.getFirst();
+                            if (Files.isDirectory(internalPath)) {
+                                addReference(out, internalPath);
+                            }
+                        } else {
+                            addReference(out, fs.getPath("/"));
+                        }
+
                     } catch (IOException | ProviderNotFoundException ignored) {}
                 }
             });

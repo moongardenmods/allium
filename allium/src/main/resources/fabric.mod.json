@@ -13,7 +13,7 @@
     "sources": "https://github.com/hugeblank/allium"
   },
 
-  "license": "CC0-1.0",
+  "license": "MIT",
   "icon": "assets/allium/icon.png",
 
   "environment": "*",
@@ -28,7 +28,6 @@
   "mixins": [],
 
   "depends": {
-    "minecraft": ">=26.1-",
     "java": ">=25",
     "fabricloader": ">=0.18.3"
   }
