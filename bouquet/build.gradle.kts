@@ -35,7 +35,7 @@ dependencies {
 	implementation("cc.tweaked", "cobalt", cobalt)
 	implementation("me.basiqueevangelist","enhanced-reflection", enhancedReflections)
 //	implementation("eu.pb4", "placeholder-api", placeholderApi)
-    runtimeOnly("net.fabricmc.fabric-api", "fabric-api", fabricApi)
+//    runtimeOnly("net.fabricmc.fabric-api", "fabric-api", fabricApi)
 
     // Probably don't need anymore now that it's bundled with game
 //	implementation(include("io.netty", "netty-codec-http", nettyHttp))
@@ -46,8 +46,8 @@ dependencies {
 java {
 	withSourcesJar()
 
-	sourceCompatibility = JavaVersion.VERSION_21
-	targetCompatibility = JavaVersion.VERSION_21
+	sourceCompatibility = JavaVersion.VERSION_25
+	targetCompatibility = JavaVersion.VERSION_25
 }
 
 publishing {

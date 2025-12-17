@@ -14,7 +14,6 @@ import org.squiddev.cobalt.function.LuaFunction;
 
 import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Collections;
 import java.util.Set;
@@ -148,7 +147,7 @@ public class Script implements Identifiable {
         Allium.PROFILER.push(getID(), "loadLibrary");
         // Ensure the modules parent path is the root path, and that the module exists before loading
         try {
-            LuaFunction loadValue = getExecutor().load(Files.newInputStream(mod), mod.getFileName().toString());
+            LuaFunction loadValue = getExecutor().load(mod);
             Allium.PROFILER.push(getID(), "dispatch");
             LuaValue value = Dispatch.call(state, loadValue);
             Allium.PROFILER.pop();

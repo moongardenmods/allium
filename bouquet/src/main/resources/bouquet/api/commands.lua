@@ -1,6 +1,6 @@
 
 local MinecraftServer
-if package.environment() == "server" then
+if allium.environment() == "server" then
     MinecraftServer = require("net.minecraft.server.MinecraftServer")
 end
 

@@ -78,7 +78,7 @@ public class PackageLib extends WrappedScriptLibrary {
         Entrypoint entrypoint = script.getManifest().entrypoints();
         String pstr = searchPath(modStr, this.path);
         if (pstr != null) {
-            Path path = Path.of(pstr);
+            Path path = script.getPath().resolve(pstr);
             if (!Files.exists(path)) return Constants.NIL;
             try {
                 // Do not allow entrypoints to get loaded from the path.
@@ -154,7 +154,7 @@ public class PackageLib extends WrappedScriptLibrary {
     private Varargs require(LuaState state, DebugFrame frame, Varargs args) throws LuaError, UnwindThrowable {
         LuaString mod = args.arg(1).checkLuaString();
         String modStr = mod.checkString();
-        if (!loaded.containsKey(modStr)) return loaded.get(modStr);
+        if (loaded.containsKey(modStr)) return loaded.get(modStr);
         for (int i = 1; i <= searchers.length(); i++) {
             LuaValue loader = searchers.rawget(i);
             if (loader instanceof LuaFunction f) {
@@ -166,6 +166,6 @@ public class PackageLib extends WrappedScriptLibrary {
                 }
             }
         }
-        throw new LuaError("Could not find module " + mod.toString());
+        throw new LuaError("Could not find module " + mod);
     }
 }
