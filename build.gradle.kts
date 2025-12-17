@@ -32,10 +32,6 @@ subprojects {
         maven("https://maven.hugeblank.dev/releases") {
             content {
                 includeGroup("dev.hugeblank")
-            }
-        }
-        maven("https://maven.squiddev.cc") {
-            content {
                 includeGroup("cc.tweaked")
             }
         }
