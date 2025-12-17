@@ -39,10 +39,7 @@ dependencies {
 	implementation("cc.tweaked", "cobalt", cobalt)
 	implementation("me.basiqueevangelist","enhanced-reflection", enhancedReflections)
 //	implementation("eu.pb4", "placeholder-api", placeholderApi)
-//    runtimeOnly("net.fabricmc.fabric-api", "fabric-api", fabricApi)
-
-    // Probably don't need anymore now that it's bundled with game
-//	implementation(include("io.netty", "netty-codec-http", nettyHttp))
+    runtimeOnly("net.fabricmc.fabric-api", "fabric-api", fabricApi)
 
 	implementation(project(path = ":allium"))
 }
