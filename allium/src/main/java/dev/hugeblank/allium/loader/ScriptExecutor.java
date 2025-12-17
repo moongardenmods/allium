@@ -62,11 +62,10 @@ public class ScriptExecutor extends EnvironmentManager {
         // data, script.getID() + ":" + entrypoint.get(type))
         InputStream stream = Files.newInputStream(libPath);
         Allium.PROFILER.push(script.getID(), "executor", "load");
-        Allium.LOGGER.info("{}:/{}", script.getID(), path.relativize(libPath));
         LuaFunction out = LoadState.load(
                 state,
                 stream,
-                script.getID() + ":/" + path.relativize(libPath),
+                '='+script.getID() + ":/" + path.relativize(libPath),
                 state.globals()
         );
         Allium.PROFILER.pop();
