@@ -156,7 +156,7 @@ public class FileHelper {
     }
 
     private static boolean exists(Entrypoint entrypoints, Path path, Entrypoint.Type type) {
-        return entrypoints.has(type) && path.resolve(entrypoints.get(type)).toFile().exists();
+        return entrypoints.has(type) && Files.exists(path.resolve(entrypoints.get(type)));
     }
 
     private static Manifest makeManifest(CustomValue.CvObject value) {
