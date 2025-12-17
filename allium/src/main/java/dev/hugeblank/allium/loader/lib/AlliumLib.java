@@ -14,7 +14,7 @@ import java.util.List;
 public class AlliumLib implements WrappedLibrary {
 
     @LuaWrapped
-    public String environment() {
+    public static String environment() {
         return switch (FabricLoader.getInstance().getEnvironmentType()) {
             case CLIENT -> "client";
             case SERVER -> "server";
@@ -22,19 +22,19 @@ public class AlliumLib implements WrappedLibrary {
     }
 
     @LuaWrapped
-    public boolean isScriptPresent(String id) {
+    public static boolean isScriptPresent(String id) {
         return ScriptRegistry.getInstance().has(id) &&
                 ScriptRegistry.getInstance().get(id).getLaunchState().equals(Script.State.INITIALIZED);
     }
 
     @LuaWrapped
-    public @CoerceToNative List<Script> getAllScripts() {
+    public static @CoerceToNative List<Script> getAllScripts() {
         return ScriptRegistry.getInstance().getAll().stream()
                 .filter((script) -> script.getLaunchState().equals(Script.State.INITIALIZED)).toList();
     }
 
     @LuaWrapped
-    public @Nullable Script getScript(String id) {
+    public static @Nullable Script getScript(String id) {
         Script instance = ScriptRegistry.getInstance().get(id);
         if (instance != null && instance.getLaunchState().equals(Script.State.INITIALIZED)) {
             return ScriptRegistry.getInstance().get(id);

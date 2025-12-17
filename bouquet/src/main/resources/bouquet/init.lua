@@ -3,7 +3,7 @@ require("bouquet.hooks")
 local FsLib = require("dev.hugeblank.bouquet.api.lib.fs.FsLib")
 local HttpLib = require("dev.hugeblank.bouquet.api.lib.http.HttpLib")
 
-print("Hello from Bouquet's Script! Environment:", package.environment())
+print("Hello from Bouquet's Script! Environment:", allium.environment())
 local request = HttpLib().request
 return {
     command = require("bouquet.api.command"),

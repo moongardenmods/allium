@@ -55,21 +55,18 @@ public class ScriptExecutor extends EnvironmentManager {
     }
 
     private Varargs execute(Entrypoint.Type type) throws IOException, CompileException, LuaError {
-        return LuaThread.runMain(state, load(getInputStream(type), script.getID() + ":" + type));
+        return LuaThread.runMain(state, load(path.resolve(entrypoint.get(type))));
     }
 
-    private InputStream getInputStream(Entrypoint.Type entrypointType) throws IOException {
-        return entrypoint.has(entrypointType) ?
-                Files.newInputStream(path.resolve(entrypoint.get(entrypointType))) :
-                null;
-    }
-
-    public LuaFunction load(InputStream stream, String name) throws CompileException, LuaError {
+    public LuaFunction load(Path libPath) throws CompileException, LuaError, IOException {
+        // data, script.getID() + ":" + entrypoint.get(type))
+        InputStream stream = Files.newInputStream(libPath);
         Allium.PROFILER.push(script.getID(), "executor", "load");
+        Allium.LOGGER.info("{}:/{}", script.getID(), path.relativize(libPath));
         LuaFunction out = LoadState.load(
                 state,
                 stream,
-                name,
+                script.getID() + ":/" + path.relativize(libPath),
                 state.globals()
         );
         Allium.PROFILER.pop();

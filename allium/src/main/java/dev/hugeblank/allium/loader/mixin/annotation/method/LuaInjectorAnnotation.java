@@ -1,6 +1,7 @@
 package dev.hugeblank.allium.loader.mixin.annotation.method;
 
 import dev.hugeblank.allium.api.event.MixinMethodHook;
+import dev.hugeblank.allium.loader.lib.MixinLib;
 import dev.hugeblank.allium.loader.mixin.annotation.LuaAnnotationParser;
 import dev.hugeblank.allium.loader.mixin.builder.MixinMethodBuilder;
 import dev.hugeblank.allium.loader.mixin.builder.MixinParameter;
@@ -49,7 +50,7 @@ public abstract class LuaInjectorAnnotation extends LuaMethodAnnotation implemen
             Type returnType = Type.getReturnType(desc);
             List<Type> types = paramTypes.stream().map(MixinParameter::getType).toList();
             methodVisitor.visitFieldInsn(
-                    GETSTATIC, Type.getInternalName(MixinMethodHook.class),
+                    GETSTATIC, Type.getInternalName(MixinLib.class),
                     "EVENT_MAP", Type.getDescriptor(Map.class)
             ); // <- 0
             methodVisitor.visitLdcInsn(eventName); // <- 1

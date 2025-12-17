@@ -8,7 +8,7 @@ val alliumBaseName: String by project
 val cobalt: String by project
 val enhancedReflections: String by project
 
-// Following by example, using semantic versioning null
+// Following by example, using semantic versioning
 var v = alliumVersion
 if ("0" != alliumReleaseCandidate) {
 	v = "$v-rc$alliumReleaseCandidate"
@@ -28,8 +28,8 @@ dependencies {
 java {
 	withSourcesJar()
 
-	sourceCompatibility = JavaVersion.VERSION_21
-	targetCompatibility = JavaVersion.VERSION_21
+	sourceCompatibility = JavaVersion.VERSION_25
+	targetCompatibility = JavaVersion.VERSION_25
 }
 
 // configure the maven publication

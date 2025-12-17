@@ -9,7 +9,7 @@ local String = require("java.lang.String")
 local Block = require("net.minecraft.world.level.block.Block")
 
 local MinecraftServer, ServerLevel
-if package.environment() == "server" then
+if allium.environment() == "server" then
     MinecraftServer = require("net.minecraft.server.MinecraftServer")
     ServerLevel = require("net.minecraft.server.level.ServerLevel")
 end
