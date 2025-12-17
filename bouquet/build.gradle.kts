@@ -13,7 +13,11 @@ val nettyHttp: String by project
 val placeholderApi: String by project
 val fabricApi: String by project
 
-version = bouquetVersion
+var v = bouquetVersion
+if ("0" != bouquetReleaseCandidate) {
+    v = "$v-rc$bouquetReleaseCandidate"
+}
+version = v
 group = mavenGroup
 
 base {
