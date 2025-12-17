@@ -49,13 +49,3 @@ event hooks into the games logic.
 ### Dev Environment Notes
 - To build both projects at the same time use the `buildAll` gradle task.
 - Multiple client run configurations are created. One is for running only allium, the other is for running both allium & bouquet.
-
-## Too much Allium...
-Since 2018 a project under the name Allium has existed. This is being addressed to suppress the Mandela Effect.
-
-### Isn't Allium for ComputerCraft?
-Allium for CC has been moved to [allium-cc](https://github.com/hugeblank/allium-cc). This project took its original repository location due to it being a 
-far more useful successor to the CC variant.
-
-### Isn't Allium a peripheral mod for ComputerCraft?
-That's Allium Peripherals. You can check it out [here](https://github.com/hugeblank/allium-peripherals).
