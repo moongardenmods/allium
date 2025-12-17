@@ -90,8 +90,16 @@ subprojects {
     publishing {
         repositories {
             maven {
-                name = "hugeblankRepo"
+                name = "hugeblankRelease"
                 url = uri("https://maven.hugeblank.dev/releases")
+                credentials(PasswordCredentials::class)
+                authentication {
+                    create<BasicAuthentication>("basic")
+                }
+            }
+            maven {
+                name = "hugeblankSnapshot"
+                url = uri("https://maven.hugeblank.dev/snapshots")
                 credentials(PasswordCredentials::class)
                 authentication {
                     create<BasicAuthentication>("basic")
