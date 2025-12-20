@@ -5,6 +5,7 @@ import dev.hugeblank.allium.loader.type.annotation.LuaStateArg;
 import dev.hugeblank.allium.loader.type.annotation.OptionalArg;
 import dev.hugeblank.allium.loader.type.coercion.TypeCoercions;
 import dev.hugeblank.allium.loader.type.exception.InvalidArgumentException;
+import me.basiqueevangelist.enhancedreflection.api.EClass;
 import me.basiqueevangelist.enhancedreflection.api.EParameter;
 import org.squiddev.cobalt.LuaError;
 import org.squiddev.cobalt.LuaState;
@@ -14,12 +15,13 @@ import org.squiddev.cobalt.Varargs;
 import java.util.List;
 
 public class ArgumentUtils {
-    public static Object[] toJavaArguments(LuaState state, Varargs args, final int offset, List<EParameter> parameters) throws LuaError, InvalidArgumentException {
+    public static Object[] toJavaArguments(LuaState state, Varargs args, final int offset, List<EParameter> parameters, List<EClass<?>> forcedParameters) throws LuaError, InvalidArgumentException {
         Object[] arguments = new Object[parameters.size()];
 
         int filledJavaArguments = 0;
         int luaOffset = offset;
         for (EParameter param : parameters) { // For each parameter in the matched call
+            EClass<?> parameterType = resolveParameter(filledJavaArguments, param, forcedParameters);
             if (param.hasAnnotation(LuaStateArg.class)) {
                 if (!param.parameterType().upperBound().raw().equals(LuaState.class))
                     throw new InvalidArgumentException("@LuaStateArg parameter must take LuaState!");
@@ -39,7 +41,7 @@ public class ArgumentUtils {
                     table.rawset(i + 1, sub.arg(i + 1));
                 }
 
-                arguments[filledJavaArguments] = TypeCoercions.toJava(state, table, param.parameterType().upperBound());
+                arguments[filledJavaArguments] = TypeCoercions.toJava(state, table, parameterType);
                 luaOffset = args.count() + 1;
             } else {
                 Object arg;
@@ -51,7 +53,7 @@ public class ArgumentUtils {
                         throw new InvalidArgumentException("Not enough arguments!");
                     }
                 } else {
-                    arg = TypeCoercions.toJava(state, args.arg(luaOffset), param.parameterType().upperBound());
+                    arg = TypeCoercions.toJava(state, args.arg(luaOffset), parameterType);
                     luaOffset++;
                 }
 
@@ -65,6 +67,11 @@ public class ArgumentUtils {
             throw new InvalidArgumentException("Too many arguments!");
 
         return arguments;
+    }
+
+    private static EClass<?> resolveParameter(int index, EParameter param, List<EClass<?>> forceTypes) {
+        if (forceTypes.size() <= index || forceTypes.get(index) == null) return param.parameterType().upperBound();
+        return forceTypes.get(index);
     }
 
     public static String paramsToPrettyString(List<EParameter> parameters) {

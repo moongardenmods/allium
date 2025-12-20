@@ -12,6 +12,7 @@ import org.squiddev.cobalt.LuaState;
 import org.squiddev.cobalt.LuaValue;
 
 import java.lang.reflect.InvocationTargetException;
+import java.util.List;
 
 public record PropertyMethodData<I>(EMethod getter, @Nullable EMethod setter) implements PropertyData<I> {
 
@@ -19,7 +20,7 @@ public record PropertyMethodData<I>(EMethod getter, @Nullable EMethod setter) im
     public LuaValue get(String name, LuaState state, I instance, boolean noThisArg) throws LuaError {
         var params = getter.parameters();
         try {
-            var jargs = ArgumentUtils.toJavaArguments(state, Constants.NONE, 1, params);
+            var jargs = ArgumentUtils.toJavaArguments(state, Constants.NONE, 1, params, List.of());
             EClassUse<?> ret = getter.returnTypeUse().upperBound();
             Object out = getter.invoke(instance, jargs);
             return TypeCoercions.toLuaValue(out, ret);
@@ -39,7 +40,7 @@ public record PropertyMethodData<I>(EMethod getter, @Nullable EMethod setter) im
 
         var params = setter.parameters();
         try {
-            var jargs = ArgumentUtils.toJavaArguments(state, value, 1, params);
+            var jargs = ArgumentUtils.toJavaArguments(state, value, 1, params, List.of());
 
             setter.invoke(instance, jargs);
         } catch (InvalidArgumentException e) {

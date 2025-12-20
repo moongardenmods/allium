@@ -33,6 +33,7 @@ public final class MethodInvocationFunction<T> extends VarArgFunction {
     private final String name;
     private final T boundReceiver;
     private final boolean isStatic;
+    private final List<EClass<?>> forcedParameters = new ArrayList<>();
 
     public MethodInvocationFunction(EClass<T> clazz, List<EMethod> matches, String name, T boundReceiver, boolean isStatic) {
         this.clazz = clazz;
@@ -42,6 +43,14 @@ public final class MethodInvocationFunction<T> extends VarArgFunction {
         this.isStatic = isStatic;
     }
 
+    public void setForcedParameters(List<EClass<?>> params) {
+        forcedParameters.addAll(params);
+    }
+
+    public void clearForcedParameters() {
+        forcedParameters.clear();
+    }
+
     @Override
     public Varargs invoke(LuaState state, Varargs args) throws LuaError {
         try {
@@ -49,7 +58,8 @@ public final class MethodInvocationFunction<T> extends VarArgFunction {
             for (EMethod method : matches) { // For each matched method from the index call
                 var parameters = method.parameters();
                 try {
-                    var javaArgs = ArgumentUtils.toJavaArguments(state, args, boundReceiver == null && !isStatic ? 2 : 1, parameters);
+                    var javaArgs = ArgumentUtils.toJavaArguments(state, args, boundReceiver == null && !isStatic ? 2 : 1, parameters, forcedParameters);
+                    clearForcedParameters();
 
                     if (javaArgs.length == parameters.size()) { // Found a match!
                         try { // Get the return type, invoke method, cast returned value, cry.

@@ -147,7 +147,7 @@ public class MixinClassBuilder extends AbstractClassBuilder {
             MixinMethodBuilder methodBuilder = MixinMethodBuilder.of(c, visitedField, name, params);
 
             methodBuilder.annotations(List.of(new LuaAnnotationParser(
-                    script.getExecutor().getState(),
+                    script.getState(),
                     annotations,
                     EClass.fromJava(Accessor.class)
             )));
@@ -191,7 +191,7 @@ public class MixinClassBuilder extends AbstractClassBuilder {
             MixinMethodBuilder methodBuilder = MixinMethodBuilder.of(c, visitedMethod, name, params);
 
             methodBuilder.annotations(List.of(new LuaAnnotationParser(
-                    script.getExecutor().getState(),
+                    script.getState(),
                     annotations,
                     EClass.fromJava(Invoker.class)
             )));

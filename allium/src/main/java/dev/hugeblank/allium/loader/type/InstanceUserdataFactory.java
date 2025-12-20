@@ -109,7 +109,7 @@ public class InstanceUserdataFactory<T> extends AbstractUserdataFactory<T, Alliu
                 if (cachedProperty == EmptyData.INSTANCE && newIndexImpl != null) {
                     var parameters = newIndexImpl.parameters();
                     try {
-                        var jargs = ArgumentUtils.toJavaArguments(state, ValueFactory.varargsOf(args.arg(1), args.arg(2)), 1, parameters);
+                        var jargs = ArgumentUtils.toJavaArguments(state, ValueFactory.varargsOf(args.arg(1), args.arg(2)), 1, parameters, List.of());
 
                         if (jargs.length == parameters.size()) {
                             try {

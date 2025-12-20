@@ -4,7 +4,7 @@ import com.google.gson.*;
 import dev.hugeblank.allium.loader.type.AlliumInstanceUserdata;
 import dev.hugeblank.allium.loader.type.annotation.LuaWrapped;
 import dev.hugeblank.allium.loader.type.annotation.OptionalArg;
-import dev.hugeblank.bouquet.util.TableHelpers;
+import dev.hugeblank.bouquet.util.TableUtils;
 import io.netty.buffer.ByteBuf;
 import io.netty.util.ReferenceCounted;
 import it.unimi.dsi.fastutil.objects.ReferenceOpenHashSet;
@@ -245,16 +245,16 @@ public class LuaByteBuf {
         if (value instanceof AlliumInstanceUserdata<?> userdata && userdata.instanceOf(JsonElement.class)) {
             return userdata.toUserdata(JsonElement.class);
         } else if (value instanceof LuaTable table) {
-            if (TableHelpers.isArray(table)) {
+            if (TableUtils.probablyArray(table)) {
                 JsonArray out = new JsonArray();
                 seenValues.add(table);
-                TableHelpers.forEachI(table, (i, v) -> out.add(toJsonElementInternal(v, seenValues)));
+                TableUtils.forEachI(table, (i, v) -> out.add(toJsonElementInternal(v, seenValues)));
                 seenValues.remove(table);
                 return out;
             } else {
                 JsonObject out = new JsonObject();
                 seenValues.add(table);
-                TableHelpers.forEach(table, (k, v) -> {
+                TableUtils.forEach(table, (k, v) -> {
                     if (!k.isString()) {
                         throw new LuaError("Expected json object key of type 'string', got " + k.typeName());
                     }
