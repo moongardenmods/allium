@@ -4,21 +4,10 @@ plugins {
     id("maven-publish")
     id("net.fabricmc.fabric-loom") version "1.14-SNAPSHOT"
 }
-// Common Mod Properties
-val mavenGroup: String by project
 
 // Fabric Properties
 val minecraftVersion: String by project
-val yarnMappings: String by project
 val loaderVersion: String by project
-
-// Common Dependencies
-val cobalt: String by project
-val enhancedReflections: String by project
-
-// Bouquet Dependencies
-val nettyHttp: String by project
-val placeholderApi: String by project
 
 dependencies {
     minecraft("com.mojang", "minecraft", minecraftVersion)
@@ -33,11 +22,6 @@ subprojects {
             content {
                 includeGroup("dev.hugeblank")
                 includeGroup("cc.tweaked")
-            }
-        }
-        maven("https://maven.nucleoid.xyz") {
-            content {
-                includeGroup("eu.pb4")
             }
         }
         maven("https://basique.top/maven/releases") {
@@ -57,7 +41,7 @@ subprojects {
             inputs.property("version", project.version)
 
             filesMatching("fabric.mod.json") {
-                expand(mutableMapOf("version" to project.version))
+                expand(mutableMapOf("version" to project.version, "name" to project.name))
             }
         }
 
