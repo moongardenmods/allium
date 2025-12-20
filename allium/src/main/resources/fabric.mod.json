@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "id": "allium",
+  "id": "${name}",
   "version": "${version}",
 
   "name": "Allium Loader",

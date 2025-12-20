@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "id": "bouquet",
+  "id": "${name}",
   "version": "${version}",
   "name": "Bouquet",
   "description": "Essential hooks for Allium mods",

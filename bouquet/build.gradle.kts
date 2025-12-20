@@ -38,7 +38,6 @@ loom {
 dependencies {
 	implementation("cc.tweaked", "cobalt", cobalt)
 	implementation("me.basiqueevangelist","enhanced-reflection", enhancedReflections)
-//	implementation("eu.pb4", "placeholder-api", placeholderApi)
     runtimeOnly("net.fabricmc.fabric-api", "fabric-api", fabricApi)
 
 	implementation(project(path = ":allium"))
