@@ -2,7 +2,9 @@ package dev.hugeblank.bouquet.util;
 
 import org.squiddev.cobalt.*;
 
-public class TableHelpers {
+import java.util.concurrent.atomic.AtomicBoolean;
+
+public class TableUtils {
     public static void forEach(LuaTable table, LuaBiConsumer<LuaValue, LuaValue> consumer) throws LuaError {
         LuaValue key = Constants.NIL;
         while (true) {
@@ -13,7 +15,7 @@ public class TableHelpers {
         }
     }
 
-    public static boolean isArray(LuaTable table) throws LuaError {
+    public static boolean probablyArray(LuaTable table) throws LuaError {
         LuaValue key = Constants.NIL;
         while (true) {
             Varargs entry = table.next(key);
@@ -24,9 +26,19 @@ public class TableHelpers {
         return true;
     }
 
+    public static boolean assuredlyArray(LuaTable table) throws LuaError {
+        AtomicBoolean bool = new AtomicBoolean(true);
+        forEach(table, (k, _) -> {
+            if (!(k instanceof LuaInteger)) {
+                bool.set(false);
+            }
+        });
+        return bool.get();
+    }
+
     // Preserve ordering, stop at nil value
     public static void forEachI(LuaTable table, LuaBiConsumer<Integer, LuaValue> consumer) throws LuaError {
-        if (!isArray(table)) return;
+        if (!probablyArray(table)) return;
         int i = 1;
         LuaValue val = table.rawget(i);
         while (val != Constants.NIL) {

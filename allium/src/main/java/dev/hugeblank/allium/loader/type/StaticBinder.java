@@ -101,6 +101,7 @@ public final class StaticBinder {
         metatable.rawset("__call", new VarArgFunction() {
             @Override
             public Varargs invoke(LuaState state, Varargs args) throws LuaError {
+                // TODO: let this function be invoked with java.callWith
                 return createInstance(
                         clazz,
                         state,
@@ -119,7 +120,7 @@ public final class StaticBinder {
 
             var parameters = constructor.parameters();
             try {
-                var jargs = ArgumentUtils.toJavaArguments(state, args, 1, parameters);
+                var jargs = ArgumentUtils.toJavaArguments(state, args, 1, parameters, List.of());
 
                 try { // Get the return type, invoke method, cast returned value, cry.
                     EClassUse<?> ret = (EClassUse<?>) constructor.receiverTypeUse();

@@ -200,6 +200,11 @@ public class Script implements Identifiable {
         return executor;
     }
 
+    @LuaWrapped
+    public LuaState getState() {
+        return executor.getState();
+    }
+
     @Override
     public String toString() {
         return manifest.name();

@@ -3,7 +3,9 @@ package dev.hugeblank.allium.loader.lib;
 import dev.hugeblank.allium.api.WrappedLibrary;
 import dev.hugeblank.allium.loader.type.AlliumClassUserdata;
 import dev.hugeblank.allium.loader.type.AlliumInstanceUserdata;
+import dev.hugeblank.allium.loader.type.MethodInvocationFunction;
 import dev.hugeblank.allium.loader.type.StaticBinder;
+import dev.hugeblank.allium.loader.type.annotation.LuaArgs;
 import dev.hugeblank.allium.loader.type.annotation.LuaStateArg;
 import dev.hugeblank.allium.loader.type.annotation.LuaWrapped;
 import dev.hugeblank.allium.loader.type.annotation.OptionalArg;
@@ -90,6 +92,12 @@ public class JavaLib implements WrappedLibrary {
         } catch (LuaError | InvalidArgumentException e) {
             return false;
         }
+    }
+
+    @LuaWrapped
+    public static Varargs callWith(@LuaStateArg LuaState state, MethodInvocationFunction<?> function, List<EClass<?>> types, @LuaArgs Varargs params) throws LuaError {
+        function.setForcedParameters(types);
+        return function.invoke(state, params);
     }
 
     @LuaWrapped

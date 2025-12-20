@@ -28,7 +28,7 @@ public class MetatableUtils {
         if (indexImpl != null) {
             var parameters = indexImpl.parameters();
             try {
-                var jargs = ArgumentUtils.toJavaArguments(state, key, 1, parameters);
+                var jargs = ArgumentUtils.toJavaArguments(state, key, 1, parameters, List.of());
 
                 if (jargs.length == parameters.size()) {
                     try {

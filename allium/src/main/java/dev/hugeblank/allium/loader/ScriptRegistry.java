@@ -20,7 +20,7 @@ public class ScriptRegistry extends Registry<Script> {
 
     @Override
     protected void onRegister(Script script) {
-        SCRIPT_STATES.put(script.getExecutor().getState(), script);
+        SCRIPT_STATES.put(script.getState(), script);
     }
 
     public void unloadScript(String name) {

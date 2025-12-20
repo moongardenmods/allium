@@ -97,7 +97,7 @@ public class MixinMethodHook {
         }
         
         public Object handle(Varargs args) throws UnwindThrowable, LuaError, InvalidArgumentException {
-            LuaState state = script.getExecutor().getState();
+            LuaState state = script.getState();
             LuaValue ret;
             try {
                 synchronized (state) {
