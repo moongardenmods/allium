@@ -36,9 +36,9 @@ loom {
 }
 
 dependencies {
-	implementation("cc.tweaked", "cobalt", cobalt)
-	implementation("me.basiqueevangelist","enhanced-reflection", enhancedReflections)
-    runtimeOnly("net.fabricmc.fabric-api", "fabric-api", fabricApi)
+	implementation("cc.tweaked:cobalt:${cobalt}")
+	implementation("me.basiqueevangelist:enhanced-reflection:${enhancedReflections}")
+    runtimeOnly("net.fabricmc.fabric-api:fabric-api:${fabricApi}")
 
 	implementation(project(path = ":allium"))
 }

@@ -21,8 +21,8 @@ base {
 }
 
 dependencies {
-	implementation(include("cc.tweaked", "cobalt", cobalt))
-	implementation(include("me.basiqueevangelist","enhanced-reflection", enhancedReflections))
+	implementation(include("cc.tweaked:cobalt:${cobalt}")!!)
+	implementation(include("me.basiqueevangelist:enhanced-reflection:${enhancedReflections}")!!)
 }
 
 java {
