@@ -6,7 +6,6 @@ import dev.hugeblank.allium.loader.type.AlliumSuperUserdata;
 import dev.hugeblank.allium.loader.type.StaticBinder;
 import dev.hugeblank.allium.loader.type.SuperUserdataFactory;
 import dev.hugeblank.allium.loader.type.annotation.LuaWrapped;
-import dev.hugeblank.allium.loader.type.annotation.OptionalArg;
 import dev.hugeblank.allium.loader.type.coercion.TypeCoercions;
 import dev.hugeblank.allium.loader.type.property.MemberFilter;
 import dev.hugeblank.allium.loader.type.property.PropertyResolver;
@@ -21,10 +20,7 @@ import org.squiddev.cobalt.*;
 import org.squiddev.cobalt.function.Dispatch;
 import org.squiddev.cobalt.function.LuaFunction;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 import static org.objectweb.asm.Opcodes.*;
 
@@ -33,6 +29,7 @@ public class ClassBuilder extends AbstractClassBuilder {
     private final LuaState state;
     private final EClass<?> eSuperClass;
     private final List<EMethod> methods = new ArrayList<>();
+    private final Map<String, MethodReference> referenceBuffer = new HashMap<>();
     private final FieldBuilder fields;
 
     @LuaWrapped
@@ -95,7 +92,18 @@ public class ClassBuilder extends AbstractClassBuilder {
     }
 
     @LuaWrapped
-    public void overrideMethod(String methodName, EClass<?>[] parameters, Map<String, Boolean> access, LuaFunction func) throws LuaError {
+    public void put(String key, LuaValue value) {
+        if (referenceBuffer.containsKey(key) && value instanceof LuaFunction function) {
+            writeMethod(referenceBuffer.remove(key), function);
+        } else if (referenceBuffer.containsKey(key) && !(value instanceof LuaFunction)) {
+            throw new IllegalStateException("Expected function for '" + key + "' got " + value.typeName());
+        } else {
+            throw new IllegalStateException("No such method '" + key + "' exists for application on class");
+        }
+    }
+
+    @LuaWrapped
+    public void override(String methodName, EClass<?>[] parameters, Map<String, Boolean> access) throws LuaError {
         var methods = new ArrayList<EMethod>();
         if (access.size() > 1) {
             ScriptRegistry.scriptFromState(state).getLogger().warn("Flags on method override besides 'static' are ignored. For method {}", methodName);
@@ -120,14 +128,10 @@ public class ClassBuilder extends AbstractClassBuilder {
                 }
 
                 if (match) {
-                    writeMethod(
-                        method.name(),
-                        methParams.stream().map(WrappedType::fromParameter).toArray(WrappedType[]::new),
-                        new WrappedType(method.rawReturnType(), method.returnType().upperBound()),
-                        method.modifiers() & ~ACC_ABSTRACT,
-                        func
-                    );
-
+                    referenceBuffer.put(method.name(), new MethodReference(method.name(),
+                            methParams.stream().map(WrappedType::fromParameter).toArray(WrappedType[]::new),
+                            new WrappedType(method.rawReturnType(), method.returnType().upperBound()),
+                            method.modifiers() & ~ACC_ABSTRACT));
                     return;
                 }
             }
@@ -137,30 +141,27 @@ public class ClassBuilder extends AbstractClassBuilder {
     }
 
     @LuaWrapped
-    public void createMethod(String methodName, EClass<?>[] parameters, @Nullable EClass<?> returnClass, Map<String, Boolean> access, @OptionalArg LuaFunction func) throws LuaError {
-        if (func == null && !access.getOrDefault("abstract", false)) throw new LuaError("Expected function, got nil");
-        if (func != null && access.getOrDefault("abstract", false)) throw new LuaError("Cannot apply function to abstract method");
-        writeMethod(
-            methodName,
-            Arrays.stream(parameters).map(x -> new WrappedType(x, x)).toArray(WrappedType[]::new),
-            returnClass == null ? null : new WrappedType(returnClass, returnClass),
-            ACC_PUBLIC | handleMethodAccess(access),
-            func
-        );
-
+    public void method(String methodName, EClass<?>[] parameters, @Nullable EClass<?> returnClass, Map<String, Boolean> access) throws LuaError {
+        int accessInt = handleMethodAccess(access);
+        if ((accessInt & ACC_ABSTRACT) == 0) {
+            referenceBuffer.put(methodName, new MethodReference(methodName,
+                    Arrays.stream(parameters).map(x -> new WrappedType(x, x)).toArray(WrappedType[]::new),
+                    returnClass == null ? null : new WrappedType(returnClass, returnClass),
+                    ACC_PUBLIC | accessInt));
+        }
     }
 
     private int handleMethodAccess(Map<String, Boolean> access) {
         return (access.getOrDefault("abstract", false) ? ACC_ABSTRACT : 0) | (access.getOrDefault("static", false) ? ACC_STATIC : 0);
     }
 
-    private void writeMethod(String methodName, WrappedType[] params, WrappedType returnClass, int access, @Nullable LuaFunction func) {
-        var paramsType = Arrays.stream(params).map(x -> x.raw).map(EClass::raw).map(Type::getType).toArray(Type[]::new);
-        var returnType = returnClass == null ? Type.VOID_TYPE : Type.getType(returnClass.raw.raw());
-        var isStatic = (access & ACC_STATIC) != 0;
+    private void writeMethod(MethodReference reference, @Nullable LuaFunction func) {
+        var paramsType = Arrays.stream(reference.params()).map(x -> x.raw).map(EClass::raw).map(Type::getType).toArray(Type[]::new);
+        var returnType = reference.returns() == null ? Type.VOID_TYPE : Type.getType(reference.returns().raw.raw());
+        var isStatic = (reference.access() & ACC_STATIC) != 0;
 
         var desc = Type.getMethodDescriptor(returnType, paramsType);
-        var m = c.visitMethod(access, methodName, desc, null, null);
+        var m = c.visitMethod(reference.access(), reference.name(), desc, null, null);
         int arrayPos = Type.getArgumentsAndReturnSizes(desc) >> 2;
         int thisVarOffset = isStatic ? 0 : 1;
 
@@ -169,7 +170,7 @@ public class ClassBuilder extends AbstractClassBuilder {
 
             if (isStatic) arrayPos -= 1;
 
-            m.visitLdcInsn(params.length + thisVarOffset);
+            m.visitLdcInsn(reference.params().length + thisVarOffset);
             m.visitTypeInsn(ANEWARRAY, Type.getInternalName(LuaValue.class));
             m.visitVarInsn(ASTORE, arrayPos);
 
@@ -205,14 +206,14 @@ public class ClassBuilder extends AbstractClassBuilder {
                     AsmUtil.wrapPrimitive(m, args[i]);
                 }
 
-                fields.storeAndGet(m, params[i].real.wrapPrimitive(), EClass.class);
+                fields.storeAndGet(m, reference.params()[i].real.wrapPrimitive(), EClass.class);
                 m.visitMethodInsn(INVOKESTATIC, Type.getInternalName(TypeCoercions.class), "toLuaValue", "(Ljava/lang/Object;Lme/basiqueevangelist/enhancedreflection/api/EClass;)Lorg/squiddev/cobalt/LuaValue;", false);
                 m.visitInsn(AASTORE);
 
                 argIndex += args[i].getSize();
             }
 
-            var isVoid = returnClass == null || returnType.getSort() == Type.VOID;
+            var isVoid = reference.returns() == null || returnType.getSort() == Type.VOID;
 
             fields.storeAndGet(m, state, LuaState.class); // state
             if (!isVoid) m.visitInsn(DUP); // state, state?
@@ -223,9 +224,9 @@ public class ClassBuilder extends AbstractClassBuilder {
 
             if (!isVoid) {
                 m.visitMethodInsn(INVOKEVIRTUAL, Type.getInternalName(Varargs.class), "first", "()Lorg/squiddev/cobalt/LuaValue;", false); // state? luavalue
-                fields.storeAndGet(m, returnClass.real.wrapPrimitive(), EClass.class); // state?, luavalue, eclass
+                fields.storeAndGet(m, reference.returns().real.wrapPrimitive(), EClass.class); // state?, luavalue, eclass
                 m.visitMethodInsn(INVOKESTATIC, Type.getInternalName(TypeCoercions.class), "toJava", "(Lorg/squiddev/cobalt/LuaState;Lorg/squiddev/cobalt/LuaValue;Lme/basiqueevangelist/enhancedreflection/api/EClass;)Ljava/lang/Object;", false); // object
-                m.visitTypeInsn(CHECKCAST, Type.getInternalName(returnClass.real.wrapPrimitive().raw())); // object(return type)
+                m.visitTypeInsn(CHECKCAST, Type.getInternalName(reference.returns().real.wrapPrimitive().raw())); // object(return type)
 
                 if (returnType.getSort() != Type.ARRAY && returnType.getSort() != Type.OBJECT) {
                     AsmUtil.unwrapPrimitive(m, returnType); // primitive
@@ -242,6 +243,17 @@ public class ClassBuilder extends AbstractClassBuilder {
 
     @LuaWrapped
     public LuaValue build() {
+        if (!referenceBuffer.isEmpty()) {
+            StringBuilder builder = new StringBuilder();
+            Iterator<MethodReference> missingReferences = referenceBuffer.values().iterator();
+            while (missingReferences.hasNext()) {
+                MethodReference reference = missingReferences.next();
+                builder.append(reference.name());
+                if (missingReferences.hasNext()) builder.append(", ");
+            }
+            throw new IllegalStateException("Mising functions for method(s): " + builder);
+        }
+
         byte[] classBytes = c.toByteArray();
 
         Class<?> klass = AsmUtil.defineClass(className, classBytes);
@@ -260,4 +272,6 @@ public class ClassBuilder extends AbstractClassBuilder {
             return new WrappedType(param.rawParameterType(), param.parameterType().lowerBound());
         }
     }
+
+    private record MethodReference(String name, WrappedType[] params, WrappedType returns, int access) {}
 }
