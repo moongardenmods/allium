@@ -10,7 +10,7 @@ val minecraftVersion: String by project
 val loaderVersion: String by project
 
 dependencies {
-    minecraft("com.mojang", "minecraft", minecraftVersion)
+    minecraft("com.mojang:minecraft:${minecraftVersion}")
 }
 
 subprojects {
@@ -32,8 +32,8 @@ subprojects {
     }
 
     dependencies {
-        minecraft("com.mojang", "minecraft", minecraftVersion)
-        implementation("net.fabricmc", "fabric-loader", loaderVersion)
+        minecraft("com.mojang:minecraft:${minecraftVersion}")
+        implementation("net.fabricmc:fabric-loader:${loaderVersion}")
     }
 
     tasks {
