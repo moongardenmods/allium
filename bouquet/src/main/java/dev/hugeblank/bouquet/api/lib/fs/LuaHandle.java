@@ -70,6 +70,7 @@ public interface LuaHandle {
     default void writeInternal(FileChannel handle, String out) throws LuaError {
         ByteBuffer buf = ByteBuffer.allocateDirect(out.length());
         buf.put(out.getBytes(StandardCharsets.UTF_8));
+        buf.position(0);
         try {
             //noinspection ResultOfMethodCallIgnored
             handle.write(buf);
