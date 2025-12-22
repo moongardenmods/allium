@@ -86,7 +86,7 @@ public abstract class AbstractUserdataFactory<T, U extends InstanceUserdata<T>> 
         return method;
     }
 
-    protected static Candidates deriveCandidates(EClass<?> clazz, MemberFilter filter) {
+    protected Candidates deriveCandidates(EClass<?> clazz, MemberFilter filter) {
         if (filter.equals(MemberFilter.PUBLIC_MEMBERS)) {
             return new Candidates(clazz.methods(), clazz.fields().stream().toList());
         }

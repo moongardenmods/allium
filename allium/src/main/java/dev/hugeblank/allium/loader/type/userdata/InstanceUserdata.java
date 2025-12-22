@@ -11,8 +11,8 @@ public class InstanceUserdata<T> extends LuaUserdata {
     protected final EClass<T> clazz;
 
      InstanceUserdata(T obj, LuaTable metatable, EClass<T> clazz) {
-        super(obj, metatable);
-        this.clazz = clazz;
+         super(obj, metatable);
+         this.clazz = clazz;
     }
 
     public EClass<T> instanceClass() {
