@@ -61,7 +61,7 @@ public class ScriptExecutor extends EnvironmentManager {
     public LuaFunction load(Path libPath) throws CompileException, LuaError, IOException {
         // data, script.getID() + ":" + entrypoint.get(type))
         InputStream stream = Files.newInputStream(libPath);
-        Allium.PROFILER.push(script.getID(), "executor", "load");
+        Allium.PROFILER.push(script.getID(), "executor", "load", path.relativize(libPath).toString());
         LuaFunction out = LoadState.load(
                 state,
                 stream,

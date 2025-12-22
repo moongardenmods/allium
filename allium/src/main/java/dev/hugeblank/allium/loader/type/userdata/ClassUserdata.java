@@ -1,13 +1,13 @@
-package dev.hugeblank.allium.loader.type;
+package dev.hugeblank.allium.loader.type.userdata;
 
 import me.basiqueevangelist.enhancedreflection.api.EClass;
 import org.squiddev.cobalt.LuaTable;
 import org.squiddev.cobalt.LuaUserdata;
 
-public class AlliumClassUserdata<T> extends LuaUserdata {
+public class ClassUserdata<T> extends LuaUserdata {
     private final EClass<T> clazz;
 
-    public AlliumClassUserdata(EClass<T> clazz, LuaTable metatable) {
+    public ClassUserdata(EClass<T> clazz, LuaTable metatable) {
         super(clazz, metatable);
         this.clazz = clazz;
     }

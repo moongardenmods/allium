@@ -1,6 +1,7 @@
 package dev.hugeblank.allium.loader.type.property;
 
 import dev.hugeblank.allium.util.AnnotationUtils;
+import dev.hugeblank.allium.util.Candidates;
 import me.basiqueevangelist.enhancedreflection.api.EClass;
 import me.basiqueevangelist.enhancedreflection.api.EField;
 import me.basiqueevangelist.enhancedreflection.api.EMethod;
@@ -14,18 +15,8 @@ import java.util.function.Predicate;
 
 public final class PropertyResolver {
 
-    public static <T> PropertyData<? super T> resolveProperty(EClass<T> clazz, String name, MemberFilter filter) {
-        List<EMethod> methods = new ArrayList<>(clazz.methods());
-        methods.addAll(clazz.declaredMethods());
-        List<EField> fields = new ArrayList<>(clazz.fields());
-        fields.addAll(clazz.declaredFields());
-        return resolvePropertyFrom(
-                clazz,
-                methods.stream().distinct().filter(filter).toList(),
-                fields.stream().distinct().filter(filter).toList(),
-                name,
-                filter
-        );
+    public static <T> PropertyData<? super T> resolveProperty(EClass<T> clazz, String name, Candidates candidates, MemberFilter filter) {
+        return resolvePropertyFrom(clazz, candidates.methods(), candidates.fields(), name, filter);
     }
 
     public static <T> PropertyData<? super T> resolvePropertyFrom(EClass<T> clazz, List<EMethod> methods, Collection<EField> fields, String name, MemberFilter filter) {

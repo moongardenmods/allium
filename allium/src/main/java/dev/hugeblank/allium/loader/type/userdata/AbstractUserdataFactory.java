@@ -1,0 +1,255 @@
+package dev.hugeblank.allium.loader.type.userdata;
+
+import dev.hugeblank.allium.loader.type.annotation.LuaIndex;
+import dev.hugeblank.allium.loader.type.coercion.TypeCoercions;
+import dev.hugeblank.allium.loader.type.exception.InvalidArgumentException;
+import dev.hugeblank.allium.loader.type.property.EmptyData;
+import dev.hugeblank.allium.loader.type.property.MemberFilter;
+import dev.hugeblank.allium.loader.type.property.PropertyData;
+import dev.hugeblank.allium.loader.type.property.PropertyResolver;
+import dev.hugeblank.allium.util.*;
+import me.basiqueevangelist.enhancedreflection.api.EClass;
+import me.basiqueevangelist.enhancedreflection.api.EField;
+import me.basiqueevangelist.enhancedreflection.api.EMember;
+import me.basiqueevangelist.enhancedreflection.api.EMethod;
+import org.apache.commons.lang3.ArrayUtils;
+import org.jetbrains.annotations.Nullable;
+import org.squiddev.cobalt.*;
+import org.squiddev.cobalt.function.VarArgFunction;
+
+import java.lang.annotation.Annotation;
+import java.lang.reflect.InvocationTargetException;
+import java.util.*;
+import java.util.function.Predicate;
+
+public abstract class AbstractUserdataFactory<T, U extends InstanceUserdata<T>> {
+    protected final EClass<T> clazz;
+    protected final LuaTable metatable;
+
+    private final Candidates candidates;
+
+    protected final @Nullable EMethod indexImpl;
+    protected final @Nullable EMethod newIndexImpl;
+    protected @Nullable LuaTable boundMetatable;
+
+    protected final EClass<? super T> targetClass;
+    protected final MemberFilter filter;
+
+    protected final Map<String, PropertyData<? super T>> cachedProperties = new HashMap<>();
+
+    AbstractUserdataFactory(EClass<T> clazz, EClass<? super T> targetClass, MemberFilter filter) {
+        this.targetClass = targetClass;
+        this.filter = filter;
+        this.candidates = deriveCandidates(targetClass, filter);
+        this.clazz = clazz;
+        this.indexImpl = tryFindOp(candidates.methods(), LuaIndex.class, 1, "get");
+        this.newIndexImpl = tryFindOp(candidates.methods(), null, 2, "set", "put");
+
+
+        this.metatable = createMetatable(false);
+    }
+
+    AbstractUserdataFactory(EClass<T> clazz, MemberFilter filter) {
+        this(clazz, clazz, filter);
+    }
+
+    AbstractUserdataFactory(EClass<T> clazz) {
+        this(clazz, clazz, MemberFilter.PUBLIC_MEMBERS);
+    }
+
+
+
+    @Nullable EMethod tryFindOp(List<EMethod> methods, @Nullable Class<? extends Annotation> annotation, int minParams, String... specialNames) {
+        EMethod method = null;
+
+        if (annotation != null)
+            method = methods
+                    .stream()
+                    .filter(x ->
+                            !x.isStatic()
+                                    && x.hasAnnotation(annotation))
+                    .findAny()
+                    .orElse(null);
+
+        if (method != null) return method;
+
+        method = methods
+                .stream()
+                .filter(x ->
+                        !x.isStatic()
+                                && !AnnotationUtils.isHiddenFromLua(x)
+                                && ArrayUtils.contains(specialNames, x.name())
+                                && x.parameters().size() >= minParams)
+                .findAny()
+                .orElse(null);
+
+        return method;
+    }
+
+    protected static Candidates deriveCandidates(EClass<?> clazz, MemberFilter filter) {
+        if (filter.equals(MemberFilter.PUBLIC_MEMBERS)) {
+            return new Candidates(clazz.methods(), clazz.fields().stream().toList());
+        }
+        List<EMethod> methods = new ArrayList<>();
+        List<EField> fields = new ArrayList<>();
+        List<EClass<?>> interfaces = new ArrayList<>();
+        Map<String, EClass<?>> nameMap = new HashMap<>();
+        while (clazz != null) {
+            methods.addAll(clazz.declaredMethods().stream().filter(testMember(nameMap, filter)).toList());
+            interfaces.addAll(clazz.interfaces());
+            fields.addAll(clazz.declaredFields().stream().filter(testMember(nameMap, filter)).toList());
+            clazz = clazz.superclass();
+        }
+        interfaces.forEach((iface) ->
+                methods.addAll(iface.declaredMethods().stream().filter(testMember(nameMap, filter)).toList())
+        );
+        return new Candidates(methods, fields);
+    }
+
+    private static Predicate<EMember> testMember(Map<String, EClass<?>> nameMap, MemberFilter filter) {
+        return (m) -> {
+            if (!filter.test(m)) return false;
+            if (!nameMap.containsKey(m.name())) nameMap.put(m.name(), m.declaringClass());
+            return nameMap.get(m.name()).equals(m.declaringClass());
+        };
+    }
+
+    protected LuaTable createMetatable(boolean isBound) {
+        LuaTable metatable = new LuaTable();
+
+        metatable.rawset("__tostring", new VarArgFunction() {
+
+            @Override
+            public Varargs invoke(LuaState state, Varargs args) throws LuaError {
+                try {
+                    // TODO: Can this be reduced to `args.arg(1).toString()`?
+                    return TypeCoercions.toLuaValue(Objects.requireNonNull(TypeCoercions.toJava(state, args.arg(1), targetClass)).toString());
+                } catch (InvalidArgumentException e) {
+                    throw new LuaError(e);
+                }
+            }
+        });
+
+        MetatableUtils.applyPairs(metatable, targetClass, cachedProperties, candidates, isBound, filter);
+
+        metatable.rawset("__index", new VarArgFunction() {
+
+            @Override
+            public LuaValue invoke(LuaState state, Varargs args) throws LuaError {
+                String name = args.arg(2).checkString();
+
+                if (name.equals("super") && args.arg(1) instanceof PrivateUserdata<?> instance) {
+                    return instance.superInstance();
+                }
+
+                PropertyData<? super T> cachedProperty = cachedProperties.get(name);
+
+                if (cachedProperty == null) {
+                    cachedProperty = PropertyResolver.resolveProperty(targetClass, name, candidates, filter);
+
+                    cachedProperties.put(name, cachedProperty);
+                }
+                if (cachedProperty == EmptyData.INSTANCE) {
+                    LuaValue output = MetatableUtils.getIndexMetamethod(targetClass, indexImpl, state, args.arg(1), args.arg(2));
+                    if (output != null) {
+                        return output;
+                    }
+                }
+
+                return cachedProperty.get(name, state, JavaHelpers.checkUserdata(args.arg(1), targetClass.raw()), isBound);
+            }
+        });
+
+        metatable.rawset("__newindex", new VarArgFunction() {
+            @Override
+            public LuaValue invoke(LuaState state, Varargs args) throws LuaError {
+                String name = args.arg(2).checkString();
+
+                PropertyData<? super T> cachedProperty = cachedProperties.get(name);
+
+                if (cachedProperty == null) {
+                    cachedProperty = PropertyResolver.resolveProperty(targetClass, name, candidates, filter);
+
+                    cachedProperties.put(name, cachedProperty);
+                }
+
+                if (cachedProperty == EmptyData.INSTANCE && newIndexImpl != null) {
+                    var parameters = newIndexImpl.parameters();
+                    try {
+                        var jargs = ArgumentUtils.toJavaArguments(state, args.subargs(2), 1, parameters, List.of());
+
+                        if (jargs.length == parameters.size()) {
+                            try {
+                                var instance = TypeCoercions.toJava(state, args.arg(1), targetClass);
+                                newIndexImpl.invoke(instance, jargs);
+                                return Constants.NIL;
+                            } catch (IllegalAccessException e) {
+                                throw new LuaError(e);
+                            } catch (InvocationTargetException e) {
+                                if (e.getTargetException() instanceof LuaError err)
+                                    throw err;
+
+                                throw new LuaError(e);
+                            }
+                        }
+                    } catch (InvalidArgumentException | IllegalArgumentException e) {
+                        // Continue.
+                    }
+                }
+                cachedProperty.set(name, state, JavaHelpers.checkUserdata(args.arg(1), targetClass.raw()), args.arg(3));
+
+                return Constants.NIL;
+            }
+        });
+
+        var comparableInst = clazz.allInterfaces().stream().filter(x -> x.raw() == Comparable.class).findFirst().orElse(null);
+        if (comparableInst != null) {
+            var bound = comparableInst.typeVariableValues().getFirst().lowerBound();
+            metatable.rawset("__lt", new LessFunction(bound));
+            metatable.rawset("__le", new LessOrEqualFunction(bound));
+        }
+
+        return metatable;
+    }
+
+    public abstract U create(Object instance);
+
+    public abstract U createBound(Object instance);
+
+    protected void initBound() {
+        if (boundMetatable == null) boundMetatable = createMetatable(true);
+    }
+
+    static final class LessFunction extends VarArgFunction {
+        private final EClass<?> bound;
+
+        public LessFunction(EClass<?> bound) {
+            this.bound = bound;
+        }
+
+        @Override
+        public LuaValue invoke(LuaState state, Varargs args) throws LuaError {
+            Comparable<Object> cmp = JavaHelpers.checkUserdata(args.arg(1), Comparable.class);
+            Object cmp2 = JavaHelpers.checkUserdata(args.arg(2), bound.raw());
+
+            return ValueFactory.valueOf(cmp.compareTo(cmp2) < 0);
+        }
+    }
+
+    static final class LessOrEqualFunction extends VarArgFunction {
+        private final EClass<?> bound;
+
+        public LessOrEqualFunction(EClass<?> bound) {
+            this.bound = bound;
+        }
+
+        @Override
+        public LuaValue invoke(LuaState state, Varargs args) throws LuaError {
+            Comparable<Object> cmp = JavaHelpers.checkUserdata(args.arg(1), Comparable.class);
+            Object cmp2 = JavaHelpers.checkUserdata(args.arg(2), bound.raw());
+
+            return ValueFactory.valueOf(cmp.compareTo(cmp2) < 0 || cmp.equals(cmp2));
+        }
+    }
+
+}

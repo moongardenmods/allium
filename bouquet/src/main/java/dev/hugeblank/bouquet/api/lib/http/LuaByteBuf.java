@@ -1,7 +1,7 @@
 package dev.hugeblank.bouquet.api.lib.http;
 
 import com.google.gson.*;
-import dev.hugeblank.allium.loader.type.AlliumInstanceUserdata;
+import dev.hugeblank.allium.loader.type.userdata.InstanceUserdata;
 import dev.hugeblank.allium.loader.type.annotation.LuaWrapped;
 import dev.hugeblank.allium.loader.type.annotation.OptionalArg;
 import dev.hugeblank.bouquet.util.TableUtils;
@@ -242,7 +242,7 @@ public class LuaByteBuf {
     private static JsonElement toJsonElementInternal(LuaValue value, Set<LuaValue> seenValues) throws LuaError {
         if (seenValues.contains(value)) return JsonNull.INSTANCE;
 
-        if (value instanceof AlliumInstanceUserdata<?> userdata && userdata.instanceOf(JsonElement.class)) {
+        if (value instanceof InstanceUserdata<?> userdata && userdata.instanceOf(JsonElement.class)) {
             return userdata.toUserdata(JsonElement.class);
         } else if (value instanceof LuaTable table) {
             if (TableUtils.probablyArray(table)) {

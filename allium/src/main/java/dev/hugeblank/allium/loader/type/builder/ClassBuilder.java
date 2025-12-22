@@ -1,14 +1,15 @@
 package dev.hugeblank.allium.loader.type.builder;
 
 import dev.hugeblank.allium.loader.ScriptRegistry;
-import dev.hugeblank.allium.loader.type.AlliumInstanceUserdata;
-import dev.hugeblank.allium.loader.type.AlliumSuperUserdata;
 import dev.hugeblank.allium.loader.type.StaticBinder;
-import dev.hugeblank.allium.loader.type.SuperUserdataFactory;
 import dev.hugeblank.allium.loader.type.annotation.LuaWrapped;
 import dev.hugeblank.allium.loader.type.coercion.TypeCoercions;
 import dev.hugeblank.allium.loader.type.property.MemberFilter;
 import dev.hugeblank.allium.loader.type.property.PropertyResolver;
+import dev.hugeblank.allium.loader.type.userdata.PrivateUserdata;
+import dev.hugeblank.allium.loader.type.userdata.PrivateUserdataFactory;
+import dev.hugeblank.allium.loader.type.userdata.SuperUserdata;
+import dev.hugeblank.allium.loader.type.userdata.SuperUserdataFactory;
 import dev.hugeblank.allium.util.asm.AsmUtil;
 import me.basiqueevangelist.enhancedreflection.api.EClass;
 import me.basiqueevangelist.enhancedreflection.api.EConstructor;
@@ -147,12 +148,20 @@ public class ClassBuilder extends AbstractClassBuilder {
             referenceBuffer.put(methodName, new MethodReference(methodName,
                     Arrays.stream(parameters).map(x -> new WrappedType(x, x)).toArray(WrappedType[]::new),
                     returnClass == null ? null : new WrappedType(returnClass, returnClass),
-                    ACC_PUBLIC | accessInt));
+                    accessInt));
         }
     }
 
     private int handleMethodAccess(Map<String, Boolean> access) {
-        return (access.getOrDefault("abstract", false) ? ACC_ABSTRACT : 0) | (access.getOrDefault("static", false) ? ACC_STATIC : 0);
+        final int out;
+        if (access.getOrDefault("private", false)) {
+            out = ACC_PRIVATE;
+        } else if (access.getOrDefault("protected", false)) {
+            out = ACC_PROTECTED;
+        } else {
+            out = ACC_PUBLIC;
+        }
+        return out | (access.getOrDefault("abstract", false) ? ACC_ABSTRACT : 0) | (access.getOrDefault("static", false) ? ACC_STATIC : 0);
     }
 
     private void writeMethod(MethodReference reference, @Nullable LuaFunction func) {
@@ -175,19 +184,20 @@ public class ClassBuilder extends AbstractClassBuilder {
             m.visitVarInsn(ASTORE, arrayPos);
 
             if (!isStatic) {
-                m.visitVarInsn(ALOAD, 0); // this
-                String eClass = fields.storeAndGetComplex(m, EClass::fromJava, EClass.class, className); // this, thisEClass
-                m.visitMethodInsn(INVOKESTATIC, Type.getInternalName(TypeCoercions.class), "toLuaValue", "(Ljava/lang/Object;Lme/basiqueevangelist/enhancedreflection/api/EClass;)Lorg/squiddev/cobalt/LuaValue;", false); // luaValue
+                String eClass = fields.storeAndGetComplex(m, EClass::fromJava, EClass.class, className); // thisEClass
+                m.visitMethodInsn(INVOKESTATIC, Type.getInternalName(PrivateUserdataFactory.class), "from", "(Lme/basiqueevangelist/enhancedreflection/api/EClass;)Ldev/hugeblank/allium/loader/type/userdata/PrivateUserdataFactory;", false); // privateUDF
+                m.visitVarInsn(ALOAD, 0); // privateUDF, this
+                m.visitMethodInsn(INVOKEVIRTUAL, Type.getInternalName(PrivateUserdataFactory.class), "create", "(Ljava/lang/Object;)Ldev/hugeblank/allium/loader/type/userdata/PrivateUserdata;", false); // privateLuaValue
                 m.visitVarInsn(ASTORE, arrayPos+1); //
                 fields.get(m, eClass, EClass.class); // thisEClass
-                m.visitMethodInsn(INVOKESTATIC, Type.getInternalName(SuperUserdataFactory.class), "from", "(Lme/basiqueevangelist/enhancedreflection/api/EClass;)Ldev/hugeblank/allium/loader/type/SuperUserdataFactory;", false); // superUDF
+                m.visitMethodInsn(INVOKESTATIC, Type.getInternalName(SuperUserdataFactory.class), "from", "(Lme/basiqueevangelist/enhancedreflection/api/EClass;)Ldev/hugeblank/allium/loader/type/userdata/SuperUserdataFactory;", false); // superUDF
                 m.visitVarInsn(ALOAD, 0); // superUDF, this
-                m.visitMethodInsn(INVOKEVIRTUAL, Type.getInternalName(SuperUserdataFactory.class), "create", "(Ljava/lang/Object;)Ldev/hugeblank/allium/loader/type/AlliumSuperUserdata;", false); // superLuaValue
-                m.visitTypeInsn(CHECKCAST, Type.getInternalName(AlliumSuperUserdata.class));
-                m.visitVarInsn(ALOAD, arrayPos+1); // superLuaValue, luaValue
-                m.visitTypeInsn(CHECKCAST, Type.getInternalName(AlliumInstanceUserdata.class));
-                m.visitInsn(SWAP); // luaValue, superLuaValue
-                m.visitMethodInsn(INVOKEVIRTUAL, Type.getInternalName(AlliumInstanceUserdata.class), "applySuperInstance", "(Ldev/hugeblank/allium/loader/type/AlliumSuperUserdata;)V", false); //
+                m.visitMethodInsn(INVOKEVIRTUAL, Type.getInternalName(SuperUserdataFactory.class), "create", "(Ljava/lang/Object;)Ldev/hugeblank/allium/loader/type/userdata/SuperUserdata;", false); // superLuaValue
+                m.visitTypeInsn(CHECKCAST, Type.getInternalName(SuperUserdata.class));
+                m.visitVarInsn(ALOAD, arrayPos+1); // superLuaValue, privateLuaValue
+                m.visitTypeInsn(CHECKCAST, Type.getInternalName(PrivateUserdata.class));
+                m.visitInsn(SWAP); // privateLuaValue, superLuaValue
+                m.visitMethodInsn(INVOKEVIRTUAL, Type.getInternalName(PrivateUserdata.class), "applySuperInstance", "(Ldev/hugeblank/allium/loader/type/userdata/SuperUserdata;)V", false); //
 
                 m.visitVarInsn(ALOAD, arrayPos); // array
                 m.visitLdcInsn(0); // array, 0

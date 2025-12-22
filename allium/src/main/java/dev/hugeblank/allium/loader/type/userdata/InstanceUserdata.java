@@ -1,15 +1,16 @@
-package dev.hugeblank.allium.loader.type;
+package dev.hugeblank.allium.loader.type.userdata;
 
 import me.basiqueevangelist.enhancedreflection.api.EClass;
-import org.jetbrains.annotations.Nullable;
+import me.basiqueevangelist.enhancedreflection.api.EMethod;
 import org.squiddev.cobalt.LuaTable;
 import org.squiddev.cobalt.LuaUserdata;
 
-public class AlliumInstanceUserdata<T> extends LuaUserdata {
-    protected final EClass<T> clazz;
-    private @Nullable AlliumSuperUserdata<? super T> superInstance;
+import java.lang.reflect.InvocationTargetException;
 
-     AlliumInstanceUserdata(T obj, LuaTable metatable, EClass<T> clazz) {
+public class InstanceUserdata<T> extends LuaUserdata {
+    protected final EClass<T> clazz;
+
+     InstanceUserdata(T obj, LuaTable metatable, EClass<T> clazz) {
         super(obj, metatable);
         this.clazz = clazz;
     }
@@ -19,14 +20,6 @@ public class AlliumInstanceUserdata<T> extends LuaUserdata {
     }
 
     // TODO: We should probably override get/setmetatable since we reuse one for each class/bound (and it's script indiscriminate!)
-
-    public void applySuperInstance(AlliumSuperUserdata<? super T> superInstance) {
-        if (this.superInstance == null) this.superInstance = superInstance;
-    }
-
-    public AlliumSuperUserdata<? super T> superInstance() {
-         return superInstance;
-    }
 
     public boolean instanceOf(Class<?> test) {
         return clazz.isAssignableFrom(test);
@@ -53,5 +46,10 @@ public class AlliumInstanceUserdata<T> extends LuaUserdata {
     @Override
     public String toString() {
         return super.toString() + " [instance of " + clazz.name() + "]";
+    }
+
+    public Object invoke(EMethod method, Object instance, Object... params) throws InvocationTargetException, IllegalAccessException, NoSuchMethodException {
+        method.raw().setAccessible(true);
+        return method.invoke(instance, params);
     }
 }

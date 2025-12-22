@@ -1,8 +1,8 @@
 package dev.hugeblank.allium.loader.type.coercion;
 
-import dev.hugeblank.allium.loader.type.AlliumClassUserdata;
-import dev.hugeblank.allium.loader.type.AlliumInstanceUserdata;
-import dev.hugeblank.allium.loader.type.InstanceUserdataFactory;
+import dev.hugeblank.allium.loader.type.userdata.ClassUserdata;
+import dev.hugeblank.allium.loader.type.userdata.InstanceUserdata;
+import dev.hugeblank.allium.loader.type.userdata.InstanceUserdataFactory;
 import dev.hugeblank.allium.loader.type.MethodInvocationFunction;
 import dev.hugeblank.allium.loader.type.annotation.CoerceToBound;
 import dev.hugeblank.allium.loader.type.annotation.CoerceToNative;
@@ -56,13 +56,13 @@ public class TypeCoercions {
         if (value.isNil())
             return null;
 
-        if (value instanceof AlliumInstanceUserdata<?> userdata) {
+        if (value instanceof InstanceUserdata<?> userdata) {
             try {
                 return userdata.toUserdata(clatz.wrapPrimitive());
             } catch (ClassCastException e) {
                 throw new InvalidArgumentException(e);
             }
-        } else if (value instanceof AlliumClassUserdata<?> userdata) {
+        } else if (value instanceof ClassUserdata<?> userdata) {
             return userdata.toUserdata();
         }
 

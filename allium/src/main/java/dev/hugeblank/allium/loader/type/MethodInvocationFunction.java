@@ -5,6 +5,8 @@ import dev.hugeblank.allium.api.Rethrowable;
 import dev.hugeblank.allium.loader.type.coercion.TypeCoercions;
 import dev.hugeblank.allium.loader.type.exception.InvalidArgumentException;
 import dev.hugeblank.allium.loader.type.exception.RethrowException;
+import dev.hugeblank.allium.loader.type.userdata.ClassUserdata;
+import dev.hugeblank.allium.loader.type.userdata.InstanceUserdata;
 import dev.hugeblank.allium.util.ArgumentUtils;
 import dev.hugeblank.allium.util.JavaHelpers;
 import me.basiqueevangelist.enhancedreflection.api.EClass;
@@ -18,9 +20,6 @@ import org.squiddev.cobalt.function.VarArgFunction;
 
 import java.io.OutputStream;
 import java.io.PrintStream;
-import java.lang.invoke.MethodHandle;
-import java.lang.invoke.MethodHandles;
-import java.lang.invoke.MethodType;
 import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -47,46 +46,31 @@ public final class MethodInvocationFunction<T> extends VarArgFunction {
         forcedParameters.addAll(params);
     }
 
-    public void clearForcedParameters() {
-        forcedParameters.clear();
-    }
-
     @Override
     public Varargs invoke(LuaState state, Varargs args) throws LuaError {
         try {
             T instance = boundReceiver != null || isStatic ? boundReceiver : JavaHelpers.checkUserdata(args.arg(1), clazz.raw());
-            for (EMethod method : matches) { // For each matched method from the index call
+            for (EMethod method : matches) {
                 var parameters = method.parameters();
                 try {
                     var javaArgs = ArgumentUtils.toJavaArguments(state, args, boundReceiver == null && !isStatic ? 2 : 1, parameters, forcedParameters);
-                    clearForcedParameters();
+                    forcedParameters.clear();
 
-                    if (javaArgs.length == parameters.size()) { // Found a match!
-                        try { // Get the return type, invoke method, cast returned value, cry.
-                            EClassUse<?> ret = method.returnTypeUse().upperBound();
-                            // Some public methods are "inaccessible" despite being public. setAccessible coerces that.
-                            Object out;
-                            if (args.arg(1) instanceof AlliumSuperUserdata<?> superData) {
-                                // TODO: Maybe the userdata should have the method invoker?
-                                Class<?> superClass = superData.superClass().raw();
-                                MethodHandles.Lookup lookup = MethodHandles.privateLookupIn(superClass, MethodHandles.lookup());
-                                MethodHandle handle = lookup.findSpecial(superClass, name, MethodType.methodType(method.rawReturnType().raw()), superData.instanceClass().raw());
-                                List<Object> params = new ArrayList<>(List.of(javaArgs));
-                                params.addFirst(instance);
-                                try {
-                                    out = handle.invoke(params.toArray());
-                                } catch (Throwable e) {
-                                    throw new InvocationTargetException(e);
-                                }
-                            } else {
+                    if (javaArgs.length == parameters.size()) {
+                        try {
+                            Object out = null;
+                            if (boundReceiver != null || isStatic) { // Static methods
                                 method.raw().setAccessible(true);
                                 out = method.invoke(instance, javaArgs);
+                            } else if (args.arg(1) instanceof InstanceUserdata<?> userdata) { // Instance methods
+                                out = userdata.invoke(method, instance, javaArgs);
                             }
-
-                            if (ret.type().raw() == Varargs.class)
-                                return (Varargs) out;
-                            else
+                            if (out instanceof Varargs outArgs) {
+                                return outArgs;
+                            } else {
+                                EClassUse<?> ret = method.returnTypeUse().upperBound();
                                 return TypeCoercions.toLuaValue(out, ret);
+                            }
                         } catch (IllegalAccessException e) {
                             throw new LuaError(e);
                         } catch (InvocationTargetException e) {
@@ -135,9 +119,9 @@ public final class MethodInvocationFunction<T> extends VarArgFunction {
         error.append("got ").append(args.count()-(!isStatic ? 1 : 0)).append(" arguments: \n  ");
         for (int i = !isStatic ? 2 : 1; i <= args.count(); i++) {
             LuaValue val = args.arg(i);
-            if (val instanceof AlliumInstanceUserdata<?> userdata) {
+            if (val instanceof InstanceUserdata<?> userdata) {
                 error.append(userdata.instanceClass().name());
-            } else if (val instanceof AlliumClassUserdata<?> userdata) {
+            } else if (val instanceof ClassUserdata<?> userdata) {
                 error.append("<class> ").append(userdata.toUserdata().name());
             } else {
                 error.append(val.luaTypeName());
