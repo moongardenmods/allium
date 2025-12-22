@@ -9,20 +9,30 @@ local Boolean = require("java.lang.Boolean")
 local Identifier = require("net.minecraft.resources.Identifier")
 local ResourceKey = require("net.minecraft.resources.ResourceKey")
 local Registries = require("net.minecraft.core.registries.Registries")
-local Blocks = require("net.minecraft.world.level.block.Blocks")
-local Items = require("net.minecraft.world.item.Items")
 local MobEffects = require("net.minecraft.world.effect.MobEffects")
-local Properties = require("net.minecraft.world.level.block.state.BlockBehaviour$Properties")
+local BlockBehaviourProperties = require("net.minecraft.world.level.block.state.BlockBehaviour$Properties")
 local MapColor = require("net.minecraft.world.level.material.MapColor")
 local SoundType = require("net.minecraft.world.level.block.SoundType")
 local OffsetType = require("net.minecraft.world.level.block.state.BlockBehaviour$OffsetType")
 local PushReaction = require("net.minecraft.world.level.material.PushReaction")
+local Item = require("net.minecraft.world.item.Item")
+local BlockItem = require("net.minecraft.world.item.BlockItem")
+local ItemProperties = require("net.minecraft.world.item.Item$Properties")
+local Registry = require("net.minecraft.core.Registry")
+local BuiltinRegistries = require("net.minecraft.core.registries.BuiltInRegistries")
 
-local function register(id, blockInitializer, settings)
+local function registerBlockItem(block)
+    local key = ResourceKey.create(Registries.ITEM, block:builtInRegistryHolder():key():identifier())
+    local blockItem = BlockItem(block, ItemProperties():useBlockDescriptionPrefix():setId(key))
+    blockItem:registerBlocks(Item.BY_BLOCK, blockItem)
+    return Registry.register(BuiltinRegistries.ITEM, key, blockItem)
+end
+
+local function registerBlock(id, blockInitializer, settings)
     local identifier = Identifier.fromNamespaceAndPath(script:getID(), id)
     local key = ResourceKey.create(Registries.BLOCK, identifier)
-    local block = Blocks.register(key, blockInitializer, settings)
-    Items.registerBlock(block)
+    local block = Registry.register(BuiltinRegistries.BLOCK, key, blockInitializer(settings:setId(key)))
+    registerBlockItem(block)
     return block
 end
 
@@ -35,9 +45,9 @@ end
 
 local MoonFlowerBlock = builder:build()
 
-local moonflower = register("moonflower", function(p)
+local moonflower = registerBlock("moonflower", function(p)
     return MoonFlowerBlock(MobEffects.NIGHT_VISION, 8.0, p)
-end, Properties.of():mapColor(MapColor.DIAMOND):noCollision():instabreak():sound(SoundType.GRASS):offsetType(OffsetType.XZ):pushReaction(PushReaction.DESTROY))
+end, BlockBehaviourProperties.of():mapColor(MapColor.DIAMOND):noCollision():instabreak():sound(SoundType.GRASS):offsetType(OffsetType.XZ):pushReaction(PushReaction.DESTROY))
 
 if allium.environment() == "client" then
     local BlockRenderLayerMap = require("net.fabricmc.fabric.api.client.rendering.v1.BlockRenderLayerMap")
