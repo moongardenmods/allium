@@ -1,5 +1,6 @@
 package dev.hugeblank.allium.loader.type.property;
 
+import dev.hugeblank.allium.Allium;
 import dev.hugeblank.allium.util.AnnotationUtils;
 import dev.hugeblank.allium.util.Candidates;
 import me.basiqueevangelist.enhancedreflection.api.EClass;
@@ -20,27 +21,42 @@ public final class PropertyResolver {
     }
 
     public static <T> PropertyData<? super T> resolvePropertyFrom(EClass<T> clazz, List<EMethod> methods, Collection<EField> fields, String name, MemberFilter filter) {
-        List<EMethod> foundMethods = new ArrayList<>();
 
-        collectMethods(methods, name, foundMethods::add);
+        if (!methods.isEmpty()) {
+            List<EMethod> foundMethods = new ArrayList<>();
 
-        if (!foundMethods.isEmpty())
-            return new MethodData<>(clazz, foundMethods, name, filter);
+            collectMethods(methods, name, foundMethods::add);
 
-        EMethod getter = findMethod(methods, "get" + StringUtils.capitalize(name),
-                method -> AnnotationUtils.countLuaArguments(method) == 0 && method.isStatic());
+            if (!foundMethods.isEmpty())
+                return new MethodData<>(clazz, foundMethods, name, filter);
 
-        if (getter != null) {
-            EMethod setter = findMethod(methods, "set" + StringUtils.capitalize(name),
-                    method -> AnnotationUtils.countLuaArguments(method) == 1 && method.isStatic());
+            EMethod getter = findMethod(methods, "get" + StringUtils.capitalize(name),
+                    method -> AnnotationUtils.countLuaArguments(method) == 0 && method.isStatic());
 
-            return new PropertyMethodData<>(getter, setter);
+            if (getter != null) {
+                EMethod setter = findMethod(methods, "set" + StringUtils.capitalize(name),
+                        method -> AnnotationUtils.countLuaArguments(method) == 1 && method.isStatic());
+
+                return new PropertyMethodData<>(getter, setter);
+            }
         }
 
-        EField field = findField(fields, name);
+        if (!fields.isEmpty()) {
+            EField field = findField(fields, name);
 
-        if (field != null)
-            return new FieldData<>(field);
+            if (field != null) {
+                if (field.isPublic()) {
+                    return new FieldData<>(field);
+                } else {
+                    try {
+                        return new InternalFieldData<>(field);
+                    } catch (IllegalAccessException e) {
+                        //noinspection StringConcatenationArgumentToLogCall
+                        Allium.LOGGER.warn("Attempt to access '" + field.name() + "' resulted in: ", e);
+                    }
+                }
+            }
+        }
 
         return EmptyData.INSTANCE;
     }
@@ -62,7 +78,7 @@ public final class PropertyResolver {
 
             var methodName = method.name();
 
-            if ((methodName.equals(name) || methodName.equals("allium$" + name) || name.equals("m_" + methodName)) && !methodName.startsWith("allium_private$")) {
+            if ((methodName.equals(name) || methodName.equals("allium$" + name)) && !methodName.startsWith("allium_private$")) {
                 consumer.accept(method);
             }
         }
@@ -84,7 +100,7 @@ public final class PropertyResolver {
 
             var methodName = method.name();
 
-            if ((methodName.equals(name) || methodName.equals("allium$" + name) || name.equals("m_" + methodName)) && !methodName.startsWith("allium_private$")) {
+            if ((methodName.equals(name) || methodName.equals("allium$" + name)) && !methodName.startsWith("allium_private$")) {
                 return method;
             }
         }
