@@ -20,7 +20,6 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Stream;
 
 
 public class MetatableUtils {
@@ -58,11 +57,8 @@ public class MetatableUtils {
         return null;
     }
 
-    public static <T> void applyPairs(LuaTable metatable, EClass<? super T> clazz, Map<String, PropertyData<? super T>> cachedProperties, boolean isBound, MemberFilter filter) {
+    public static <T> void applyPairs(LuaTable metatable, EClass<? super T> clazz, Map<String, PropertyData<? super T>> cachedProperties, Candidates candidates, boolean isBound, MemberFilter filter) {
         metatable.rawset("__pairs", LibFunction.create((state, arg1) -> {
-            Stream.Builder<EMember> memberBuilder = Stream.builder();
-            clazz.methods().forEach(memberBuilder);
-            clazz.fields().forEach(memberBuilder);
             T instance;
             if (isBound) {
                 try {
@@ -75,33 +71,31 @@ public class MetatableUtils {
                 instance = null;
             }
             final boolean classHasAnnotation = clazz.hasAnnotation(LuaWrapped.class);
-            List<EMember> members = memberBuilder.build().filter((member)->
+            List<EMember> members = candidates.memberStream().filter((member)->
                     !classHasAnnotation || member.hasAnnotation(LuaWrapped.class)
             ).toList();
             List<Varargs> varargs = new ArrayList<>();
             for (EMember member : members) {
-                if (filter.test(member)) {
-                    String memberName = member.name();
-                    if (member.hasAnnotation(LuaWrapped.class)) {
-                        String[] names = AnnotationUtils.findNames(member);
-                        if (names != null && names.length > 0) {
-                            memberName = names[0];
-                        }
+                String memberName = member.name();
+                if (member.hasAnnotation(LuaWrapped.class)) {
+                    String[] names = AnnotationUtils.findNames(member);
+                    if (names != null && names.length > 0) {
+                        memberName = names[0];
                     }
-                    PropertyData<? super T> propertyData = cachedProperties.get(memberName);
-
-                    if (propertyData == null) { // caching
-                        propertyData = PropertyResolver.resolveProperty(clazz, memberName, filter);
-                        cachedProperties.put(memberName, propertyData);
-                    }
-
-                    varargs.add(ValueFactory.varargsOf(LuaString.valueOf(memberName), propertyData.get(
-                            memberName,
-                            state,
-                            instance,
-                            isBound
-                    )));
                 }
+                PropertyData<? super T> propertyData = cachedProperties.get(memberName);
+
+                if (propertyData == null) { // caching
+                    propertyData = PropertyResolver.resolveProperty(clazz, memberName, candidates, filter);
+                    cachedProperties.put(memberName, propertyData);
+                }
+
+                varargs.add(ValueFactory.varargsOf(LuaString.valueOf(memberName), propertyData.get(
+                        memberName,
+                        state,
+                        instance,
+                        isBound
+                )));
             }
             Iterator<Varargs> iterator = varargs.listIterator();
 

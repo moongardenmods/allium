@@ -1,8 +1,8 @@
 package dev.hugeblank.allium.loader.lib;
 
 import dev.hugeblank.allium.api.WrappedLibrary;
-import dev.hugeblank.allium.loader.type.AlliumClassUserdata;
-import dev.hugeblank.allium.loader.type.AlliumInstanceUserdata;
+import dev.hugeblank.allium.loader.type.userdata.ClassUserdata;
+import dev.hugeblank.allium.loader.type.userdata.InstanceUserdata;
 import dev.hugeblank.allium.loader.type.MethodInvocationFunction;
 import dev.hugeblank.allium.loader.type.StaticBinder;
 import dev.hugeblank.allium.loader.type.annotation.LuaArgs;
@@ -24,14 +24,14 @@ import java.util.Map;
 @LuaWrapped(name = "java")
 public class JavaLib implements WrappedLibrary {
 
-    @LuaWrapped(name = "boolean") public static final AlliumClassUserdata<?> primitiveBoolean = StaticBinder.bindClass(EClass.fromJava(boolean.class));
-    @LuaWrapped(name = "byte") public static final AlliumClassUserdata<?> primitiveByte = StaticBinder.bindClass(EClass.fromJava(byte.class));
-    @LuaWrapped(name = "short") public static final AlliumClassUserdata<?> primitiveShort = StaticBinder.bindClass(EClass.fromJava(short.class));
-    @LuaWrapped(name = "int") public static final AlliumClassUserdata<?> primitiveInt = StaticBinder.bindClass(EClass.fromJava(int.class));
-    @LuaWrapped(name = "long") public static final AlliumClassUserdata<?> primitiveLong = StaticBinder.bindClass(EClass.fromJava(long.class));
-    @LuaWrapped(name = "float") public static final AlliumClassUserdata<?> primitiveFloat = StaticBinder.bindClass(EClass.fromJava(float.class));
-    @LuaWrapped(name = "double") public static final AlliumClassUserdata<?> primitiveDouble = StaticBinder.bindClass(EClass.fromJava(double.class));
-    @LuaWrapped(name = "char") public static final AlliumClassUserdata<?> primitiveChar = StaticBinder.bindClass(EClass.fromJava(char.class));
+    @LuaWrapped(name = "boolean") public static final ClassUserdata<?> primitiveBoolean = StaticBinder.bindClass(EClass.fromJava(boolean.class));
+    @LuaWrapped(name = "byte") public static final ClassUserdata<?> primitiveByte = StaticBinder.bindClass(EClass.fromJava(byte.class));
+    @LuaWrapped(name = "short") public static final ClassUserdata<?> primitiveShort = StaticBinder.bindClass(EClass.fromJava(short.class));
+    @LuaWrapped(name = "int") public static final ClassUserdata<?> primitiveInt = StaticBinder.bindClass(EClass.fromJava(int.class));
+    @LuaWrapped(name = "long") public static final ClassUserdata<?> primitiveLong = StaticBinder.bindClass(EClass.fromJava(long.class));
+    @LuaWrapped(name = "float") public static final ClassUserdata<?> primitiveFloat = StaticBinder.bindClass(EClass.fromJava(float.class));
+    @LuaWrapped(name = "double") public static final ClassUserdata<?> primitiveDouble = StaticBinder.bindClass(EClass.fromJava(double.class));
+    @LuaWrapped(name = "char") public static final ClassUserdata<?> primitiveChar = StaticBinder.bindClass(EClass.fromJava(char.class));
 
     @LuaWrapped
     public static LuaValue cast(@LuaStateArg LuaState state, LuaUserdata object, EClass<?> klass) throws LuaError {
@@ -43,7 +43,7 @@ public class JavaLib implements WrappedLibrary {
     }
 
     @LuaWrapped
-    public static <T> LuaValue coerce(@LuaStateArg LuaState state, AlliumInstanceUserdata<T> tableLike, EClass<T> klass) throws LuaError {
+    public static <T> LuaValue coerce(@LuaStateArg LuaState state, InstanceUserdata<T> tableLike, EClass<T> klass) throws LuaError {
         LuaTable out = new LuaTable();
         List<EType> typeVars = klass.typeVariableValues();
         final LuaError err = new LuaError("Could not coerce type '" + tableLike.instance.getClass().getName() + "' to '" + klass.name() + "'");

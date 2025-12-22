@@ -1,7 +1,7 @@
 package dev.hugeblank.allium.util;
 
-import dev.hugeblank.allium.loader.type.AlliumClassUserdata;
-import dev.hugeblank.allium.loader.type.AlliumInstanceUserdata;
+import dev.hugeblank.allium.loader.type.userdata.ClassUserdata;
+import dev.hugeblank.allium.loader.type.userdata.InstanceUserdata;
 import me.basiqueevangelist.enhancedreflection.api.EClass;
 import org.squiddev.cobalt.LuaError;
 import org.squiddev.cobalt.LuaValue;
@@ -10,13 +10,13 @@ public class JavaHelpers {
 
 
     public static <T> T checkUserdata(LuaValue value, Class<? super T> clazz) throws LuaError {
-        if (value instanceof AlliumInstanceUserdata<?> userdata) {
+        if (value instanceof InstanceUserdata<?> userdata) {
             try {
                 return userdata.toUserdata(clazz);
             } catch (Exception e) {
                 throw new LuaError(e);
             }
-        } else if (value instanceof AlliumClassUserdata<?> userdata) {
+        } else if (value instanceof ClassUserdata<?> userdata) {
             //noinspection unchecked
             return (T) userdata.toUserdata();
         }
@@ -40,9 +40,9 @@ public class JavaHelpers {
             return getRawClass(value.checkString());
         } else if (value.isNil()) {
             return null;
-        } else if (value instanceof AlliumClassUserdata<?> userdata) {
+        } else if (value instanceof ClassUserdata<?> userdata) {
             return userdata.toUserdata();
-        } else if (value instanceof AlliumInstanceUserdata<?> instance) {
+        } else if (value instanceof InstanceUserdata<?> instance) {
             Object out = instance.toUserdata();
             if (out instanceof EClass<?> eClass) {
                 return eClass;

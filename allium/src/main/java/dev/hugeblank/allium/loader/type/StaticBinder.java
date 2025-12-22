@@ -7,10 +7,8 @@ import dev.hugeblank.allium.loader.type.property.EmptyData;
 import dev.hugeblank.allium.loader.type.property.MemberFilter;
 import dev.hugeblank.allium.loader.type.property.PropertyData;
 import dev.hugeblank.allium.loader.type.property.PropertyResolver;
-import dev.hugeblank.allium.util.AnnotationUtils;
-import dev.hugeblank.allium.util.ArgumentUtils;
-import dev.hugeblank.allium.util.JavaHelpers;
-import dev.hugeblank.allium.util.MetatableUtils;
+import dev.hugeblank.allium.loader.type.userdata.ClassUserdata;
+import dev.hugeblank.allium.util.*;
 import me.basiqueevangelist.enhancedreflection.api.EClass;
 import me.basiqueevangelist.enhancedreflection.api.EMethod;
 import me.basiqueevangelist.enhancedreflection.api.typeuse.EClassUse;
@@ -28,15 +26,16 @@ public final class StaticBinder {
 
     private StaticBinder() {}
 
-    public static <T> AlliumClassUserdata<T> bindClass(EClass<T> clazz) {
+    public static <T> ClassUserdata<T> bindClass(EClass<T> clazz) {
         return bindClass(clazz, MemberFilter.PUBLIC_STATIC_MEMBERS);
     }
 
-    public static <T> AlliumClassUserdata<T> bindClass(EClass<T> clazz, MemberFilter filter) {
+    public static <T> ClassUserdata<T> bindClass(EClass<T> clazz, MemberFilter filter) {
         Map<String, PropertyData<? super T>> cachedProperties = new HashMap<>();
         LuaTable metatable = new LuaTable();
+        Candidates candidates = new Candidates(clazz.methods(), clazz.fields().stream().toList());
 
-        MetatableUtils.applyPairs(metatable, clazz, cachedProperties, false, filter);
+        MetatableUtils.applyPairs(metatable, clazz, cachedProperties, candidates, false, filter);
 
         metatable.rawset("__index", LibFunction.create((state, arg1, arg2) -> {
             if (arg2.isString()) {
@@ -49,7 +48,7 @@ public final class StaticBinder {
                 PropertyData<? super T> cachedProperty = cachedProperties.get(name);
 
                 if (cachedProperty == null) {
-                    cachedProperty = PropertyResolver.resolveProperty(clazz, name, filter);
+                    cachedProperty = PropertyResolver.resolveProperty(clazz, name, candidates, filter);
 
                     cachedProperties.put(name, cachedProperty);
                 }
@@ -88,7 +87,7 @@ public final class StaticBinder {
             PropertyData<? super T> cachedProperty = cachedProperties.get(name);
 
             if (cachedProperty == null) {
-                cachedProperty = PropertyResolver.resolveProperty(clazz, name, filter);
+                cachedProperty = PropertyResolver.resolveProperty(clazz, name, candidates, filter);
 
                 cachedProperties.put(name, cachedProperty);
             }
@@ -110,7 +109,7 @@ public final class StaticBinder {
             }
         });
 
-        return new AlliumClassUserdata<>(clazz, metatable);
+        return new ClassUserdata<>(clazz, metatable);
     }
 
     private static Varargs createInstance(EClass<?> clazz, LuaState state, Varargs args) throws LuaError {

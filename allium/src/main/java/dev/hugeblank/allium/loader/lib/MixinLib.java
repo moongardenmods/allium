@@ -6,7 +6,7 @@ import dev.hugeblank.allium.loader.Script;
 import dev.hugeblank.allium.loader.mixin.annotation.method.MixinMethodAnnotations;
 import dev.hugeblank.allium.loader.mixin.annotation.sugar.MixinSugars;
 import dev.hugeblank.allium.loader.mixin.builder.MixinClassBuilder;
-import dev.hugeblank.allium.loader.type.AlliumClassUserdata;
+import dev.hugeblank.allium.loader.type.userdata.ClassUserdata;
 import dev.hugeblank.allium.loader.type.StaticBinder;
 import dev.hugeblank.allium.loader.type.annotation.LuaWrapped;
 import dev.hugeblank.allium.loader.type.annotation.OptionalArg;
@@ -25,11 +25,11 @@ public class MixinLib extends WrappedScriptLibrary {
     public static final Map<String, MixinMethodHook> EVENT_MAP = new HashMap<>();
     public static final Map<String, String> DUCK_MAP = new HashMap<>();
     // This being the way to define embedded "tables" is hilarious to me.
-    private static final AlliumClassUserdata<MixinMethodAnnotations> ANNOTATION = StaticBinder.bindClass(EClass.fromJava(MixinMethodAnnotations.class));
-    private static final AlliumClassUserdata<MixinSugars> SUGAR = StaticBinder.bindClass(EClass.fromJava(MixinSugars.class));
+    private static final ClassUserdata<MixinMethodAnnotations> ANNOTATION = StaticBinder.bindClass(EClass.fromJava(MixinMethodAnnotations.class));
+    private static final ClassUserdata<MixinSugars> SUGAR = StaticBinder.bindClass(EClass.fromJava(MixinSugars.class));
 
-    @LuaWrapped public final AlliumClassUserdata<MixinMethodAnnotations> annotation = ANNOTATION;
-    @LuaWrapped public final AlliumClassUserdata<MixinSugars> sugar = SUGAR;
+    @LuaWrapped public final ClassUserdata<MixinMethodAnnotations> annotation = ANNOTATION;
+    @LuaWrapped public final ClassUserdata<MixinSugars> sugar = SUGAR;
 
     public MixinLib(Script script) {
         super(script);
