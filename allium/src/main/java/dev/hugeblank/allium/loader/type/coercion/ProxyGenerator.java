@@ -1,6 +1,6 @@
 package dev.hugeblank.allium.loader.type.coercion;
 
-import dev.hugeblank.allium.loader.type.builder.FieldBuilder;
+import dev.hugeblank.allium.loader.lib.builder.FieldBuilder;
 import dev.hugeblank.allium.util.asm.AsmUtil;
 import me.basiqueevangelist.enhancedreflection.api.EClass;
 import me.basiqueevangelist.enhancedreflection.api.EMethod;

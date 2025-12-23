@@ -1,4 +1,4 @@
-package dev.hugeblank.allium.loader.type.builder;
+package dev.hugeblank.allium.loader.lib.builder;
 
 import dev.hugeblank.allium.util.Pair;
 import org.objectweb.asm.ClassVisitor;

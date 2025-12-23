@@ -11,7 +11,7 @@ import dev.hugeblank.allium.loader.mixin.annotation.method.LuaMethodAnnotation;
 import dev.hugeblank.allium.loader.mixin.annotation.sugar.LuaSugar;
 import dev.hugeblank.allium.loader.type.annotation.LuaWrapped;
 import dev.hugeblank.allium.loader.type.annotation.OptionalArg;
-import dev.hugeblank.allium.loader.type.builder.AbstractClassBuilder;
+import dev.hugeblank.allium.loader.lib.builder.AbstractClassBuilder;
 import dev.hugeblank.allium.loader.type.exception.InvalidArgumentException;
 import dev.hugeblank.allium.loader.type.exception.InvalidMixinException;
 import dev.hugeblank.allium.util.MixinConfigUtil;
