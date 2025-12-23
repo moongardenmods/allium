@@ -48,8 +48,8 @@ public class InstanceUserdata<T> extends LuaUserdata {
         return super.toString() + " [instance of " + clazz.name() + "]";
     }
 
-    public Object invoke(EMethod method, Object instance, Object... params) throws InvocationTargetException, IllegalAccessException, NoSuchMethodException {
-        method.raw().setAccessible(true);
-        return method.invoke(instance, params);
+    public Object invoke(EMethod eMethod, Object instance, Object... params) throws InvocationTargetException, IllegalAccessException, NoSuchMethodException {
+        eMethod.raw().setAccessible(true);
+        return eMethod.invoke(instance, params);
     }
 }

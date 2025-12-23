@@ -10,6 +10,7 @@ import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodHandles;
 import java.lang.invoke.MethodType;
 import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -37,10 +38,16 @@ public class PrivateUserdata<T> extends InstanceUserdata<T> {
     }
 
     @Override
-    public Object invoke(EMethod method, Object instance, Object... params) throws InvocationTargetException, IllegalAccessException, NoSuchMethodException {
-        Class<?> clazz = instanceClass().raw();
-        MethodHandles.Lookup lookup = MethodHandles.privateLookupIn(clazz, MethodHandles.lookup());
-        MethodHandle handle = lookup.findSpecial(clazz, method.name(), MethodType.methodType(method.rawReturnType().raw()), clazz);
+    public Object invoke(EMethod eMethod, Object instance, Object... params) throws InvocationTargetException, IllegalAccessException, NoSuchMethodException {
+        Class<?> rawClass = clazz.raw();
+        Method method = eMethod.raw();
+        MethodHandles.Lookup lookup = MethodHandles.privateLookupIn(rawClass, MethodHandles.lookup());
+        MethodHandle handle = lookup.findSpecial(
+                rawClass,
+                eMethod.name(),
+                MethodType.methodType(method.getReturnType(), method.getParameterTypes()),
+                rawClass
+        );
         List<Object> paramList = new ArrayList<>(List.of(params));
         paramList.addFirst(instance);
         try {
