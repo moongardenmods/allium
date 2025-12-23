@@ -51,8 +51,7 @@ public final class PropertyResolver {
                     try {
                         return new InternalFieldData<>(field);
                     } catch (IllegalAccessException e) {
-                        //noinspection StringConcatenationArgumentToLogCall
-                        Allium.LOGGER.warn("Attempt to access '" + field.name() + "' resulted in: ", e);
+                        Allium.LOGGER.warn("Attempt to access '{}' resulted in: ", field.name(), e);
                     }
                 }
             }
