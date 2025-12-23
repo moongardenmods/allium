@@ -9,6 +9,7 @@ import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodHandles;
 import java.lang.invoke.MethodType;
 import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -28,10 +29,16 @@ public class SuperUserdata<T> extends InstanceUserdata<T> {
     }
 
     @Override
-    public Object invoke(EMethod method, Object instance, Object... params) throws InvocationTargetException, IllegalAccessException, NoSuchMethodException {
-        Class<?> superClass = superClass().raw();
+    public Object invoke(EMethod eMethod, Object instance, Object... params) throws InvocationTargetException, IllegalAccessException, NoSuchMethodException {
+        Class<?> superClass = clazz.superclass().raw();
+        Method method = eMethod.raw();
         MethodHandles.Lookup lookup = MethodHandles.privateLookupIn(superClass, MethodHandles.lookup());
-        MethodHandle handle = lookup.findSpecial(superClass, method.name(), MethodType.methodType(method.rawReturnType().raw()), instanceClass().raw());
+        MethodHandle handle = lookup.findSpecial(
+                superClass,
+                eMethod.name(),
+                MethodType.methodType(method.getReturnType(), method.getParameterTypes()),
+                clazz.raw()
+        );
         List<Object> paramList = new ArrayList<>(List.of(params));
         paramList.addFirst(instance);
         try {

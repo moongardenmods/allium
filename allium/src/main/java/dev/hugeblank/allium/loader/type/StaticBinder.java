@@ -121,7 +121,7 @@ public final class StaticBinder {
             try {
                 var jargs = ArgumentUtils.toJavaArguments(state, args, 1, parameters, List.of());
 
-                try { // Get the return type, invoke method, cast returned value, cry.
+                try {
                     EClassUse<?> ret = (EClassUse<?>) constructor.receiverTypeUse();
 
                     if (ret == null) ret = clazz.asEmptyUse();
