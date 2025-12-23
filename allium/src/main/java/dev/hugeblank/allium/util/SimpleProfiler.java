@@ -34,7 +34,6 @@ public class SimpleProfiler {
 
     public void pop() {
         if (Allium.DEVELOPMENT && enable) {
-            // Note: Sub-entries are reversed, that should probably be fixed.
             long stop = System.currentTimeMillis();
             Entry e = stack.pop();
             long duration = e.time().accumulateAndGet(stop, (a, b) -> b-a);
