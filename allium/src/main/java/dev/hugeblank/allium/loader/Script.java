@@ -51,8 +51,7 @@ public class Script implements Identifiable {
                     executor.reload().arg(1) :
                     this.module;
         } catch (Throwable e) {
-            //noinspection StringConcatenationArgumentToLogCall
-            getLogger().error("Could not reload allium script " + getID(), e);
+            getLogger().error("Could not reload allium script {}", getID(), e);
             unload();
         }
 
@@ -113,8 +112,7 @@ public class Script implements Identifiable {
         try {
             getExecutor().preInitialize();
         } catch (Throwable e) {
-            //noinspection StringConcatenationArgumentToLogCall
-            getLogger().error("Could not pre-initialize allium script " + getID(), e);
+            getLogger().error("Could not pre-initialize allium script {}", getID(), e);
         }
         Allium.PROFILER.pop();
     }
@@ -129,8 +127,7 @@ public class Script implements Identifiable {
                 this.initialized = State.INITIALIZED; // If all these steps are successful, we can update the state
             } catch (Throwable e) {
                 this.module = Constants.NIL;
-                //noinspection StringConcatenationArgumentToLogCall
-                getLogger().error("Could not initialize allium script " + getID(), e);
+                getLogger().error("Could not initialize allium script {}", getID(), e);
                 unload();
                 this.initialized = State.INVALID;
             }

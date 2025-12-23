@@ -103,6 +103,11 @@ public class ClassBuilder extends AbstractClassBuilder {
         }
     }
 
+    public void field(String fieldName, EClass<?> type, Map<String, Boolean> access) throws LuaError {
+        // TODO: Private field access
+
+    }
+
     @LuaWrapped
     public void override(String methodName, EClass<?>[] parameters, Map<String, Boolean> access) throws LuaError {
         var methods = new ArrayList<EMethod>();
