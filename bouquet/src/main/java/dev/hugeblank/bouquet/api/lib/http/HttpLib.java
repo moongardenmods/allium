@@ -1,24 +1,16 @@
 package dev.hugeblank.bouquet.api.lib.http;
 
-
-import com.google.common.util.concurrent.ThreadFactoryBuilder;
-import io.netty.channel.EventLoopGroup;
-import io.netty.channel.MultiThreadIoEventLoopGroup;
-import io.netty.channel.nio.NioIoHandler;
-
 import java.net.URI;
+import java.net.http.HttpClient;
 
 public class HttpLib {
-    private final EventLoopGroup group;
+    private final HttpClient client;
 
     public HttpLib() {
-        this.group = new MultiThreadIoEventLoopGroup(
-                (new ThreadFactoryBuilder()).setNameFormat("[Allium] Netty NIO IO #%d").setDaemon(true).build(),
-                NioIoHandler.newFactory()
-        );
+        this.client = HttpClient.newBuilder().build();
     }
 
-    public HttpRequest request(String url) {
-        return new HttpRequest(URI.create(url), group);
+    public LuaHttpRequest request(String url) {
+        return new LuaHttpRequest(URI.create(url), client);
     }
 }
