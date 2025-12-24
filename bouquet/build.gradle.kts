@@ -1,3 +1,7 @@
+plugins {
+    id("allium.fabric-conventions")
+}
+
 val mavenGroup: String by project
 
 // Common Dependencies
