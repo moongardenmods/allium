@@ -25,14 +25,12 @@ base {
 }
 
 loom {
-	splitEnvironmentSourceSets()
 	mods {
 		register("bouquet") {
 			sourceSet(sourceSets["main"])
 			sourceSet(sourceSets["client"])
 		}
 	}
-
 }
 
 dependencies {
