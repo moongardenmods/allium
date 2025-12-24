@@ -20,6 +20,14 @@ base {
 	archivesName.set(alliumBaseName)
 }
 
+loom {
+    mods {
+        register("allium") {
+            sourceSet(sourceSets["main"])
+        }
+    }
+}
+
 dependencies {
 	implementation(include("cc.tweaked:cobalt:${cobalt}")!!)
 	implementation(include("me.basiqueevangelist:enhanced-reflection:${enhancedReflections}")!!)

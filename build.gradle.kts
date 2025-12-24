@@ -13,6 +13,10 @@ dependencies {
     minecraft("com.mojang:minecraft:${minecraftVersion}")
 }
 
+loom {
+    splitEnvironmentSourceSets()
+}
+
 subprojects {
     apply(plugin = "maven-publish")
     apply(plugin = "net.fabricmc.fabric-loom")
@@ -52,6 +56,8 @@ subprojects {
         }
 
         loom {
+            splitEnvironmentSourceSets()
+
             val moduleName = project.name.replaceFirstChar {
                 if (it.isLowerCase()) it.titlecase(Locale.getDefault()) else it.toString()
             }
