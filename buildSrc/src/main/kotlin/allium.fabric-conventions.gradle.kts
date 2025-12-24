@@ -1,7 +1,6 @@
-plugins {
-    id("maven-publish")
-    id("net.fabricmc.fabric-loom") version "1.14-SNAPSHOT" apply false
-}
+//plugins {
+//    id("net.fabricmc.fabric-loom") version "1.14-SNAPSHOT"
+//}
 
 // Fabric Properties
 val minecraftVersion: String by project

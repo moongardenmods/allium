@@ -1,4 +1,6 @@
 plugins {
+    id("maven-publish")
+//    id("net.fabricmc.fabric-loom") version "1.14-SNAPSHOT"
     id("allium.fabric-conventions")
 }
 
