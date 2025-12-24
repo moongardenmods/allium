@@ -9,8 +9,6 @@ val bouquetReleaseCandidate: String by project
 val bouquetBaseName: String by project
 
 // Bouquet Dependencies
-val nettyHttp: String by project
-val placeholderApi: String by project
 val fabricApi: String by project
 
 var v = bouquetVersion
