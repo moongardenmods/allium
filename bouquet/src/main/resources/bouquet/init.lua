@@ -17,7 +17,6 @@ local function wrapAs(class)
 end
 
 print("Hello from Bouquet's Script! Environment:", allium.environment())
-local request = HttpLib().request
 return {
     command = require("bouquet.api.command"),
     commands = require("bouquet.api.commands"),
@@ -27,9 +26,7 @@ return {
     fabric = require("bouquet.api.fabric"),
     fs = wrapAs(FsLib),
     game = require("bouquet.api.game"),
-    http = {
-        request = request
-    },
+    http = HttpLib(),
     json = require("bouquet.api.json"),
     tag = require("bouquet.api.tag"),
 }
