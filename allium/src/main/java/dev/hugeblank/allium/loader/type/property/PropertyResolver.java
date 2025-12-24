@@ -77,7 +77,7 @@ public final class PropertyResolver {
 
             var methodName = method.name();
 
-            if ((methodName.equals(name) || methodName.equals("m_" + methodName) || methodName.equals("allium$" + name)) && !methodName.startsWith("allium_private$")) {
+            if ((methodName.equals(name) || name.equals("m_" + methodName) || methodName.equals("allium$" + name)) && !methodName.startsWith("allium_private$")) {
                 consumer.accept(method);
             }
         }
