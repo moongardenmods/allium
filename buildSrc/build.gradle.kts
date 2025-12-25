@@ -3,7 +3,7 @@ plugins {
 }
 
 dependencies {
-    implementation("net.fabricmc:fabric-loom:1.14-SNAPSHOT")
+    implementation("net.fabricmc:fabric-loom:${project.properties["loomVersion"]}")
 }
 
 repositories {

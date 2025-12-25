@@ -1,10 +1,8 @@
-//plugins {
-//    id("net.fabricmc.fabric-loom") version "1.14-SNAPSHOT"
-//}
-
-// Fabric Properties
-val minecraftVersion: String by project
-val loaderVersion: String by project
+import java.util.Locale
+plugins {
+    `maven-publish`
+    id("net.fabricmc.fabric-loom")
+}
 
 repositories {
     maven("https://maven.hugeblank.dev/releases") {
@@ -20,9 +18,37 @@ repositories {
     }
 }
 
+val rc = project.properties[project.name+"ReleaseCandidate"] as String
+var v = project.properties[project.name+"Version"] as String
+if ("0" != rc) {
+    v = "$v-rc$rc"
+}
+version = v
+group = project.properties["mavenGroup"] as String
+
+base {
+    archivesName = project.properties[project.name + "BaseName"] as String
+}
+
 dependencies {
-    minecraft("com.mojang:minecraft:${minecraftVersion}")
-    implementation("net.fabricmc:fabric-loader:${loaderVersion}")
+    minecraft("com.mojang:minecraft:${project.properties["minecraftVersion"]}")
+    implementation("net.fabricmc:fabric-loader:${project.properties["loaderVersion"]}")
+}
+
+loom {
+    mods {
+        register(project.name) {
+            sourceSet(sourceSets["main"])
+            sourceSet(sourceSets["client"])
+        }
+    }
+}
+
+java {
+    withSourcesJar()
+
+    sourceCompatibility = JavaVersion.VERSION_25
+    targetCompatibility = JavaVersion.VERSION_25
 }
 
 tasks {
@@ -36,7 +62,7 @@ tasks {
 
     jar {
         from("LICENSE") {
-            rename { "${it}_${project.base.archivesName}" }
+            rename { "${it}_${project.base.archivesName.get()}" }
         }
     }
 
@@ -62,7 +88,17 @@ tasks {
     }
 }
 
+// configure the maven publication
 publishing {
+    publications {
+        register("mavenJava", MavenPublication::class) {
+            from(components["java"])
+            groupId = group as String
+            artifactId = base.archivesName.get()
+            version = version
+        }
+    }
+
     repositories {
         maven {
             name = "hugeblankRelease"
