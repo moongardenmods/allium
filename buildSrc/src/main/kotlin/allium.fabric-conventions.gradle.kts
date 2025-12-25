@@ -36,10 +36,29 @@ dependencies {
 }
 
 loom {
+    splitEnvironmentSourceSets()
+
     mods {
         register(project.name) {
             sourceSet(sourceSets["main"])
             sourceSet(sourceSets["client"])
+        }
+    }
+
+    val moduleName = project.name.replaceFirstChar {
+        if (it.isLowerCase()) it.titlecase(Locale.getDefault()) else it.toString()
+    }
+    runs {
+        named("client") {
+            configName = "$moduleName Client"
+            ideConfigGenerated(true)
+            runDir("../run")
+            programArgs("-username", "GradleDev")
+        }
+        named("server") {
+            configName = "$moduleName Server"
+            ideConfigGenerated(true)
+            runDir("../run")
         }
     }
 }
@@ -54,6 +73,7 @@ java {
 tasks {
     processResources {
         inputs.property("version", project.version)
+        inputs.property("name", project.name)
 
         filesMatching("fabric.mod.json") {
             expand(mutableMapOf("version" to project.version, "name" to project.name))
@@ -63,27 +83,6 @@ tasks {
     jar {
         from("LICENSE") {
             rename { "${it}_${project.base.archivesName.get()}" }
-        }
-    }
-
-    loom {
-        splitEnvironmentSourceSets()
-
-        val moduleName = project.name.replaceFirstChar {
-            if (it.isLowerCase()) it.titlecase(Locale.getDefault()) else it.toString()
-        }
-        runs {
-            named("client") {
-                configName = "$moduleName Client"
-                ideConfigGenerated(true)
-                runDir("../run")
-                programArgs("-username", "GradleDev")
-            }
-            named("server") {
-                configName = "$moduleName Server"
-                ideConfigGenerated(true)
-                runDir("../run")
-            }
         }
     }
 }
