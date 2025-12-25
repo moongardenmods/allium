@@ -1,10 +1,9 @@
 package dev.hugeblank.allium.loader.lib.builder;
 
-import dev.hugeblank.allium.loader.ScriptRegistry;
 import dev.hugeblank.allium.loader.type.StaticBinder;
 import dev.hugeblank.allium.loader.type.annotation.LuaWrapped;
+import dev.hugeblank.allium.loader.type.annotation.OptionalArg;
 import dev.hugeblank.allium.loader.type.coercion.TypeCoercions;
-import dev.hugeblank.allium.loader.type.property.MemberFilter;
 import dev.hugeblank.allium.loader.type.property.PropertyResolver;
 import dev.hugeblank.allium.loader.type.userdata.PrivateUserdata;
 import dev.hugeblank.allium.loader.type.userdata.PrivateUserdataFactory;
@@ -16,6 +15,7 @@ import me.basiqueevangelist.enhancedreflection.api.EConstructor;
 import me.basiqueevangelist.enhancedreflection.api.EMethod;
 import me.basiqueevangelist.enhancedreflection.api.EParameter;
 import org.jetbrains.annotations.Nullable;
+import org.objectweb.asm.MethodVisitor;
 import org.objectweb.asm.Type;
 import org.squiddev.cobalt.*;
 import org.squiddev.cobalt.function.Dispatch;
@@ -27,17 +27,22 @@ import static org.objectweb.asm.Opcodes.*;
 
 @LuaWrapped
 public class ClassBuilder extends AbstractClassBuilder {
+    private static final EClass<?> VOID = EClass.fromJava(Void.class);
+
     private final LuaState state;
-    private final EClass<?> eSuperClass;
+    private final EClass<?> parentClass;
     private final List<EMethod> methods = new ArrayList<>();
-    private final Map<String, MethodReference> referenceBuffer = new HashMap<>();
+    private final Map<String, MethodReference> methodReferences = new HashMap<>();
+    private final Queue<ConstructorReference> ctorReferences = new LinkedList<>();
     private final FieldBuilder fields;
 
+    private boolean hasConstructor = false;
+
     @LuaWrapped
-    public ClassBuilder(EClass<?> eSuperClass, List<EClass<?>> interfaces, Map<String, Boolean> access, LuaState state) {
+    public ClassBuilder(EClass<?> superClass, List<EClass<?>> interfaces, Map<String, Boolean> access, LuaState state) {
         super(
                 AsmUtil.getUniqueClassName(),
-                eSuperClass.name().replace('.', '/'),
+                superClass.name().replace('.', '/'),
                 interfaces.stream()
                         .map(x -> x.name().replace('.', '/'))
                         .toArray(String[]::new),
@@ -47,39 +52,11 @@ public class ClassBuilder extends AbstractClassBuilder {
                 null
         );
         this.state = state;
-        this.eSuperClass = eSuperClass;
+        this.parentClass = superClass;
         this.fields = new FieldBuilder(className, c);
 
-        if (!access.getOrDefault("interface", false)){
-            for (EConstructor<?> superCtor : eSuperClass.constructors()) {
-                if (!superCtor.isPublic()) continue;
-
-                var desc = Type.getConstructorDescriptor(superCtor.raw());
-                var m = c.visitMethod(superCtor.modifiers(), "<init>", desc, null, null);
-                m.visitCode();
-                var args = Type.getArgumentTypes(desc);
-
-                m.visitVarInsn(ALOAD, 0);
-
-                int argIndex = 1;
-
-                for (Type arg : args) {
-                    m.visitVarInsn(arg.getOpcode(ILOAD), argIndex);
-
-                    argIndex += arg.getSize();
-                }
-
-                m.visitMethodInsn(INVOKESPECIAL, Type.getInternalName(eSuperClass.raw()), "<init>", desc, false);
-
-                m.visitInsn(RETURN);
-
-                m.visitMaxs(0, 0);
-                m.visitEnd();
-            }
-        }
-
-        final List<EMethod> methods = new ArrayList<>(this.eSuperClass.methods());
-        EClass<?> eClass = this.eSuperClass;
+        final List<EMethod> methods = new ArrayList<>(this.parentClass.methods());
+        EClass<?> eClass = this.parentClass;
         while (eClass != null) {
             methods.addAll(eClass.declaredMethods());
             eClass = eClass.superclass();
@@ -94,47 +71,83 @@ public class ClassBuilder extends AbstractClassBuilder {
 
     @LuaWrapped
     public void put(String key, LuaValue value) {
-        if (referenceBuffer.containsKey(key) && value instanceof LuaFunction function) {
-            writeMethod(referenceBuffer.remove(key), function);
-        } else if (referenceBuffer.containsKey(key) && !(value instanceof LuaFunction)) {
-            throw new IllegalStateException("Expected function for '" + key + "' got " + value.typeName());
+        if (methodReferences.containsKey(key)) {
+            if (value instanceof LuaFunction function) {
+                writeMethod(methodReferences.remove(key), function);
+            } else {
+                throw new IllegalStateException("Expected function for '" + key + "', got " + value.typeName());
+            }
+        } else if (key.equals("constructor") && !ctorReferences.isEmpty()) {
+            if (value instanceof LuaFunction function) {
+                writeMethod(ctorReferences.remove().toMethodReference(), function);
+                hasConstructor = true;
+            } else {
+                throw new IllegalStateException("Expected function for constructor, got " + value.typeName());
+            }
         } else {
-            throw new IllegalStateException("No such method '" + key + "' exists for application on class");
+            throw new IllegalStateException("No such method or constructor '" + key + "' exists for application on class");
         }
     }
 
     public void field(String fieldName, EClass<?> type, Map<String, Boolean> access) throws LuaError {
-        // TODO: Private field access
 
     }
 
     @LuaWrapped
-    public void override(String methodName, EClass<?>[] parameters, Map<String, Boolean> access) throws LuaError {
-        var methods = new ArrayList<EMethod>();
-        if (access.size() > 1) {
-            ScriptRegistry.scriptFromState(state).getLogger().warn("Flags on method override besides 'static' are ignored. For method {}", methodName);
+    public void constructor(List<EClass<?>> parameters, @OptionalArg Map<String, Boolean> access) {
+        if ((this.access & ACC_INTERFACE) == ACC_INTERFACE) {
+            throw new IllegalStateException("Interfaces can not contain a constructor");
         }
-        PropertyResolver.collectMethods(this.methods.stream().filter(new MemberFilter(
-                access.getOrDefault("static", false),
-                true,
-                true,
-                false
-        )).toList(), methodName, methods::add);
+        var ctors = this.parentClass.constructors().stream().filter((m) -> !m.isPrivate()).toList();
+        for (EConstructor<?> ctor : ctors) {
+            List<EParameter> ctorParams = ctor.parameters();
 
-        for (var method : methods) {
-            var methParams = method.parameters();
-
-            if (methParams.size() == parameters.length) {
+            if (ctorParams.size() == parameters.size()) {
                 boolean match = true;
-                for (int i = 0; i < parameters.length; i++) {
-                    if (!methParams.get(i).parameterType().upperBound().wrapPrimitive().raw().equals(parameters[i].raw())) {
+                for (int i = 0; i < parameters.size(); i++) {
+                    if (!ctorParams.get(i).parameterType().upperBound().raw().equals(parameters.get(i).raw())) {
                         match = false;
                         break;
                     }
                 }
 
                 if (match) {
-                    referenceBuffer.put(method.name(), new MethodReference(method.name(),
+                    ctorReferences.add(new ConstructorReference(
+                            ctor,
+                            ctorParams.stream().map(WrappedType::fromParameter).toArray(WrappedType[]::new),
+                            ctor.modifiers()
+                    ));
+                    return;
+                }
+            }
+        }
+        if (access == null) throw new IllegalStateException("Expected access modifiers for constructor not matching super");
+        ctorReferences.add(new ConstructorReference(
+                null,
+                parameters.stream().map((ec) -> new WrappedType(ec, ec)).toArray(WrappedType[]::new),
+                handleMethodAccess(access)
+        ));
+    }
+
+    @LuaWrapped
+    public void override(String methodName, List<EClass<?>> parameters) throws LuaError {
+        var methods = new ArrayList<EMethod>();
+        PropertyResolver.collectMethods(this.methods.stream().filter((m) -> !m.isPrivate()).toList(), methodName, methods::add);
+
+        for (EMethod method : methods) {
+            List<EParameter> methParams = method.parameters();
+
+            if (methParams.size() == parameters.size()) {
+                boolean match = true;
+                for (int i = 0; i < parameters.size(); i++) {
+                    if (!methParams.get(i).parameterType().upperBound().raw().equals(parameters.get(i).raw())) {
+                        match = false;
+                        break;
+                    }
+                }
+
+                if (match) {
+                    methodReferences.put(method.name(), new MethodReference(method.name(),
                             methParams.stream().map(WrappedType::fromParameter).toArray(WrappedType[]::new),
                             new WrappedType(method.rawReturnType(), method.returnType().upperBound()),
                             method.modifiers() & ~ACC_ABSTRACT));
@@ -143,15 +156,15 @@ public class ClassBuilder extends AbstractClassBuilder {
             }
         }
 
-        throw new IllegalArgumentException("Couldn't find method " + methodName + " in parent class " + eSuperClass.name() + "!");
+        throw new IllegalArgumentException("Couldn't find method " + methodName + " in parent class " + parentClass.name() + "!");
     }
 
     @LuaWrapped
-    public void method(String methodName, EClass<?>[] parameters, @Nullable EClass<?> returnClass, Map<String, Boolean> access) throws LuaError {
+    public void method(String methodName, List<EClass<?>> parameters, @Nullable EClass<?> returnClass, Map<String, Boolean> access) throws LuaError {
         int accessInt = handleMethodAccess(access);
         if ((accessInt & ACC_ABSTRACT) == 0) {
-            referenceBuffer.put(methodName, new MethodReference(methodName,
-                    Arrays.stream(parameters).map(x -> new WrappedType(x, x)).toArray(WrappedType[]::new),
+            methodReferences.put(methodName, new MethodReference(methodName,
+                    parameters.stream().map(x -> new WrappedType(x, x)).toArray(WrappedType[]::new),
                     returnClass == null ? null : new WrappedType(returnClass, returnClass),
                     accessInt));
         }
@@ -170,12 +183,12 @@ public class ClassBuilder extends AbstractClassBuilder {
     }
 
     private void writeMethod(MethodReference reference, @Nullable LuaFunction func) {
-        var paramsType = Arrays.stream(reference.params()).map(x -> x.raw).map(EClass::raw).map(Type::getType).toArray(Type[]::new);
-        var returnType = reference.returns() == null ? Type.VOID_TYPE : Type.getType(reference.returns().raw.raw());
-        var isStatic = (reference.access() & ACC_STATIC) != 0;
+        Type[] paramsType = Arrays.stream(reference.params).map(x -> x.raw).map(EClass::raw).map(Type::getType).toArray(Type[]::new);
+        Type returnType = reference.returns == null ? Type.VOID_TYPE : Type.getType(reference.returns.raw.raw());
+        boolean isStatic = (reference.access & ACC_STATIC) != 0;
 
-        var desc = Type.getMethodDescriptor(returnType, paramsType);
-        var m = c.visitMethod(reference.access(), reference.name(), desc, null, null);
+        String desc = Type.getMethodDescriptor(returnType, paramsType);
+        MethodVisitor m = c.visitMethod(reference.access, reference.name, desc, null, null);
         int arrayPos = Type.getArgumentsAndReturnSizes(desc) >> 2;
         int thisVarOffset = isStatic ? 0 : 1;
 
@@ -184,7 +197,7 @@ public class ClassBuilder extends AbstractClassBuilder {
 
             if (isStatic) arrayPos -= 1;
 
-            m.visitLdcInsn(reference.params().length + thisVarOffset);
+            m.visitLdcInsn(reference.params.length + thisVarOffset);
             m.visitTypeInsn(ANEWARRAY, Type.getInternalName(LuaValue.class));
             m.visitVarInsn(ASTORE, arrayPos);
 
@@ -221,14 +234,14 @@ public class ClassBuilder extends AbstractClassBuilder {
                     AsmUtil.wrapPrimitive(m, args[i]);
                 }
 
-                fields.storeAndGet(m, reference.params()[i].real.wrapPrimitive(), EClass.class);
+                fields.storeAndGet(m, reference.params[i].real.wrapPrimitive(), EClass.class);
                 m.visitMethodInsn(INVOKESTATIC, Type.getInternalName(TypeCoercions.class), "toLuaValue", "(Ljava/lang/Object;Lme/basiqueevangelist/enhancedreflection/api/EClass;)Lorg/squiddev/cobalt/LuaValue;", false);
                 m.visitInsn(AASTORE);
 
                 argIndex += args[i].getSize();
             }
 
-            var isVoid = reference.returns() == null || returnType.getSort() == Type.VOID;
+            var isVoid = reference.returns == null || returnType.getSort() == Type.VOID;
 
             fields.storeAndGet(m, state, LuaState.class); // state
             if (!isVoid) m.visitInsn(DUP); // state, state?
@@ -239,9 +252,9 @@ public class ClassBuilder extends AbstractClassBuilder {
 
             if (!isVoid) {
                 m.visitMethodInsn(INVOKEVIRTUAL, Type.getInternalName(Varargs.class), "first", "()Lorg/squiddev/cobalt/LuaValue;", false); // state? luavalue
-                fields.storeAndGet(m, reference.returns().real.wrapPrimitive(), EClass.class); // state?, luavalue, eclass
+                fields.storeAndGet(m, reference.returns.real.wrapPrimitive(), EClass.class); // state?, luavalue, eclass
                 m.visitMethodInsn(INVOKESTATIC, Type.getInternalName(TypeCoercions.class), "toJava", "(Lorg/squiddev/cobalt/LuaState;Lorg/squiddev/cobalt/LuaValue;Lme/basiqueevangelist/enhancedreflection/api/EClass;)Ljava/lang/Object;", false); // object
-                m.visitTypeInsn(CHECKCAST, Type.getInternalName(reference.returns().real.wrapPrimitive().raw())); // object(return type)
+                m.visitTypeInsn(CHECKCAST, Type.getInternalName(reference.returns.real.wrapPrimitive().raw())); // object(return type)
 
                 if (returnType.getSort() != Type.ARRAY && returnType.getSort() != Type.OBJECT) {
                     AsmUtil.unwrapPrimitive(m, returnType); // primitive
@@ -258,15 +271,60 @@ public class ClassBuilder extends AbstractClassBuilder {
 
     @LuaWrapped
     public LuaValue build() {
-        if (!referenceBuffer.isEmpty()) {
+        if (!parentClass.constructors().isEmpty()) {
+            while (!ctorReferences.isEmpty()) {
+                ConstructorReference reference = ctorReferences.remove();
+
+                StringBuilder builder = new StringBuilder("(");
+                builder.append(reference.params.length).append(" arguments) ");
+
+                for (int i = 0; i < reference.params.length; i++) {
+                    builder.append(reference.params[i].raw);
+                    if (i < reference.params.length-1) builder.append(", ");
+                }
+
+                if (reference.ctor == null) throw new IllegalStateException("Missing function for constructor with no match on super class: " + builder);
+
+                EConstructor<?> superCtor = reference.ctor;
+
+                var desc = Type.getConstructorDescriptor(superCtor.raw());
+                var m = c.visitMethod(superCtor.modifiers(), "<init>", desc, null, null);
+                m.visitCode();
+                var args = Type.getArgumentTypes(desc);
+
+                m.visitVarInsn(ALOAD, 0);
+
+                int argIndex = 1;
+
+                for (Type arg : args) {
+                    m.visitVarInsn(arg.getOpcode(ILOAD), argIndex);
+
+                    argIndex += arg.getSize();
+                }
+
+                m.visitMethodInsn(INVOKESPECIAL, Type.getInternalName(parentClass.raw()), "<init>", desc, false);
+
+                m.visitInsn(RETURN);
+
+                m.visitMaxs(0, 0);
+                m.visitEnd();
+
+                hasConstructor = true;
+            }
+
+            if (!hasConstructor) {
+                throw new IllegalStateException("Missing constructor for class whose super class defines one");
+            }
+        }
+
+        if (!methodReferences.isEmpty()) {
             StringBuilder builder = new StringBuilder();
-            Iterator<MethodReference> missingReferences = referenceBuffer.values().iterator();
-            while (missingReferences.hasNext()) {
-                MethodReference reference = missingReferences.next();
+            Iterator<MethodReference> missingReferences = methodReferences.values().iterator();
+            while (missingReferences.hasNext() && missingReferences.next() instanceof MethodReference reference) {
                 builder.append(reference.name());
                 if (missingReferences.hasNext()) builder.append(", ");
             }
-            throw new IllegalStateException("Mising functions for method(s): " + builder);
+            throw new IllegalStateException("Missing functions for method(s): " + builder);
         }
 
         byte[] classBytes = c.toByteArray();
@@ -285,6 +343,12 @@ public class ClassBuilder extends AbstractClassBuilder {
     private record WrappedType(EClass<?> raw, EClass<?> real) {
         public static WrappedType fromParameter(EParameter param) {
             return new WrappedType(param.rawParameterType(), param.parameterType().lowerBound());
+        }
+    }
+
+    private record ConstructorReference(EConstructor<?> ctor, WrappedType[] params, int access) {
+        public MethodReference toMethodReference() {
+            return new MethodReference("<init>", params, new WrappedType(VOID, VOID), access);
         }
     }
 
