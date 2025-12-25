@@ -1,6 +1,5 @@
 package dev.hugeblank.bouquet.mixin.server.network;
 
-import com.mojang.authlib.GameProfile;
 import dev.hugeblank.bouquet.api.event.ServerEvents;
 import dev.hugeblank.bouquet.util.EntityDataHolder;
 import net.minecraft.server.level.ServerPlayer;

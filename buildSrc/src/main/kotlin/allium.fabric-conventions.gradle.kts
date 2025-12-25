@@ -1,4 +1,5 @@
 import java.util.Locale
+
 plugins {
     `maven-publish`
     id("net.fabricmc.fabric-loom")
@@ -81,7 +82,7 @@ tasks {
     }
 
     jar {
-        from("LICENSE") {
+        from("../LICENSE") {
             rename { "${it}_${project.base.archivesName.get()}" }
         }
     }

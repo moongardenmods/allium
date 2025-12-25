@@ -1,17 +1,17 @@
 package dev.hugeblank.allium.loader.lib;
 
 import dev.hugeblank.allium.api.WrappedLibrary;
-import dev.hugeblank.allium.loader.type.userdata.ClassUserdata;
-import dev.hugeblank.allium.loader.type.userdata.InstanceUserdata;
+import dev.hugeblank.allium.loader.lib.builder.ClassBuilder;
 import dev.hugeblank.allium.loader.type.MethodInvocationFunction;
 import dev.hugeblank.allium.loader.type.StaticBinder;
 import dev.hugeblank.allium.loader.type.annotation.LuaArgs;
 import dev.hugeblank.allium.loader.type.annotation.LuaStateArg;
 import dev.hugeblank.allium.loader.type.annotation.LuaWrapped;
 import dev.hugeblank.allium.loader.type.annotation.OptionalArg;
-import dev.hugeblank.allium.loader.lib.builder.ClassBuilder;
 import dev.hugeblank.allium.loader.type.coercion.TypeCoercions;
 import dev.hugeblank.allium.loader.type.exception.InvalidArgumentException;
+import dev.hugeblank.allium.loader.type.userdata.ClassUserdata;
+import dev.hugeblank.allium.loader.type.userdata.InstanceUserdata;
 import dev.hugeblank.allium.util.JavaHelpers;
 import me.basiqueevangelist.enhancedreflection.api.EClass;
 import me.basiqueevangelist.enhancedreflection.api.EType;

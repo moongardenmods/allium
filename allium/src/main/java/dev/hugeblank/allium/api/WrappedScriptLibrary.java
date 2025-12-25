@@ -1,8 +1,8 @@
 package dev.hugeblank.allium.api;
 
 import dev.hugeblank.allium.loader.Script;
-import dev.hugeblank.allium.loader.type.userdata.InstanceUserdataFactory;
 import dev.hugeblank.allium.loader.type.annotation.LuaWrapped;
+import dev.hugeblank.allium.loader.type.userdata.InstanceUserdataFactory;
 import me.basiqueevangelist.enhancedreflection.api.EClass;
 import org.squiddev.cobalt.LuaError;
 import org.squiddev.cobalt.LuaState;

@@ -5,9 +5,7 @@ import dev.hugeblank.allium.loader.type.annotation.LuaWrapped;
 import org.squiddev.cobalt.LuaError;
 
 import java.io.IOException;
-import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
 import java.util.Set;
