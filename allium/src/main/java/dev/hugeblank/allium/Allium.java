@@ -28,7 +28,7 @@ public class Allium implements ModInitializer {
     public static final boolean DEVELOPMENT = FabricLoader.getInstance().isDevelopmentEnvironment();
     public static final Path DUMP_DIRECTORY = FabricLoader.getInstance().getGameDir().resolve("allium-dump");
     public static final String VERSION = FabricLoader.getInstance().getModContainer(ID).orElseThrow().getMetadata().getVersion().getFriendlyString();
-    public static final SimpleProfiler PROFILER = new SimpleProfiler(true);
+    public static final SimpleProfiler PROFILER = new SimpleProfiler(false);
 
     @Override
     public void onInitialize() {

@@ -5,7 +5,7 @@ local FlowerBlock = require("net.minecraft.world.level.block.FlowerBlock")
 local BlockState = require("net.minecraft.world.level.block.state.BlockState")
 local Level = require("net.minecraft.world.level.Level")
 local BlockPos = require("net.minecraft.core.BlockPos")
-local Boolean = require("java.lang.Boolean")
+local Holder = require("net.minecraft.core.Holder")
 local Identifier = require("net.minecraft.resources.Identifier")
 local ResourceKey = require("net.minecraft.resources.ResourceKey")
 local Registries = require("net.minecraft.core.registries.Registries")
@@ -36,9 +36,12 @@ local function registerBlock(id, blockInitializer, settings)
     return block
 end
 
-local builder = java.extendClass(FlowerBlock)
+local builder = java.extendClass(FlowerBlock )
 
-builder:override("onPlace", {BlockState, Level, BlockPos, BlockState, Boolean}, {})
+builder:constructor({Holder, java.float, BlockBehaviourProperties})
+-- If defining a constructor that matches one in the parent class, a constructor function definition is optional.
+
+builder:override("onPlace", {BlockState, Level, BlockPos, BlockState, java.boolean})
 function builder:onPlace(this, state, level, pos, oldState, movedByPiston)
     --print(tostring(this), tostring(state), tostring(level), tostring(pos), tostring(oldState), movedByPiston)
 end
