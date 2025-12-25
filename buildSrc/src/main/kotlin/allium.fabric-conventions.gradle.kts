@@ -27,6 +27,8 @@ if ("0" != rc) {
 version = v
 group = project.properties["mavenGroup"].toString()
 
+layout.buildDirectory = file("../build/" + project.name)
+
 base {
     archivesName = project.properties[project.name + "BaseName"].toString()
 }
