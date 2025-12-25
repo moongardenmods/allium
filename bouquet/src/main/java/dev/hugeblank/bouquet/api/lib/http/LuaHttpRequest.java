@@ -4,7 +4,7 @@ import dev.hugeblank.allium.Allium;
 import dev.hugeblank.allium.loader.type.annotation.LuaWrapped;
 import io.netty.buffer.ByteBufUtil;
 import io.netty.buffer.Unpooled;
-import io.netty.handler.codec.http.*;
+import io.netty.handler.codec.http.HttpHeaderNames;
 
 import java.net.URI;
 import java.net.http.HttpClient;

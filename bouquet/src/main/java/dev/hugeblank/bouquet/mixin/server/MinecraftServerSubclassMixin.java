@@ -3,8 +3,6 @@ package dev.hugeblank.bouquet.mixin.server;
 import dev.hugeblank.bouquet.api.event.ServerEvents;
 import net.minecraft.gametest.framework.GameTestServer;
 import net.minecraft.server.MinecraftServer;
-import net.minecraft.network.protocol.game.ClientboundSetTitleTextPacket;
-import net.minecraft.data.tags.PaintingVariantTagsProvider;
 import net.minecraft.server.dedicated.DedicatedServer;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;

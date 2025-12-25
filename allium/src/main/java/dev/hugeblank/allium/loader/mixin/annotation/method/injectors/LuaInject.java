@@ -2,11 +2,11 @@ package dev.hugeblank.allium.loader.mixin.annotation.method.injectors;
 
 import dev.hugeblank.allium.Allium;
 import dev.hugeblank.allium.loader.Script;
-import dev.hugeblank.allium.loader.mixin.builder.MixinMethodBuilder;
-import dev.hugeblank.allium.loader.mixin.builder.MixinParameter;
 import dev.hugeblank.allium.loader.mixin.annotation.method.LuaInjectorAnnotation;
 import dev.hugeblank.allium.loader.mixin.annotation.method.LuaMethodAnnotation;
 import dev.hugeblank.allium.loader.mixin.annotation.sugar.LuaSugar;
+import dev.hugeblank.allium.loader.mixin.builder.MixinMethodBuilder;
+import dev.hugeblank.allium.loader.mixin.builder.MixinParameter;
 import dev.hugeblank.allium.loader.type.exception.InvalidArgumentException;
 import dev.hugeblank.allium.loader.type.exception.InvalidMixinException;
 import dev.hugeblank.allium.util.asm.VisitedClass;

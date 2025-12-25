@@ -1,12 +1,12 @@
 package dev.hugeblank.allium.loader.type.coercion;
 
-import dev.hugeblank.allium.loader.type.userdata.ClassUserdata;
-import dev.hugeblank.allium.loader.type.userdata.InstanceUserdata;
-import dev.hugeblank.allium.loader.type.userdata.InstanceUserdataFactory;
 import dev.hugeblank.allium.loader.type.MethodInvocationFunction;
 import dev.hugeblank.allium.loader.type.annotation.CoerceToBound;
 import dev.hugeblank.allium.loader.type.annotation.CoerceToNative;
 import dev.hugeblank.allium.loader.type.exception.InvalidArgumentException;
+import dev.hugeblank.allium.loader.type.userdata.ClassUserdata;
+import dev.hugeblank.allium.loader.type.userdata.InstanceUserdata;
+import dev.hugeblank.allium.loader.type.userdata.InstanceUserdataFactory;
 import dev.hugeblank.allium.util.JavaHelpers;
 import me.basiqueevangelist.enhancedreflection.api.*;
 import me.basiqueevangelist.enhancedreflection.api.typeuse.EClassUse;
