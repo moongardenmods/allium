@@ -18,16 +18,16 @@ repositories {
     }
 }
 
-val rc = project.properties[project.name+"ReleaseCandidate"] as String
-var v = project.properties[project.name+"Version"] as String
+val rc = project.properties[project.name+"ReleaseCandidate"].toString()
+var v = project.properties[project.name+"Version"].toString()
 if ("0" != rc) {
     v = "$v-rc$rc"
 }
 version = v
-group = project.properties["mavenGroup"] as String
+group = project.properties["mavenGroup"].toString()
 
 base {
-    archivesName = project.properties[project.name + "BaseName"] as String
+    archivesName = project.properties[project.name + "BaseName"].toString()
 }
 
 dependencies {
@@ -92,7 +92,7 @@ publishing {
     publications {
         register("mavenJava", MavenPublication::class) {
             from(components["java"])
-            groupId = group as String
+            groupId = group.toString()
             artifactId = base.archivesName.get()
             version = version
         }
