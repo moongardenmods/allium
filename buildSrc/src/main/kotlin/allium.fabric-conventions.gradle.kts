@@ -44,7 +44,7 @@ loom {
     mods {
         register(project.name) {
             sourceSet(sourceSets["main"])
-            sourceSet(sourceSets["client"])
+            if (project.name != "allium") sourceSet(sourceSets["client"])
         }
     }
 
