@@ -90,7 +90,7 @@ public class ClassBuilder extends AbstractClassBuilder {
     }
 
     public void field(String fieldName, EClass<?> type, Map<String, Boolean> access) throws LuaError {
-
+        
     }
 
     @LuaWrapped

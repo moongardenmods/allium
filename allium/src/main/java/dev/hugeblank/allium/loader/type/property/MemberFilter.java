@@ -2,6 +2,7 @@ package dev.hugeblank.allium.loader.type.property;
 
 import me.basiqueevangelist.enhancedreflection.api.ModifierHolder;
 
+import java.lang.invoke.MethodHandles;
 import java.util.Objects;
 import java.util.function.Predicate;
 
@@ -29,6 +30,14 @@ public record MemberFilter(boolean expectStatic, boolean expectPublic, boolean e
                 ((expectPublic == holder.isPublic()) ||
                 (expectProtected == holder.isProtected()) ||
                 (expectPrivate == holder.isPrivate()));
+    }
+
+    public MethodHandles.Lookup lookup(Class<?> clazz) throws IllegalAccessException {
+        if (expectPrivate || expectProtected) {
+            return MethodHandles.privateLookupIn(clazz, MethodHandles.lookup());
+        } else {
+            return MethodHandles.lookup();
+        }
     }
 
     @Override

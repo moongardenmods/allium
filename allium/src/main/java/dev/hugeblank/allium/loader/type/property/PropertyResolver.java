@@ -45,14 +45,10 @@ public final class PropertyResolver {
             EField field = findField(fields, name);
 
             if (field != null) {
-                if (field.isPublic()) {
-                    return new FieldData<>(field);
-                } else {
-                    try {
-                        return new InternalFieldData<>(field);
-                    } catch (IllegalAccessException e) {
-                        Allium.LOGGER.warn("Attempt to access '{}' resulted in: ", field.name(), e);
-                    }
+                try {
+                    return new FieldData<>(field, filter);
+                } catch (IllegalAccessException e) {
+                    Allium.LOGGER.warn("Attempt to access '{}' resulted in: ", field.name(), e);
                 }
             }
         }

@@ -5,6 +5,8 @@ import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.MethodVisitor;
 import org.objectweb.asm.Type;
 
+import java.lang.invoke.MethodHandles;
+import java.lang.invoke.VarHandle;
 import java.util.HashMap;
 import java.util.function.Function;
 
@@ -28,7 +30,7 @@ public class FieldBuilder extends AbstractFieldBuilder {
 
         String fieldName = "allium$field" + fieldIndex++;
 
-        var f = c.visitField(ACC_PUBLIC | ACC_STATIC, fieldName, Type.getDescriptor(fieldType), null, null);
+        var f = c.visitField(ACC_PRIVATE | ACC_STATIC, fieldName, Type.getDescriptor(fieldType), null, null);
         var a = f.visitAnnotation(GeneratedFieldValue.DESCRIPTOR, true);
         a.visit("value", o.toString());
         a.visitEnd();
@@ -40,7 +42,7 @@ public class FieldBuilder extends AbstractFieldBuilder {
     public <T> String storeComplex(Function<Class<?>, T> supplier, Class<T> fieldType, String description) {
         String fieldName = "allium$field" + fieldIndex++;
 
-        var f = c.visitField(ACC_PUBLIC | ACC_STATIC, fieldName, Type.getDescriptor(fieldType), null, null);
+        var f = c.visitField(ACC_PRIVATE | ACC_STATIC, fieldName, Type.getDescriptor(fieldType), null, null);
         var a = f.visitAnnotation(GeneratedFieldValue.DESCRIPTOR, true);
         a.visit("description", description);
         a.visitEnd();
@@ -67,12 +69,16 @@ public class FieldBuilder extends AbstractFieldBuilder {
 
     public void apply(Class<?> builtClass) {
         try {
+            MethodHandles.Lookup lookup = MethodHandles.privateLookupIn(builtClass, MethodHandles.lookup());
             for (var entry : storedFields.entrySet()) {
-                builtClass.getField(entry.getKey()).set(null, entry.getValue().left());
+                VarHandle var = lookup.findStaticVarHandle(builtClass, entry.getKey(), entry.getValue().right());
+                var.set(entry.getValue().left());
             }
 
             for (var entry : complexFields.entrySet()) {
-                builtClass.getField(entry.getKey()).set(null, entry.getValue().apply(builtClass));
+                Object value = entry.getValue().apply(builtClass);
+                VarHandle var = lookup.findStaticVarHandle(builtClass, entry.getKey(), value.getClass());
+                var.set(value);
             }
         } catch (ReflectiveOperationException e) {
             throw new RuntimeException("Failed to apply fields to class", e);
