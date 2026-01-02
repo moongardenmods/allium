@@ -24,8 +24,8 @@ mixin.get("commands_init"):hook(function(self, commandSelection, context, ci)
         ) then
             self:getDispatcher():register(entry.builder)
             queueRegisterEvent(entry, true)
-            return
+        else
+            queueRegisterEvent(entry, false)
         end
-        queueRegisterEvent(entry, false)
     end
 end)
