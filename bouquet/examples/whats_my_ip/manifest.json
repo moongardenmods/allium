@@ -1,0 +1,8 @@
+{
+  "id": "whats_my_ip",
+  "name": "What's my IP?",
+  "version": "1.0.0",
+  "entrypoints": {
+    "dynamic":"main.lua"
+  }
+}
