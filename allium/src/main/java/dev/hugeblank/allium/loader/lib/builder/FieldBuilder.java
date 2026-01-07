@@ -15,7 +15,7 @@ import static org.objectweb.asm.Opcodes.*;
 public class FieldBuilder extends AbstractFieldBuilder {
     private int fieldIndex = 0;
     private final HashMap<String, Pair<Object, Class<?>>> storedFields = new HashMap<>();
-    private final HashMap<String, Function<Class<?>, ?>> complexFields = new HashMap<>();
+    private final HashMap<String, Pair<Function<Class<?>, ?>, Class<?>>> complexFields = new HashMap<>();
 
     public FieldBuilder(String className, ClassVisitor c) {
         super(className, c);
@@ -47,7 +47,7 @@ public class FieldBuilder extends AbstractFieldBuilder {
         a.visit("description", description);
         a.visitEnd();
 
-        complexFields.put(fieldName, supplier);
+        complexFields.put(fieldName, new Pair<>(supplier, fieldType));
         return fieldName;
     }
 
@@ -76,8 +76,8 @@ public class FieldBuilder extends AbstractFieldBuilder {
             }
 
             for (var entry : complexFields.entrySet()) {
-                Object value = entry.getValue().apply(builtClass);
-                VarHandle var = lookup.findStaticVarHandle(builtClass, entry.getKey(), value.getClass());
+                Object value = entry.getValue().left().apply(builtClass);
+                VarHandle var = lookup.findStaticVarHandle(builtClass, entry.getKey(), entry.getValue().right());
                 var.set(value);
             }
         } catch (ReflectiveOperationException e) {

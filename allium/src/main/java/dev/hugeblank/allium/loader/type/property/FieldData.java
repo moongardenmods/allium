@@ -23,7 +23,7 @@ public final class FieldData<I> implements PropertyData<I> {
 
     @Override
     public LuaValue get(String name, LuaState state, I instance, boolean noThisArg) throws LuaError {
-        return TypeCoercions.toLuaValue(handle.get(instance), field.fieldTypeUse().upperBound());
+        return TypeCoercions.toLuaValue(field.isStatic() ? handle.get() : handle.get(instance), field.fieldTypeUse().upperBound());
     }
 
     @Override
