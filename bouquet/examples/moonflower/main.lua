@@ -53,7 +53,7 @@ local moonflower = registerBlock("moonflower", function(p)
 end, BlockBehaviourProperties.of():mapColor(MapColor.DIAMOND):noCollision():instabreak():sound(SoundType.GRASS):offsetType(OffsetType.XZ):pushReaction(PushReaction.DESTROY))
 
 if allium.environment() == "client" then
-    local BlockRenderLayerMap = require("net.fabricmc.fabric.api.client.rendering.v1.BlockRenderLayerMap")
+    local ChunkSectionLayerMap = require("net.fabricmc.fabric.api.client.rendering.v1.ChunkSectionLayerMap")
     local ChunkSectionLayer = require("net.minecraft.client.renderer.chunk.ChunkSectionLayer")
-    BlockRenderLayerMap.putBlock(moonflower, ChunkSectionLayer.CUTOUT)
+    ChunkSectionLayerMap.putBlock(moonflower, ChunkSectionLayer.CUTOUT)
 end
