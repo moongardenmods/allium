@@ -4,6 +4,7 @@
   "compatibilityLevel": "JAVA_21",
   "plugin": "dev.hugeblank.bouquet.mixin.BouquetMixinPlugin",
   "mixins": [
+    "RecipeMapAccessor",
     "block.BlockBehaviourMixin",
     "command.ReloadCommandMixin",
     "entity.EntityMixin",
@@ -12,7 +13,14 @@
     "server.MinecraftServerMixin",
     "server.MinecraftServerSubclassMixin",
     "server.PlayerManagerMixin",
-    "server.network.ServerPlayerMixin"
+    "server.network.ServerPlayerMixin",
+    "world.item.crafting.AbstractCookingRecipeMixin",
+    "world.item.crafting.NormalCraftingRecipeMixin",
+    "world.item.crafting.RecipeManagerMixin",
+    "world.item.crafting.RecipeMapMixin",
+    "world.item.crafting.ShapedRecipeMixin",
+    "world.item.crafting.ShapelessRecipeMixin",
+    "world.item.crafting.SingleItemRecipeMixin"
   ],
   "injectors": {
     "defaultRequire": 1

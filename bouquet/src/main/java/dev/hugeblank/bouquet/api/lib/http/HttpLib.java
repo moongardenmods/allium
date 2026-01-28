@@ -4,9 +4,11 @@ import java.net.URI;
 import java.net.http.HttpClient;
 
 public class HttpLib {
+    public static final HttpLib INSTANCE = new HttpLib();
+
     private final HttpClient client;
 
-    public HttpLib() {
+    private HttpLib() {
         this.client = HttpClient.newBuilder().build();
     }
 

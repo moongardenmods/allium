@@ -2,6 +2,7 @@ require("bouquet.hooks")
 
 local FsLib = require("dev.hugeblank.bouquet.api.lib.fs.FsLib")
 local HttpLib = require("dev.hugeblank.bouquet.api.lib.http.HttpLib")
+local RecipeLib = require("dev.hugeblank.bouquet.api.lib.recipe.RecipeLib")
 
 local function wrapAs(class)
     return function(script)
@@ -26,7 +27,8 @@ return {
     fabric = require("bouquet.api.fabric"),
     fs = wrapAs(FsLib),
     game = require("bouquet.api.game"),
-    http = HttpLib(),
+    http = HttpLib.INSTANCE,
     json = require("bouquet.api.json"),
+    recipe = RecipeLib.INSTANCE,
     tag = require("bouquet.api.tag"),
 }
