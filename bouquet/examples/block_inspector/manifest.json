@@ -1,0 +1,8 @@
+{
+  "id": "block_inspector",
+  "version": "1.0.0",
+  "name": "Block Inspector",
+  "entrypoints": {
+    "dynamic": "main.lua"
+  }
+}

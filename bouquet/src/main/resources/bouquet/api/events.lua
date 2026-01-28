@@ -25,6 +25,7 @@ if allium.environment() == "client" then
     out.client = {
         guiRenderHead = ClientEvents.GUI_RENDER_HEAD,
         guiRenderTail = ClientEvents.GUI_RENDER_TAIL,
+        worldRender = ClientEvents.WORLD_RENDER,
     }
 end
 
