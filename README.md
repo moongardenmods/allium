@@ -24,7 +24,10 @@ will go. They may come in the form of a `.zip`, but may be expanded, and put int
 tinker with them. If you're at all familiar with the Resource/Data Pack structure, then you'll know that this is 
 similar.
 
-## [Documentation](https://moongardenmods.github.io/allium-docs/)
+## Documentation
+
+- [Allium Loader](https://moongardenmods.github.io/allium-docs/)
+- Bouquet API (TODO)
 
 ## Logos
 Allium's logos are under the same license as the rest of the project. Feel free to use these in your own project.
@@ -35,17 +38,4 @@ Allium's logos are under the same license as the rest of the project. Feel free 
 <img src="logos/banner.png" alt="Powered by Allium" height="100"/>
 
 ## Contributing
-Allium is broken up into 2 gradle subprojects that each build into their own jars. When making a pull request please
-make sure to use the template that corresponds to which project you're contributing to (TODO). If you'd like to discuss
-contribution please feel free to join the [Moongarden mods discord](https://discord.gg/rWSaP222G9).
-
-### Allium
-Found in the `allium` directory, this is the bare-minimum necessary for a Lua script to be run in the game.
-
-### Bouquet
-Found in the `bouquet` directory, this features additional quality of life libraries, as well as frequently used
-event hooks into the games logic.
-
-### Dev Environment Notes
-- To build both projects at the same time use the `buildAll` gradle task.
-- Multiple client run configurations are created. One is for running only allium, the other is for running both allium & bouquet.
+See [CONTRIBUTING.md](CONTRIBUTING.md)

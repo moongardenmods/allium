@@ -1,5 +1,7 @@
 {
-    "diagnostics.disable": [
-        "undefined-global"
-    ]
+  "diagnostics.globals": [
+    "allium",
+    "mixin",
+    "java"
+  ]
 }
