@@ -162,19 +162,6 @@ public class Script implements Identifiable {
     }
 
     @LuaWrapped
-    public LuaValue getModule() {
-        return module;
-    }
-
-    public Manifest getManifest() {
-        return manifest;
-    }
-
-    public Path getPath() {
-        return path;
-    }
-
-    @LuaWrapped
     public String getID() {
         return manifest.id();
     }
@@ -189,6 +176,19 @@ public class Script implements Identifiable {
         return manifest.name();
     }
 
+    @LuaWrapped
+    public LuaValue getModule() {
+        return module;
+    }
+
+    public Manifest getManifest() {
+        return manifest;
+    }
+
+    public Path getPath() {
+        return path;
+    }
+
     public Logger getLogger() {
         return logger;
     }
@@ -197,7 +197,6 @@ public class Script implements Identifiable {
         return executor;
     }
 
-    @LuaWrapped
     public LuaState getState() {
         return executor.getState();
     }

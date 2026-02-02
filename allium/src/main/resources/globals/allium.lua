@@ -1,0 +1,4 @@
+---@meta
+
+---@class Allium
+allium = {}
