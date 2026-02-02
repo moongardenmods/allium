@@ -36,7 +36,7 @@ local function registerBlock(id, blockInitializer, settings)
     return block
 end
 
-local builder = java.extendClass(FlowerBlock )
+local builder = java.extendClass(FlowerBlock)
 
 builder:constructor({Holder, java.float, BlockBehaviourProperties})
 -- If defining a constructor that matches one in the parent class, a constructor function definition is optional.

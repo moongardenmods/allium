@@ -181,6 +181,11 @@ public class Script implements Identifiable {
         return module;
     }
 
+    @LuaWrapped
+    public LuaState getState() {
+        return executor.getState();
+    }
+
     public Manifest getManifest() {
         return manifest;
     }
@@ -195,10 +200,6 @@ public class Script implements Identifiable {
 
     public ScriptExecutor getExecutor() {
         return executor;
-    }
-
-    public LuaState getState() {
-        return executor.getState();
     }
 
     @Override

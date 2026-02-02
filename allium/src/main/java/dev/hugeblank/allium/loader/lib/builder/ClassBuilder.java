@@ -1,15 +1,15 @@
 package dev.hugeblank.allium.loader.lib.builder;
 
 import dev.hugeblank.allium.loader.type.StaticBinder;
+import dev.hugeblank.allium.loader.type.annotation.LuaStateArg;
 import dev.hugeblank.allium.loader.type.annotation.LuaWrapped;
 import dev.hugeblank.allium.loader.type.annotation.OptionalArg;
 import dev.hugeblank.allium.loader.type.coercion.TypeCoercions;
+import dev.hugeblank.allium.loader.type.exception.InvalidArgumentException;
 import dev.hugeblank.allium.loader.type.property.PropertyResolver;
-import dev.hugeblank.allium.loader.type.userdata.PrivateUserdata;
-import dev.hugeblank.allium.loader.type.userdata.PrivateUserdataFactory;
-import dev.hugeblank.allium.loader.type.userdata.SuperUserdata;
-import dev.hugeblank.allium.loader.type.userdata.SuperUserdataFactory;
+import dev.hugeblank.allium.util.Pair;
 import dev.hugeblank.allium.util.asm.AsmUtil;
+import dev.hugeblank.allium.util.asm.Owners;
 import me.basiqueevangelist.enhancedreflection.api.EClass;
 import me.basiqueevangelist.enhancedreflection.api.EConstructor;
 import me.basiqueevangelist.enhancedreflection.api.EMethod;
@@ -27,6 +27,7 @@ import static org.objectweb.asm.Opcodes.*;
 
 @LuaWrapped
 public class ClassBuilder extends AbstractClassBuilder {
+    public static final Map<String, Pair<List<FieldDefinition>, List<FieldDefinition>>> FIELD_REFERENCES = new HashMap<>();
     private static final EClass<?> VOID = EClass.fromJava(Void.class);
 
     private final LuaState state;
@@ -34,6 +35,8 @@ public class ClassBuilder extends AbstractClassBuilder {
     private final List<EMethod> methods = new ArrayList<>();
     private final Map<String, MethodReference> methodReferences = new HashMap<>();
     private final Queue<ConstructorReference> ctorReferences = new LinkedList<>();
+    private final List<FieldReference> instanceFields = new ArrayList<>();
+    private final List<FieldReference> classFields = new ArrayList<>();
     private final FieldBuilder fields;
 
     private boolean hasConstructor = false;
@@ -89,12 +92,45 @@ public class ClassBuilder extends AbstractClassBuilder {
         }
     }
 
-    public void field(String fieldName, EClass<?> type, Map<String, Boolean> access) throws LuaError {
-        
+    public void field(@LuaStateArg LuaState state, String fieldName, EClass<?> type, Map<String, Boolean> access, LuaFunction definition) {
+        int intAccess = handleMethodAccess(access);
+        FieldDefinition fieldDefinition = (userdata) -> {
+            if (definition == null) return null;
+            synchronized (state) {
+                LuaValue value = Dispatch.call(state, definition, userdata).arg(1);
+                return TypeCoercions.toJava(state, value, type);
+            }
+        };
+
+        if (access.getOrDefault("static", false)) {
+            classFields.add(new FieldReference(fieldName, type, fieldDefinition, intAccess));
+        } else {
+            instanceFields.add(new FieldReference(fieldName, type, fieldDefinition, intAccess));
+        }
+        c.visitField(intAccess, fieldName, Type.getDescriptor(type.raw()), null, null);
+    }
+
+    @LuaWrapped
+    public void field(@LuaStateArg LuaState state, String fieldName, EClass<?> type, Map<String, Boolean> access, LuaValue value) throws InvalidArgumentException, LuaError {
+        if (access.getOrDefault("final", false) && value == null) {
+            throw new IllegalStateException("Final field '" + fieldName + "' must have definition");
+        }
+        if (value instanceof LuaFunction func) {
+            field(state, fieldName, type, access, func);
+            return;
+        }
+
+        int intAccess = handleMethodAccess(access);
+        c.visitField(intAccess, fieldName, Type.getDescriptor(type.raw()), null, value == Constants.NIL ? null : TypeCoercions.toJava(state, value, type));
     }
 
     @LuaWrapped
     public void constructor(List<EClass<?>> parameters, @OptionalArg Map<String, Boolean> access) {
+        constructor(parameters, access, false);
+    }
+
+    @LuaWrapped
+    public void constructor(List<EClass<?>> parameters, @OptionalArg Map<String, Boolean> access, boolean definesFields) {
         if ((this.access & ACC_INTERFACE) == ACC_INTERFACE) {
             throw new IllegalStateException("Interfaces can not contain a constructor");
         }
@@ -113,9 +149,10 @@ public class ClassBuilder extends AbstractClassBuilder {
 
                 if (match) {
                     ctorReferences.add(new ConstructorReference(
-                            ctor,
-                            ctorParams.stream().map(WrappedType::fromParameter).toArray(WrappedType[]::new),
-                            ctor.modifiers()
+                        ctor,
+                        ctorParams.stream().map(WrappedType::fromParameter).toArray(WrappedType[]::new),
+                        ctor.modifiers(),
+                        definesFields
                     ));
                     return;
                 }
@@ -123,9 +160,10 @@ public class ClassBuilder extends AbstractClassBuilder {
         }
         if (access == null) throw new IllegalStateException("Expected access modifiers for constructor not matching super");
         ctorReferences.add(new ConstructorReference(
-                null,
-                parameters.stream().map((ec) -> new WrappedType(ec, ec)).toArray(WrappedType[]::new),
-                handleMethodAccess(access)
+            null,
+            parameters.stream().map((ec) -> new WrappedType(ec, ec)).toArray(WrappedType[]::new),
+            handleMethodAccess(access),
+            definesFields
         ));
     }
 
@@ -179,7 +217,10 @@ public class ClassBuilder extends AbstractClassBuilder {
         } else {
             out = ACC_PUBLIC;
         }
-        return out | (access.getOrDefault("abstract", false) ? ACC_ABSTRACT : 0) | (access.getOrDefault("static", false) ? ACC_STATIC : 0);
+        return out |
+            (access.getOrDefault("abstract", false) ? ACC_ABSTRACT : 0) |
+            (access.getOrDefault("static", false) ? ACC_STATIC : 0) |
+            (access.getOrDefault("final", false) ? ACC_FINAL : 0);
     }
 
     private void writeMethod(MethodReference reference, @Nullable LuaFunction func) {
@@ -198,24 +239,24 @@ public class ClassBuilder extends AbstractClassBuilder {
             if (isStatic) arrayPos -= 1;
 
             m.visitLdcInsn(reference.params.length + thisVarOffset);
-            m.visitTypeInsn(ANEWARRAY, Type.getInternalName(LuaValue.class));
+            m.visitTypeInsn(ANEWARRAY, Owners.LUA_VALUE);
             m.visitVarInsn(ASTORE, arrayPos);
 
             if (!isStatic) {
                 String eClass = fields.storeAndGetComplex(m, EClass::fromJava, EClass.class, className); // thisEClass
-                m.visitMethodInsn(INVOKESTATIC, Type.getInternalName(PrivateUserdataFactory.class), "from", "(Lme/basiqueevangelist/enhancedreflection/api/EClass;)Ldev/hugeblank/allium/loader/type/userdata/PrivateUserdataFactory;", false); // privateUDF
+                m.visitMethodInsn(INVOKESTATIC, Owners.PRIVATE_USERDATA_FACTORY, "from", "(Lme/basiqueevangelist/enhancedreflection/api/EClass;)Ldev/hugeblank/allium/loader/type/userdata/PrivateUserdataFactory;", false); // privateUDF
                 m.visitVarInsn(ALOAD, 0); // privateUDF, this
-                m.visitMethodInsn(INVOKEVIRTUAL, Type.getInternalName(PrivateUserdataFactory.class), "create", "(Ljava/lang/Object;)Ldev/hugeblank/allium/loader/type/userdata/PrivateUserdata;", false); // privateLuaValue
+                m.visitMethodInsn(INVOKEVIRTUAL, Owners.PRIVATE_USERDATA_FACTORY, "create", "(Ljava/lang/Object;)Ldev/hugeblank/allium/loader/type/userdata/PrivateUserdata;", false); // privateLuaValue
                 m.visitVarInsn(ASTORE, arrayPos+1); //
                 fields.get(m, eClass, EClass.class); // thisEClass
-                m.visitMethodInsn(INVOKESTATIC, Type.getInternalName(SuperUserdataFactory.class), "from", "(Lme/basiqueevangelist/enhancedreflection/api/EClass;)Ldev/hugeblank/allium/loader/type/userdata/SuperUserdataFactory;", false); // superUDF
+                m.visitMethodInsn(INVOKESTATIC, Owners.SUPER_USERDATA_FACTORY, "from", "(Lme/basiqueevangelist/enhancedreflection/api/EClass;)Ldev/hugeblank/allium/loader/type/userdata/SuperUserdataFactory;", false); // superUDF
                 m.visitVarInsn(ALOAD, 0); // superUDF, this
-                m.visitMethodInsn(INVOKEVIRTUAL, Type.getInternalName(SuperUserdataFactory.class), "create", "(Ljava/lang/Object;)Ldev/hugeblank/allium/loader/type/userdata/SuperUserdata;", false); // superLuaValue
-                m.visitTypeInsn(CHECKCAST, Type.getInternalName(SuperUserdata.class));
+                m.visitMethodInsn(INVOKEVIRTUAL, Owners.SUPER_USERDATA_FACTORY, "create", "(Ljava/lang/Object;)Ldev/hugeblank/allium/loader/type/userdata/SuperUserdata;", false); // superLuaValue
+                m.visitTypeInsn(CHECKCAST, Owners.SUPER_USERDATA);
                 m.visitVarInsn(ALOAD, arrayPos+1); // superLuaValue, privateLuaValue
-                m.visitTypeInsn(CHECKCAST, Type.getInternalName(PrivateUserdata.class));
+                m.visitTypeInsn(CHECKCAST, Owners.PRIVATE_USERDATA);
                 m.visitInsn(SWAP); // privateLuaValue, superLuaValue
-                m.visitMethodInsn(INVOKEVIRTUAL, Type.getInternalName(PrivateUserdata.class), "applySuperInstance", "(Ldev/hugeblank/allium/loader/type/userdata/SuperUserdata;)V", false); //
+                m.visitMethodInsn(INVOKEVIRTUAL, Owners.PRIVATE_USERDATA, "applySuperInstance", "(Ldev/hugeblank/allium/loader/type/userdata/SuperUserdata;)V", false); //
 
                 m.visitVarInsn(ALOAD, arrayPos); // array
                 m.visitLdcInsn(0); // array, 0
@@ -235,7 +276,7 @@ public class ClassBuilder extends AbstractClassBuilder {
                 }
 
                 fields.storeAndGet(m, reference.params[i].real.wrapPrimitive(), EClass.class);
-                m.visitMethodInsn(INVOKESTATIC, Type.getInternalName(TypeCoercions.class), "toLuaValue", "(Ljava/lang/Object;Lme/basiqueevangelist/enhancedreflection/api/EClass;)Lorg/squiddev/cobalt/LuaValue;", false);
+                m.visitMethodInsn(INVOKESTATIC, Owners.TYPE_COERCIONS, "toLuaValue", "(Ljava/lang/Object;Lme/basiqueevangelist/enhancedreflection/api/EClass;)Lorg/squiddev/cobalt/LuaValue;", false);
                 m.visitInsn(AASTORE);
 
                 argIndex += args[i].getSize();
@@ -247,13 +288,13 @@ public class ClassBuilder extends AbstractClassBuilder {
             if (!isVoid) m.visitInsn(DUP); // state, state?
             fields.storeAndGet(m, func, LuaFunction.class); // state, state?, function
             m.visitVarInsn(ALOAD, arrayPos); // state, state, function, luavalue[]
-            m.visitMethodInsn(INVOKESTATIC, Type.getInternalName(ValueFactory.class), "varargsOf", "([Lorg/squiddev/cobalt/LuaValue;)Lorg/squiddev/cobalt/Varargs;", false); // state, state?, function, varargs
-            m.visitMethodInsn(INVOKESTATIC, Type.getInternalName(Dispatch.class), "invoke", "(Lorg/squiddev/cobalt/LuaState;Lorg/squiddev/cobalt/LuaValue;Lorg/squiddev/cobalt/Varargs;)Lorg/squiddev/cobalt/Varargs;", false); // state?, varargs
+            m.visitMethodInsn(INVOKESTATIC, Owners.VALUE_FACTORY, "varargsOf", "([Lorg/squiddev/cobalt/LuaValue;)Lorg/squiddev/cobalt/Varargs;", false); // state, state?, function, varargs
+            m.visitMethodInsn(INVOKESTATIC, Owners.DISPATCH, "invoke", "(Lorg/squiddev/cobalt/LuaState;Lorg/squiddev/cobalt/LuaValue;Lorg/squiddev/cobalt/Varargs;)Lorg/squiddev/cobalt/Varargs;", false); // state?, varargs
 
             if (!isVoid) {
-                m.visitMethodInsn(INVOKEVIRTUAL, Type.getInternalName(Varargs.class), "first", "()Lorg/squiddev/cobalt/LuaValue;", false); // state? luavalue
+                m.visitMethodInsn(INVOKEVIRTUAL, Owners.VARARGS, "first", "()Lorg/squiddev/cobalt/LuaValue;", false); // state? luavalue
                 fields.storeAndGet(m, reference.returns.real.wrapPrimitive(), EClass.class); // state?, luavalue, eclass
-                m.visitMethodInsn(INVOKESTATIC, Type.getInternalName(TypeCoercions.class), "toJava", "(Lorg/squiddev/cobalt/LuaState;Lorg/squiddev/cobalt/LuaValue;Lme/basiqueevangelist/enhancedreflection/api/EClass;)Ljava/lang/Object;", false); // object
+                m.visitMethodInsn(INVOKESTATIC, Owners.TYPE_COERCIONS, "toJava", "(Lorg/squiddev/cobalt/LuaState;Lorg/squiddev/cobalt/LuaValue;Lme/basiqueevangelist/enhancedreflection/api/EClass;)Ljava/lang/Object;", false); // object
                 m.visitTypeInsn(CHECKCAST, Type.getInternalName(reference.returns.real.wrapPrimitive().raw())); // object(return type)
 
                 if (returnType.getSort() != Type.ARRAY && returnType.getSort() != Type.OBJECT) {
@@ -271,7 +312,22 @@ public class ClassBuilder extends AbstractClassBuilder {
 
     @LuaWrapped
     public LuaValue build() {
+        Pair<List<FieldDefinition>, List<FieldDefinition>> pair = new Pair<>(new ArrayList<>(), new ArrayList<>());
+        FIELD_REFERENCES.put(className, pair);
+        if (!classFields.isEmpty()) {
+            MethodVisitor clinit = c.visitMethod(ACC_STATIC, "<clinit>", "()V", null, null);
+            clinit.visitCode();
+
+            applyFieldDefs(classFields, pair, clinit, true);
+
+            clinit.visitInsn(RETURN);
+            clinit.visitMaxs(0, 0);
+            clinit.visitEnd();
+        }
+
         if (!parentClass.constructors().isEmpty()) {
+            FIELD_REFERENCES.computeIfAbsent(className, (_) -> new Pair<>(new ArrayList<>(), new ArrayList<>()));
+
             while (!ctorReferences.isEmpty()) {
                 ConstructorReference reference = ctorReferences.remove();
 
@@ -287,10 +343,10 @@ public class ClassBuilder extends AbstractClassBuilder {
 
                 EConstructor<?> superCtor = reference.ctor;
 
-                var desc = Type.getConstructorDescriptor(superCtor.raw());
-                var m = c.visitMethod(superCtor.modifiers(), "<init>", desc, null, null);
+                String desc = Type.getConstructorDescriptor(superCtor.raw());
+                MethodVisitor m = c.visitMethod(superCtor.modifiers(), "<init>", desc, null, null);
                 m.visitCode();
-                var args = Type.getArgumentTypes(desc);
+                Type[] args = Type.getArgumentTypes(desc);
 
                 m.visitVarInsn(ALOAD, 0);
 
@@ -303,6 +359,8 @@ public class ClassBuilder extends AbstractClassBuilder {
                 }
 
                 m.visitMethodInsn(INVOKESPECIAL, Type.getInternalName(parentClass.raw()), "<init>", desc, false);
+
+                if (reference.definesFields()) applyFieldDefs(instanceFields, pair, m, false);
 
                 m.visitInsn(RETURN);
 
@@ -336,6 +394,48 @@ public class ClassBuilder extends AbstractClassBuilder {
         return StaticBinder.bindClass(EClass.fromJava(klass));
     }
 
+    private void applyFieldDefs(List<FieldReference> fieldReferences, Pair<List<FieldDefinition>, List<FieldDefinition>> pair, MethodVisitor m, boolean isStatic) {
+        List<FieldDefinition> definitions = isStatic ? pair.left() : pair.right();
+        for (FieldReference fieldReference : fieldReferences) {
+            Class<?> rawType = fieldReference.type.raw();
+            int pos = definitions.size();
+            definitions.add(fieldReference.definition());
+            m.visitFieldInsn(GETSTATIC, Owners.CLASS_BUILDER, "FIELD_REFERENCES", Type.getDescriptor(Map.class)); // <- map
+            m.visitLdcInsn(className); // map <- className
+            m.visitMethodInsn(INVOKEINTERFACE, Owners.MAP, "get", "(Ljava/lang/Object;)Ljava/lang/Object;", true); // -> map, className <- pair
+            m.visitTypeInsn(CHECKCAST, Owners.PAIR); // cast
+            m.visitMethodInsn(INVOKEVIRTUAL, Owners.PAIR, isStatic ? "left" : "right", "()Ljava/lang/Object;", false); // -> pair <- list
+            m.visitTypeInsn(CHECKCAST, Owners.LIST); // cast
+            m.visitLdcInsn(pos); // list <- pos
+            m.visitMethodInsn(INVOKEINTERFACE, Owners.LIST, "get", "(I)Ljava/lang/Object;", true); // <- definition -> list, pos
+            m.visitTypeInsn(CHECKCAST, "dev/hugeblank/allium/loader/lib/builder/ClassBuilder$FieldDefinition"); // cast
+            m.visitLdcInsn(Type.getType("L" + className + ";")); // definition <- class
+            m.visitMethodInsn(INVOKESTATIC, Owners.ECLASS, "fromJava", "(Ljava/lang/Class;)Lme/basiqueevangelist/enhancedreflection/api/EClass;", true); // definition <-> classEClass
+
+            if (isStatic) {
+                m.visitMethodInsn(INVOKESTATIC, Owners.STATIC_BINDER, "bindClass", "(Lme/basiqueevangelist/enhancedreflection/api/EClass;)Ldev/hugeblank/allium/loader/type/userdata/ClassUserdata;", false); // definition <-> userdata
+            } else {
+                m.visitMethodInsn(INVOKESTATIC, Owners.INSTANCE_USERDATA_FACTORY, "from", "(Lme/basiqueevangelist/enhancedreflection/api/EClass;)Ldev/hugeblank/allium/loader/type/userdata/InstanceUserdataFactory;", false); // definition <-> thisUserdataFactory
+                m.visitVarInsn(ALOAD, 0); // definition, thisUserdataFactory <- this
+                m.visitMethodInsn(INVOKEVIRTUAL, Owners.INSTANCE_USERDATA_FACTORY, "create", "(Ljava/lang/Object;)Ldev/hugeblank/allium/loader/type/userdata/InstanceUserdata;", false); // definition -> thisUserdataFactory, this <- userdata
+            }
+
+            m.visitMethodInsn(INVOKEINTERFACE, "dev/hugeblank/allium/loader/lib/builder/ClassBuilder$FieldDefinition", "apply", "(Lorg/squiddev/cobalt/LuaUserdata;)Ljava/lang/Object;", true); //  -> definition, userdata <- fieldObject
+            m.visitTypeInsn(CHECKCAST, Type.getInternalName(fieldReference.type().wrapPrimitive().raw())); // cast
+            if (rawType.isPrimitive()) {
+                AsmUtil.unwrapPrimitive(m, Type.getType(rawType)); // <-> realFieldValue
+            }
+
+            if (isStatic) {
+                m.visitFieldInsn(PUTSTATIC, className, fieldReference.name(), Type.getDescriptor(rawType)); // -> realFieldValue
+            } else {
+                m.visitVarInsn(ALOAD, 0); // realFieldValue <- this
+                m.visitInsn(SWAP); // this, realFieldValue
+                m.visitFieldInsn(PUTFIELD, className, fieldReference.name(), Type.getDescriptor(fieldReference.type().raw())); // -> this, realFieldValue
+            }
+        }
+    }
+
     public String getName() {
         return this.className;
     }
@@ -346,11 +446,17 @@ public class ClassBuilder extends AbstractClassBuilder {
         }
     }
 
-    private record ConstructorReference(EConstructor<?> ctor, WrappedType[] params, int access) {
+    private record ConstructorReference(EConstructor<?> ctor, WrappedType[] params, int access, boolean definesFields) {
         public MethodReference toMethodReference() {
             return new MethodReference("<init>", params, new WrappedType(VOID, VOID), access);
         }
     }
+
+    public interface FieldDefinition {
+        Object apply(LuaUserdata luaUserdata) throws LuaError, UnwindThrowable, InvalidArgumentException;
+    }
+
+    private record FieldReference(String name, EClass<?> type, FieldDefinition definition, int access) {}
 
     private record MethodReference(String name, WrappedType[] params, WrappedType returns, int access) {}
 }

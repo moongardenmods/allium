@@ -8,6 +8,7 @@ import dev.hugeblank.allium.loader.mixin.builder.MixinParameter;
 import dev.hugeblank.allium.loader.type.exception.InvalidArgumentException;
 import dev.hugeblank.allium.loader.type.exception.InvalidMixinException;
 import dev.hugeblank.allium.util.asm.AsmUtil;
+import dev.hugeblank.allium.util.asm.Owners;
 import dev.hugeblank.allium.util.asm.VisitedClass;
 import dev.hugeblank.allium.util.asm.VisitedMethod;
 import org.objectweb.asm.Type;
@@ -66,7 +67,7 @@ public abstract class LuaInjectorAnnotation extends LuaMethodAnnotation implemen
                 visitor.visitVarInsn(arg.getOpcode(ILOAD), index); // <- 2
                 AsmUtil.wrapPrimitive(visitor, arg); // <- 2 | -> 2 (sometimes)
                 if (index == 0) {
-                    visitor.visitTypeInsn(CHECKCAST, Type.getInternalName(Object.class)); // <- 2 | -> 2
+                    visitor.visitTypeInsn(CHECKCAST, Owners.OBJECT); // <- 2 | -> 2
                 }
             }); // <- 1
             methodVisitor.visitMethodInsn(
