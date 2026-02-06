@@ -2,7 +2,7 @@ package dev.hugeblank.allium.loader.lib.builder;
 
 import org.objectweb.asm.ClassWriter;
 
-import static org.objectweb.asm.Opcodes.V17;
+import static org.objectweb.asm.Opcodes.V25;
 
 public class AbstractClassBuilder {
     protected final String superClass;
@@ -14,6 +14,6 @@ public class AbstractClassBuilder {
         this.superClass = superClass;
         this.className = className;
         this.access = access;
-        this.c.visit(V17, access, className, signature, superClass, interfaces);
+        this.c.visit(V25, access, className, signature, superClass, interfaces);
     }
 }

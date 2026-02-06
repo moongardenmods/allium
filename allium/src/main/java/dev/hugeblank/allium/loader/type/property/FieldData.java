@@ -1,5 +1,6 @@
 package dev.hugeblank.allium.loader.type.property;
 
+import dev.hugeblank.allium.loader.lib.builder.ClassBuilder;
 import dev.hugeblank.allium.loader.type.coercion.TypeCoercions;
 import dev.hugeblank.allium.loader.type.exception.InvalidArgumentException;
 import me.basiqueevangelist.enhancedreflection.api.EField;
@@ -7,10 +8,7 @@ import org.squiddev.cobalt.LuaError;
 import org.squiddev.cobalt.LuaState;
 import org.squiddev.cobalt.LuaValue;
 
-import java.lang.invoke.MethodHandles;
 import java.lang.invoke.VarHandle;
-import java.lang.reflect.Member;
-import java.util.Objects;
 
 public final class FieldData<I> implements PropertyData<I> {
     private final EField field;
@@ -29,6 +27,14 @@ public final class FieldData<I> implements PropertyData<I> {
     @Override
     public void set(String name, LuaState state, I instance, LuaValue value) throws LuaError {
         if (field.isFinal()) {
+            if (ClassBuilder.hasInstanceFieldHooks(instance)) {
+                try {
+                    ClassBuilder.setInstanceFieldHooks(instance, name, TypeCoercions.toJava(state, value, field.rawFieldType()));
+                    return;
+                } catch (InvalidArgumentException e) {
+                    throw new LuaError(e);
+                }
+            }
             PropertyData.super.set(name, state, instance, value);
             return;
         }

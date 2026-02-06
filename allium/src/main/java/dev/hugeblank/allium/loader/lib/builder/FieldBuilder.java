@@ -40,6 +40,12 @@ public class FieldBuilder extends AbstractFieldBuilder {
     }
 
     public <T> String storeComplex(Function<Class<?>, T> supplier, Class<T> fieldType, String description) {
+        for (var entry : complexFields.entrySet()) {
+            if (supplier == entry.getValue().left() && fieldType.equals(entry.getValue().right())) {
+                return entry.getKey();
+            }
+        }
+
         String fieldName = "allium$field" + fieldIndex++;
 
         var f = c.visitField(ACC_PRIVATE | ACC_STATIC, fieldName, Type.getDescriptor(fieldType), null, null);
@@ -63,7 +69,15 @@ public class FieldBuilder extends AbstractFieldBuilder {
         return field;
     }
 
-    public void get(MethodVisitor m, String fieldName, Class<?> type) {
+    public void get(MethodVisitor m, String fieldName) {
+        Class<?> type;
+        if (storedFields.containsKey(fieldName)) {
+            type = storedFields.get(fieldName).right();
+        } else if (complexFields.containsKey(fieldName)) {
+            type = complexFields.get(fieldName).right();
+        } else {
+            throw new RuntimeException("Failed to get type of " + fieldName);
+        }
         m.visitFieldInsn(GETSTATIC, className, fieldName, Type.getDescriptor(type));
     }
 

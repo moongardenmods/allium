@@ -32,6 +32,7 @@ public class Owners {
     public static final String STATIC_BINDER = Type.getInternalName(StaticBinder.class);
     public static final String TYPE_COERCIONS = Type.getInternalName(TypeCoercions.class);
     public static final String CLASS_BUILDER = Type.getInternalName(ClassBuilder.class);
+    public static final String FIELD_HOLDER = Type.getInternalName(ClassBuilder.FieldHolder.class);
     // Cobalt
     public static final String LUA_VALUE = Type.getInternalName(LuaValue.class);
     public static final String VARARGS = Type.getInternalName(Varargs.class);

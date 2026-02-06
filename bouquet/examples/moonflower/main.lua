@@ -38,12 +38,12 @@ end
 
 local builder = java.extendClass(FlowerBlock)
 
-builder:constructor({Holder, java.float, BlockBehaviourProperties})
+builder:constructor(builder:usingSuper({Holder, java.float, BlockBehaviourProperties}), nil, nil)
 -- If defining a constructor that matches one in the parent class, a constructor function definition is optional.
 
 builder:override("onPlace", {BlockState, Level, BlockPos, BlockState, java.boolean})
-function builder:onPlace(this, state, level, pos, oldState, movedByPiston)
-    --print(tostring(this), tostring(state), tostring(level), tostring(pos), tostring(oldState), movedByPiston)
+function builder:onPlace(state, level, pos, oldState, movedByPiston)
+    --print(tostring(self), tostring(state), tostring(level), tostring(pos), tostring(oldState), movedByPiston)
 end
 
 local MoonFlowerBlock = builder:build()
