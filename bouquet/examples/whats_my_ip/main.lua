@@ -9,7 +9,7 @@ local Component = require("net.minecraft.network.chat.Component")
 
 bouquet.command.register(script, Commands.literal("whats_my_ip"):executes(function(context)
     local req = bouquet.http:request("https://httpbin.org/get")
-    local json = req:send():thenAccept(function(res)
+    req:send():thenAccept(function(res)
         local json = res.body:asJson()
         print(json)
         context:getSource():sendSuccess(function()

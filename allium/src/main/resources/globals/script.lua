@@ -19,13 +19,11 @@ function script:getName() end
 --- @return any
 function script:getModule() end
 
+--- Returns the scripts internal Lua state. Be careful, this exposes the script's globals.
+--- @return InstanceUserdata
+function script:getState() end
+
 --- Register a resource that can be closed at will, OR when the script gets unloaded or reloaded.
---- @param onClose function called when the resource is closed
+--- @param onClose function Function to be called when the resource is closed.
 --- @return ResourceRegistration
 function script:registerResource(onClose) end
-
----@class ResourceRegistration
-local ResourceRegistration = {}
-
---- Closes the registered resource
-function ResourceRegistration:close() end

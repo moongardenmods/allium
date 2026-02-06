@@ -53,7 +53,6 @@ public class ClassBuilder extends AbstractClassBuilder {
 
     private boolean definesValidConstructor = false;
 
-    @LuaWrapped
     public ClassBuilder(EClass<?> superClass, List<EClass<?>> interfaces, Map<String, Boolean> access, LuaState state) {
         super(
                 AsmUtil.getUniqueClassName(),
@@ -158,6 +157,9 @@ public class ClassBuilder extends AbstractClassBuilder {
 
     @LuaWrapped
     public void field(@LuaStateArg LuaState state, String fieldName, EClass<?> type, Map<String, Boolean> access, @OptionalArg LuaValue value) throws InvalidArgumentException, LuaError {
+        if (fieldName.startsWith("allium$")) {
+            throw new IllegalStateException("Fields that start with the allium$ ID prefix are not permitted in generated classes.");
+        }
         int intAccess = handleMethodAccess(access);
         FieldReference ref = new FieldReference(fieldName, type, intAccess);
         c.visitField(intAccess, fieldName, Type.getDescriptor(type.raw()), null, value == null || value == Constants.NIL ? null : TypeCoercions.toJava(state, value, type));
@@ -225,6 +227,7 @@ public class ClassBuilder extends AbstractClassBuilder {
     }
 
 
+    // TODO: If super class has no constructors, handler MAY be nil.
     @LuaWrapped
     public void constructor(ConstructorHandler handler, @OptionalArg List<EClass<?>> customParameters, @OptionalArg Map<String, Boolean> access) throws LuaError {
         constructor(handler, customParameters, access, false);
