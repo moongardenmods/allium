@@ -22,7 +22,7 @@ repositories {
 val rc = project.properties[project.name+"ReleaseCandidate"].toString()
 var v = project.properties[project.name+"Version"].toString()
 if ("0" != rc) {
-    v = "$v-rc$rc"
+    v = "$v-rc.$rc"
 }
 version = v
 group = project.properties["mavenGroup"].toString()
@@ -97,7 +97,7 @@ publishing {
             from(components["java"])
             groupId = group.toString()
             artifactId = base.archivesName.get()
-            version = version
+            version = project.version.toString()
         }
     }
 
