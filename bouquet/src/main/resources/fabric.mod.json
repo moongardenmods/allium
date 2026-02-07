@@ -16,10 +16,14 @@
   "environment": "*",
   "custom": {
     "allium": {
-      "entrypoints": {
-        "static": "bouquet/init.lua",
-        "mixin": "bouquet/mixin.lua"
-      }
+      "scripts": [
+        {
+          "entrypoints": {
+            "static": "bouquet/init.lua",
+            "mixin": "bouquet/mixin.lua"
+          }
+        }
+      ]
     }
   },
 	"mixins": [
