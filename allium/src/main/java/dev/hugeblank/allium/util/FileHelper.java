@@ -98,29 +98,49 @@ public class FileHelper {
             if (metadata.containsCustomValue(Allium.ID)) {
                 switch (metadata.getCustomValue(Allium.ID).getType()) {
                     case OBJECT -> {
-                        CustomValue.CvObject value = metadata.getCustomValue(Allium.ID).getAsObject();
-                        Manifest man = makeManifest( // Make a manifest using the default values, use optional args otherwise.
-                                value,
-                                metadata.getId(),
-                                metadata.getVersion().getFriendlyString(),
-                                metadata.getName()
-                        );
-                        if (!man.isComplete()) { // Make sure the manifest exists and has an entrypoint
-                            Allium.LOGGER.error("Could not read manifest from script with ID {}", metadata.getId());
-                            return;
+                        CustomValue.CvObject alliumObject = metadata.getCustomValue(Allium.ID).getAsObject();
+                        if (alliumObject.containsKey("scripts") && alliumObject.get("scripts").getType().equals(CustomValue.CvType.ARRAY)) {
+                            alliumObject.get("scripts").getAsArray().forEach((scriptObject) -> {
+                                if (scriptObject.getType().equals(CustomValue.CvType.OBJECT)) {
+                                Manifest man = makeManifest( // Make a manifest using the default values, use optional args otherwise.
+                                        scriptObject.getAsObject(),
+                                        metadata.getId(),
+                                        metadata.getVersion().getFriendlyString(),
+                                        metadata.getName()
+                                );
+                                if (!man.isComplete()) { // Make sure the manifest exists and has an entrypoint
+                                    Allium.LOGGER.error("Could not read manifest from script with ID {}", metadata.getId());
+                                    return;
+                                }
+                                if (man.entrypoints() != null) {
+                                    if (!man.entrypoints().valid()) {
+                                        Allium.LOGGER.error("Invalid entrypoints from script with ID {}", metadata.getId());
+                                        return;
+                                    }
+                                    Script.Reference ref = referenceFromContainer(man, container);
+                                    if (ref == null) {
+                                        Allium.LOGGER.error("Could not find entrypoints for script with ID {}", metadata.getId());
+                                        return;
+                                    }
+                                    out.add(ref);
+                                }
+                                }
+                            });
                         }
-                        if (man.entrypoints() != null) {
-                            if (!man.entrypoints().valid()) {
-                                Allium.LOGGER.error("Invalid entrypoints from script with ID {}", metadata.getId());
-                                return;
-                            }
-                            Script.Reference ref = referenceFromContainer(man, container);
-                            if (ref == null) {
-                                Allium.LOGGER.error("Could not find entrypoints for script with ID {}", metadata.getId());
-                                return;
-                            }
-                            out.add(ref);
+                        if (alliumObject.containsKey("paths") && alliumObject.get("paths").getType().equals(CustomValue.CvType.ARRAY)) {
+                            alliumObject.get("paths").getAsArray().forEach((pathsArray) -> {
+                                if (pathsArray.getType().equals(CustomValue.CvType.STRING)) {
+                                    String suffix = pathsArray.getAsString();
+                                    container.getRootPaths().forEach((path) -> {
+                                        if (Files.exists(path.resolve(suffix))) {
+                                            Set<Script.Reference> scripts = getValidDirScripts(path.resolve(suffix));
+                                            out.addAll(scripts);
+                                        }
+                                    });
+                                }
+                            });
                         }
+
                     }
                     case ARRAY -> {
                         CustomValue.CvArray value = metadata.getCustomValue(Allium.ID).getAsArray();
