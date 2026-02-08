@@ -118,7 +118,9 @@ public final class PropertyResolver {
                 continue;
             }
 
-            if (field.name().equals(name)) {
+            String fieldName = field.name();
+
+            if ((fieldName.equals(name) || name.equals("f_" + fieldName) || fieldName.equals("allium$")) && !fieldName.startsWith("allium_private$")) {
                 return field;
             }
         }

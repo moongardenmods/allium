@@ -28,7 +28,7 @@ public class FieldBuilder extends AbstractFieldBuilder {
             }
         }
 
-        String fieldName = "allium$field" + fieldIndex++;
+        String fieldName = "allium_private$field" + fieldIndex++;
 
         var f = c.visitField(ACC_PRIVATE | ACC_STATIC, fieldName, Type.getDescriptor(fieldType), null, null);
         var a = f.visitAnnotation(GeneratedFieldValue.DESCRIPTOR, true);
@@ -46,7 +46,7 @@ public class FieldBuilder extends AbstractFieldBuilder {
             }
         }
 
-        String fieldName = "allium$field" + fieldIndex++;
+        String fieldName = "allium_private$field" + fieldIndex++;
 
         var f = c.visitField(ACC_PRIVATE | ACC_STATIC, fieldName, Type.getDescriptor(fieldType), null, null);
         var a = f.visitAnnotation(GeneratedFieldValue.DESCRIPTOR, true);
