@@ -6,7 +6,8 @@ plugins {
 dependencies {
 	implementation("cc.tweaked:cobalt:${project.properties["cobalt"]}")
 	implementation("me.basiqueevangelist:enhanced-reflection:${project.properties["enhancedReflections"]}")
-    runtimeOnly("net.fabricmc.fabric-api:fabric-api:${project.properties["fabricApi"]}")
+
+    localRuntime("net.fabricmc.fabric-api:fabric-api:${project.properties["fabricApi"]}")
 
 	implementation(project(path = ":allium"))
 }
