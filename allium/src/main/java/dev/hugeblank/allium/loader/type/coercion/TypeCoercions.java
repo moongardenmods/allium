@@ -21,7 +21,7 @@ import java.util.function.Function;
 public class TypeCoercions {
     private static final Map<Class<?>, Function<EClass<?>, LuaToJavaConverter<?>>> FROM_LUA = new HashMap<>();
     private static final Map<Class<?>, BiFunction<Object, EClassUse<?>, JavaToLuaConverter<?>>> TO_LUA = new HashMap<>();
-    
+
     public static <T> void registerJavaToLua(Class<T> klass, JavaToLuaConverter<T> serializer) {
         if (TO_LUA.put(klass, (unused, ignored) -> serializer) != null)
             throw new IllegalStateException("Converter already registered for " + klass);
@@ -243,40 +243,22 @@ public class TypeCoercions {
         TypeCoercions.registerJavaToLua(boolean.class, ValueFactory::valueOf);
         TypeCoercions.registerJavaToLua(String.class, ValueFactory::valueOf);
 
-        TypeCoercions.registerComplexJavaToLua(List.class, (val, use) -> {
+        TypeCoercions.registerComplexJavaToLua(Collection.class, (_, use) -> {
             if (!use.hasAnnotation(CoerceToNative.class)) return null;
 
             EClassUse<?> componentUse = use.typeVariableValues().getFirst().upperBound();
 
             return list -> {
                 LuaTable table = new LuaTable();
-                int length = list.size();
-
-                for (int i = 0; i < length; i++) {
-                    table.rawset(i + 1, toLuaValue(list.get(i), componentUse));
-                }
-
-                return table;
-            };
-        });
-
-        TypeCoercions.registerComplexJavaToLua(Set.class, (val, use) -> {
-            if (!use.hasAnnotation(CoerceToNative.class)) return null;
-
-            EClassUse<?> componentUse = use.typeVariableValues().getFirst().upperBound();
-
-            return set -> {
-                LuaTable table = new LuaTable();
-                int i = 0;
-                for (Object o : set) {
-                    table.rawset(i + 1, toLuaValue(o, componentUse));
-                    i++;
+                int i = 1;
+                for (Object o : list) {
+                    table.rawset(i, toLuaValue(o, componentUse));
                 }
                 return table;
             };
         });
 
-        TypeCoercions.registerComplexJavaToLua(Map.class, (val, use) -> {
+        TypeCoercions.registerComplexJavaToLua(Map.class, (_, use) -> {
             if (!use.hasAnnotation(CoerceToNative.class)) return null;
 
             EClassUse<?> keyUse = use.typeVariableValues().get(0).upperBound();
@@ -300,70 +282,84 @@ public class TypeCoercions {
             };
         });
 
-        TypeCoercions.registerLuaToJava(boolean.class, (state, val) -> suppressError(val::checkBoolean));
-        TypeCoercions.registerLuaToJava(byte.class, (state, val) -> suppressError(() -> (byte)val.checkInteger()));
-        TypeCoercions.registerLuaToJava(short.class, (state, val) -> suppressError(() -> (short)val.checkInteger()));
-        TypeCoercions.registerLuaToJava(int.class, (state, val) -> suppressError(val::checkInteger));
-        TypeCoercions.registerLuaToJava(long.class, (state, val) -> suppressError(val::checkLong));
-        TypeCoercions.registerLuaToJava(float.class, (state, val) -> suppressError(() -> (float)val.checkDouble()));
-        TypeCoercions.registerLuaToJava(double.class, (state, val) -> suppressError(val::checkDouble));
-        TypeCoercions.registerLuaToJava(char.class, (state, val) -> suppressError(() -> (char)val.checkInteger()));
-        TypeCoercions.registerLuaToJava(Boolean.class, (state, val) -> suppressError(val::checkBoolean));
-        TypeCoercions.registerLuaToJava(Byte.class, (state, val) -> suppressError(() -> (byte)val.checkInteger()));
-        TypeCoercions.registerLuaToJava(Short.class, (state, val) -> suppressError(() -> (short)val.checkInteger()));
-        TypeCoercions.registerLuaToJava(Integer.class, (state, val) -> suppressError(val::checkInteger));
-        TypeCoercions.registerLuaToJava(Long.class, (state, val) -> suppressError(val::checkLong));
-        TypeCoercions.registerLuaToJava(Float.class, (state, val) -> suppressError(() -> (float)val.checkDouble()));
-        TypeCoercions.registerLuaToJava(Double.class, (state, val) -> suppressError(val::checkDouble));
-        TypeCoercions.registerLuaToJava(Character.class, (state, val) -> suppressError(() -> (char)val.checkInteger()));
-        TypeCoercions.registerLuaToJava(String.class, (state, val) -> suppressError(val::checkString));
+        TypeCoercions.registerLuaToJava(boolean.class, (_, val) -> suppressError(val::checkBoolean));
+        TypeCoercions.registerLuaToJava(byte.class, (_, val) -> suppressError(() -> (byte)val.checkInteger()));
+        TypeCoercions.registerLuaToJava(short.class, (_, val) -> suppressError(() -> (short)val.checkInteger()));
+        TypeCoercions.registerLuaToJava(int.class, (_, val) -> suppressError(val::checkInteger));
+        TypeCoercions.registerLuaToJava(long.class, (_, val) -> suppressError(val::checkLong));
+        TypeCoercions.registerLuaToJava(float.class, (_, val) -> suppressError(() -> (float)val.checkDouble()));
+        TypeCoercions.registerLuaToJava(double.class, (_, val) -> suppressError(val::checkDouble));
+        TypeCoercions.registerLuaToJava(char.class, (_, val) -> suppressError(() -> (char)val.checkInteger()));
+        TypeCoercions.registerLuaToJava(Boolean.class, (_, val) -> suppressError(val::checkBoolean));
+        TypeCoercions.registerLuaToJava(Byte.class, (_, val) -> suppressError(() -> (byte)val.checkInteger()));
+        TypeCoercions.registerLuaToJava(Short.class, (_, val) -> suppressError(() -> (short)val.checkInteger()));
+        TypeCoercions.registerLuaToJava(Integer.class, (_, val) -> suppressError(val::checkInteger));
+        TypeCoercions.registerLuaToJava(Long.class, (_, val) -> suppressError(val::checkLong));
+        TypeCoercions.registerLuaToJava(Float.class, (_, val) -> suppressError(() -> (float)val.checkDouble()));
+        TypeCoercions.registerLuaToJava(Double.class, (_, val) -> suppressError(val::checkDouble));
+        TypeCoercions.registerLuaToJava(Character.class, (_, val) -> suppressError(() -> {
+            if (val.isString()) {
+                return val.checkString().charAt(0);
+            } else {
+                return (char)val.checkInteger();
+            }
+        }));
+        TypeCoercions.registerLuaToJava(String.class, (_, val) -> suppressError(val::checkString));
 
-        TypeCoercions.registerLuaToJava(Class.class, (state, val) -> {
+        TypeCoercions.registerLuaToJava(Class.class, (_, val) -> {
             EClass<?> klass = JavaHelpers.asClass(val);
             if (klass == null) return null;
             else return klass.raw();
         });
 
-        TypeCoercions.registerLuaToJava(List.class, klass -> {
+        registerCollection(Collection.class, ArrayList::new);
+        registerCollection(SequencedCollection.class, ArrayList::new);
+        registerCollection(List.class, ArrayList::new);
+        registerCollection(Set.class, HashSet::new);
+        registerCollection(Queue.class, ArrayDeque::new);
+        registerCollection(Deque.class, ArrayDeque::new);
+        registerCollection(Vector.class, Vector::new);
+        registerCollection(Stack.class, (_) -> new Stack<>());
+
+
+        registerMap(Map.class, HashMap::new);
+        registerMap(SequencedMap.class, LinkedHashMap::new);
+        registerMap(SortedMap.class, (_) -> new TreeMap<>());
+        registerMap(NavigableMap.class, (_) -> new TreeMap<>());
+
+        // More collection and map types are welcome
+    }
+
+    static <U> void registerCollection(Class<U> clazz, Function<Integer, Collection<Object>> initializer) {
+        TypeCoercions.registerLuaToJava(clazz, klass -> {
             EClass<?> componentType = klass.typeVariableValues().getFirst().upperBound();
 
             return (state, value) -> {
                 LuaTable table = value.checkTable();
                 int length = table.length();
-                List<Object> list = new ArrayList<>(length);
+
+                Collection<Object> list = initializer.apply(length);
 
                 for (int i = 0; i < length; i++) {
                     list.add(TypeCoercions.toJava(state, table.rawget(i + 1), componentType));
                 }
 
-                return list;
+                //noinspection unchecked
+                return (U) list;
             };
         });
+    }
 
-        TypeCoercions.registerLuaToJava(Set.class, klass -> {
-            EClass<?> componentType = klass.typeVariableValues().getFirst().upperBound();
-
-            return (state, value) -> {
-                LuaTable table = value.checkTable();
-                int length = table.length();
-                Set<Object> set = new HashSet<>(length);
-
-                for (int i = 0; i < length; i++) {
-                    set.add(TypeCoercions.toJava(state, table.rawget(i + 1), componentType));
-                }
-
-                return set;
-            };
-        });
-
-        TypeCoercions.registerLuaToJava(Map.class, klass -> {
+    static <U> void registerMap(Class<U> clazz, Function<Integer, Map<Object, Object>> initializer) {
+        TypeCoercions.registerLuaToJava(clazz, klass -> {
+            if (!klass.raw().equals(Map.class)) return null; // Maybe eventually support other classes that inherit Map.
             EClass<?> keyType = klass.typeVariableValues().get(0).upperBound();
             EClass<?> valueType = klass.typeVariableValues().get(1).upperBound();
 
             return (state, value) -> {
                 LuaTable table = value.checkTable();
                 int length = table.length();
-                Map<Object, Object> map = new HashMap<>(length);
+                Map<Object, Object> map = initializer.apply(length);
 
                 LuaValue k = Constants.NIL;
                 while (true) {
@@ -375,7 +371,8 @@ public class TypeCoercions {
                     map.put(TypeCoercions.toJava(state, k, keyType), TypeCoercions.toJava(state, v, valueType));
                 }
 
-                return map;
+                //noinspection unchecked
+                return (U) map;
             };
         });
     }
@@ -385,6 +382,26 @@ public class TypeCoercions {
             return checkValue.get();
         } catch (LuaError ignored) {}
         return null;
+    }
+
+    private static <T extends Collection<Object>> LuaToJavaConverter<T> collectorConverter(Function<Integer, T> initializer, EClass<T> target) {
+        EClass<?> componentType = target.typeVariableValues().getFirst().upperBound();
+        return (state, value) -> {
+            LuaTable table = value.checkTable();
+            int length = table.length();
+
+            T list = initializer.apply(length);
+
+            for (int i = 0; i < length; i++) {
+                list.add(TypeCoercions.toJava(state, table.rawget(i + 1), componentType));
+            }
+
+            return list;
+        };
+    }
+
+    private interface Converter<T> {
+        LuaToJavaConverter<T> apply(Function<Integer, Collection<Object>> initializer, EClass<?> componentType);
     }
 
     private interface SupplierThrowsLuaError<T> {
