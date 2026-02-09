@@ -3,10 +3,7 @@ package dev.hugeblank.allium.loader.type;
 import dev.hugeblank.allium.loader.type.annotation.LuaIndex;
 import dev.hugeblank.allium.loader.type.coercion.TypeCoercions;
 import dev.hugeblank.allium.loader.type.exception.InvalidArgumentException;
-import dev.hugeblank.allium.loader.type.property.EmptyData;
-import dev.hugeblank.allium.loader.type.property.MemberFilter;
-import dev.hugeblank.allium.loader.type.property.PropertyData;
-import dev.hugeblank.allium.loader.type.property.PropertyResolver;
+import dev.hugeblank.allium.loader.type.property.*;
 import dev.hugeblank.allium.loader.type.userdata.ClassUserdata;
 import dev.hugeblank.allium.util.*;
 import me.basiqueevangelist.enhancedreflection.api.EClass;
@@ -41,14 +38,14 @@ public final class StaticBinder {
             if (arg2.isString()) {
                 String name = arg2.checkString();
 
-                if (name.equals("class")) {
-                    return TypeCoercions.toLuaValue(clazz.raw());
-                }
-
                 PropertyData<? super T> cachedProperty = cachedProperties.get(name);
 
                 if (cachedProperty == null) {
-                    cachedProperty = PropertyResolver.resolveProperty(clazz, name, candidates, filter);
+                    if (name.equals("class")) {
+                        cachedProperty = new CustomData<>(TypeCoercions.toLuaValue(clazz.raw()));
+                    } else {
+                        cachedProperty = PropertyResolver.resolveProperty(clazz, name, candidates, filter);
+                    }
 
                     cachedProperties.put(name, cachedProperty);
                 }
@@ -58,7 +55,7 @@ public final class StaticBinder {
             }
 
             EMethod indexImpl = clazz.methods().stream().filter(x -> x.isStatic() && x.hasAnnotation(LuaIndex.class)).findAny().orElse(null);
-            LuaValue output = MetatableUtils.getIndexMetamethod(clazz, indexImpl, state, arg1, arg2);
+            LuaValue output = MetatableUtils.getIndexMetamethod(clazz, indexImpl, state, ValueFactory.varargsOf(arg1, arg2));
             if (output != null) {
                 return output;
             }

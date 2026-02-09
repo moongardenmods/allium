@@ -3,10 +3,7 @@ package dev.hugeblank.allium.loader.type.userdata;
 import dev.hugeblank.allium.loader.type.annotation.LuaIndex;
 import dev.hugeblank.allium.loader.type.coercion.TypeCoercions;
 import dev.hugeblank.allium.loader.type.exception.InvalidArgumentException;
-import dev.hugeblank.allium.loader.type.property.EmptyData;
-import dev.hugeblank.allium.loader.type.property.MemberFilter;
-import dev.hugeblank.allium.loader.type.property.PropertyData;
-import dev.hugeblank.allium.loader.type.property.PropertyResolver;
+import dev.hugeblank.allium.loader.type.property.*;
 import dev.hugeblank.allium.util.*;
 import me.basiqueevangelist.enhancedreflection.api.EClass;
 import me.basiqueevangelist.enhancedreflection.api.EField;
@@ -18,7 +15,6 @@ import org.squiddev.cobalt.*;
 import org.squiddev.cobalt.function.VarArgFunction;
 
 import java.lang.annotation.Annotation;
-import java.lang.reflect.InvocationTargetException;
 import java.util.*;
 import java.util.function.Predicate;
 
@@ -138,19 +134,20 @@ public abstract class AbstractUserdataFactory<T, U extends InstanceUserdata<T>> 
             public LuaValue invoke(LuaState state, Varargs args) throws LuaError {
                 String name = args.arg(2).checkString();
 
-                if (name.equals("super") && args.arg(1) instanceof PrivateUserdata<?> instance) {
-                    return instance.superInstance();
-                }
-
                 PropertyData<? super T> cachedProperty = cachedProperties.get(name);
 
                 if (cachedProperty == null) {
-                    cachedProperty = PropertyResolver.resolveProperty(targetClass, name, candidates, filter);
+                    if (name.equals("super") && args.arg(1) instanceof PrivateUserdata<?> instance) {
+                        cachedProperty = new CustomData<>(instance.superInstance());
+                    } else {
+                        cachedProperty = PropertyResolver.resolveProperty(targetClass, name, candidates, filter);
+                    }
+
 
                     cachedProperties.put(name, cachedProperty);
                 }
                 if (cachedProperty == EmptyData.INSTANCE) {
-                    LuaValue output = MetatableUtils.getIndexMetamethod(targetClass, indexImpl, state, args.arg(1), args.arg(2));
+                    LuaValue output = MetatableUtils.getIndexMetamethod(targetClass, indexImpl, state, args);
                     if (output != null) {
                         return output;
                     }
@@ -174,26 +171,9 @@ public abstract class AbstractUserdataFactory<T, U extends InstanceUserdata<T>> 
                 }
 
                 if (cachedProperty == EmptyData.INSTANCE && newIndexImpl != null) {
-                    var parameters = newIndexImpl.parameters();
-                    try {
-                        var jargs = ArgumentUtils.toJavaArguments(state, args.subargs(2), 1, parameters, List.of());
-
-                        if (jargs.length == parameters.size()) {
-                            try {
-                                var instance = TypeCoercions.toJava(state, args.arg(1), targetClass);
-                                newIndexImpl.invoke(instance, jargs);
-                                return Constants.NIL;
-                            } catch (IllegalAccessException e) {
-                                throw new LuaError(e);
-                            } catch (InvocationTargetException e) {
-                                if (e.getTargetException() instanceof LuaError err)
-                                    throw err;
-
-                                throw new LuaError(e);
-                            }
-                        }
-                    } catch (InvalidArgumentException | IllegalArgumentException e) {
-                        // Continue.
+                    LuaValue output = MetatableUtils.getNewIndexMetamethod(targetClass, newIndexImpl, state, args);
+                    if (output != null) {
+                        return output;
                     }
                 }
                 cachedProperty.set(name, state, JavaHelpers.checkUserdata(args.arg(1), targetClass.raw()), args.arg(3));

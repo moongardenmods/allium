@@ -23,8 +23,10 @@ import java.util.Map;
 
 
 public class MetatableUtils {
-    public static <T> LuaValue getIndexMetamethod(EClass<T> clazz, @Nullable EMethod indexImpl, LuaState state, LuaValue table, LuaValue key) throws LuaError {
+    public static <T> LuaValue getIndexMetamethod(EClass<T> clazz, @Nullable EMethod indexImpl, LuaState state, Varargs args) throws LuaError {
         if (indexImpl != null) {
+            LuaValue table = args.arg(1);
+            LuaValue key = args.arg(2);
             var parameters = indexImpl.parameters();
             try {
                 var jargs = ArgumentUtils.toJavaArguments(state, key, 1, parameters, List.of());
@@ -106,5 +108,32 @@ public class MetatableUtils {
                 }
             };
         }));
+    }
+
+    public static <T> LuaValue getNewIndexMetamethod(EClass<T> clazz, @Nullable EMethod newIndexImpl, LuaState state, Varargs args) throws LuaError {
+        if (newIndexImpl != null) {
+            var parameters = newIndexImpl.parameters();
+            try {
+                var jargs = ArgumentUtils.toJavaArguments(state, args.subargs(2), 1, parameters, List.of());
+
+                if (jargs.length == parameters.size()) {
+                    try {
+                        var instance = TypeCoercions.toJava(state, args.arg(1), clazz);
+                        newIndexImpl.invoke(instance, jargs);
+                        return Constants.NIL;
+                    } catch (IllegalAccessException e) {
+                        throw new LuaError(e);
+                    } catch (InvocationTargetException e) {
+                        if (e.getTargetException() instanceof LuaError err)
+                            throw err;
+
+                        throw new LuaError(e);
+                    }
+                }
+            } catch (InvalidArgumentException | IllegalArgumentException e) {
+                // Continue.
+            }
+        }
+        return null;
     }
 }
