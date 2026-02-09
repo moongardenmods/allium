@@ -9,12 +9,14 @@ import me.basiqueevangelist.enhancedreflection.api.EClass;
 import me.basiqueevangelist.enhancedreflection.api.EField;
 import me.basiqueevangelist.enhancedreflection.api.EMember;
 import me.basiqueevangelist.enhancedreflection.api.EMethod;
+import me.basiqueevangelist.enhancedreflection.api.typeuse.EClassUse;
 import org.apache.commons.lang3.ArrayUtils;
 import org.jetbrains.annotations.Nullable;
 import org.squiddev.cobalt.*;
 import org.squiddev.cobalt.function.VarArgFunction;
 
 import java.lang.annotation.Annotation;
+import java.lang.reflect.InvocationTargetException;
 import java.util.*;
 import java.util.function.Predicate;
 
@@ -26,6 +28,7 @@ public abstract class AbstractUserdataFactory<T, U extends InstanceUserdata<T>> 
 
     protected final @Nullable EMethod indexImpl;
     protected final @Nullable EMethod newIndexImpl;
+    protected final @Nullable EMethod lenImpl;
     protected @Nullable LuaTable boundMetatable;
 
     protected final EClass<? super T> targetClass;
@@ -40,6 +43,7 @@ public abstract class AbstractUserdataFactory<T, U extends InstanceUserdata<T>> 
         this.clazz = clazz;
         this.indexImpl = tryFindOp(candidates.methods(), LuaIndex.class, 1, "get");
         this.newIndexImpl = tryFindOp(candidates.methods(), null, 2, "set", "put");
+        this.lenImpl = tryFindOp(candidates.methods(), null, 0, "size");
 
 
         this.metatable = createMetatable(false);
@@ -59,6 +63,7 @@ public abstract class AbstractUserdataFactory<T, U extends InstanceUserdata<T>> 
         EMethod method = null;
 
         if (annotation != null)
+
             method = methods
                     .stream()
                     .filter(x ->
@@ -114,6 +119,44 @@ public abstract class AbstractUserdataFactory<T, U extends InstanceUserdata<T>> 
         LuaTable metatable = new LuaTable();
 
         MetatableUtils.applyPairs(metatable, targetClass, cachedProperties, candidates, isBound, filter);
+
+        metatable.rawset("__len", new VarArgFunction() {
+            @Override
+            protected Varargs invoke(LuaState state, Varargs args) throws LuaError, UnwindThrowable {
+                if (lenImpl != null) {
+                    try {
+                        var instance = TypeCoercions.toJava(state, args.arg(1), targetClass);
+                        EClassUse<?> ret = lenImpl.returnTypeUse().upperBound();
+                        Object out = lenImpl.invoke(instance);
+                        // If out is null, we can assume the length is nil
+                        if (out == null) throw new InvalidArgumentException();
+                        return TypeCoercions.toLuaValue(out, ret);
+                    } catch (IllegalAccessException e) {
+                        throw new LuaError(e);
+                    } catch (InvocationTargetException e) {
+                        var target = e.getTargetException();
+                        if (target instanceof LuaError err) {
+                            throw err;
+                        } else if (target instanceof IndexOutOfBoundsException ignored) {
+                        } else {
+                            throw new LuaError(target);
+                        }
+                    } catch (InvalidArgumentException ignore) {}
+                }
+
+                PropertyData<? super T> cachedProperty = cachedProperties.get("length");
+
+                if (cachedProperty == EmptyData.INSTANCE) {
+                    cachedProperty = PropertyResolver.resolveProperty(targetClass, "length", candidates, filter);
+                    cachedProperties.put("length", cachedProperty);
+                }
+
+                LuaValue out = cachedProperty.get("length", state, JavaHelpers.checkUserdata(args.arg(1), targetClass.raw()), isBound);
+                if (!out.isNil()) return out;
+
+                throw new LuaError("attempt to get length of a " + args.arg(1).toString() + " value");
+            }
+        });
 
         metatable.rawset("__index", new VarArgFunction() {
 
