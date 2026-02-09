@@ -153,7 +153,7 @@ public class MixinClassBuilder extends AbstractClassBuilder {
             )));
 
             if (visitedField.needsInstance()) {
-                methodBuilder.code((classVisitor, visitor, desc, mparams) -> {
+                methodBuilder.code((visitor, _, _) -> {
                     AsmUtil.visitObjectDefinition(
                             visitor,
                             Type.getInternalName(UnsupportedOperationException.class),
@@ -197,7 +197,7 @@ public class MixinClassBuilder extends AbstractClassBuilder {
             )));
 
             if (visitedMethod.needsInstance()) {
-                methodBuilder.code((classVisitor, visitor, desc, mparams) -> {
+                methodBuilder.code((visitor, _, _) -> {
                     AsmUtil.visitObjectDefinition(visitor, Type.getInternalName(AssertionError.class), "()V").run();
                     visitor.visitInsn(ATHROW);
                     visitor.visitMaxs(0,0);

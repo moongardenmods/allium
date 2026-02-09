@@ -18,10 +18,11 @@ import org.squiddev.cobalt.LuaTable;
 
 import java.util.List;
 import java.util.Map;
+import java.util.regex.Matcher;
 
 import static org.objectweb.asm.Opcodes.*;
 
-public abstract class LuaInjectorAnnotation extends LuaMethodAnnotation implements InjectorChef{
+public abstract class LuaInjectorAnnotation extends LuaMethodAnnotation implements InjectorChef {
     private int methodIndex = 0;
 
     public LuaInjectorAnnotation(LuaState state, LuaTable annotationTable, Class<?> annotation) throws InvalidArgumentException, LuaError {
@@ -38,7 +39,9 @@ public abstract class LuaInjectorAnnotation extends LuaMethodAnnotation implemen
 
     protected static VisitedMethod getVisitedMethod(VisitedClass mixinClass, LuaAnnotationParser annotation) throws InvalidMixinException, LuaError {
         String descriptor = annotation.findElement("method", String.class);
-        // TODO: if the descriptor starts with the class name remove it!
+        String classType = mixinClass.getType().getDescriptor();
+        if (descriptor.startsWith(classType))
+            descriptor = descriptor.replaceFirst(Matcher.quoteReplacement(classType), "");
         if (!mixinClass.containsMethod(descriptor))
             throw new InvalidMixinException(InvalidMixinException.Type.INVALID_DESCRIPTOR, descriptor);
         return mixinClass.getMethod(descriptor);
@@ -46,7 +49,7 @@ public abstract class LuaInjectorAnnotation extends LuaMethodAnnotation implemen
 
     protected static MixinMethodBuilder.WriteFactory createInjectWriteFactory(String eventName) {
         final Type objectType = Type.getType(Object.class);
-        return (classWriter, methodVisitor, desc, paramTypes) -> {
+        return (methodVisitor, desc, paramTypes) -> {
             int varPrefix = paramTypes.size();
             Type returnType = Type.getReturnType(desc);
             List<Type> types = paramTypes.stream().map(MixinParameter::getType).toList();

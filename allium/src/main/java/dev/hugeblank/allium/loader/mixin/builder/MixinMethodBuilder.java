@@ -26,7 +26,6 @@ import java.util.List;
 
 import static org.objectweb.asm.Opcodes.ACC_STATIC;
 
-@SuppressWarnings("UnusedReturnValue")
 public class MixinMethodBuilder {
     private final ClassWriter classWriter;
     private final VisitedElement target;
@@ -66,6 +65,7 @@ public class MixinMethodBuilder {
         return this;
     }
 
+    @SuppressWarnings("UnusedReturnValue")
     public MixinMethodBuilder sugars(List<? extends LuaSugar> luaSugars) throws InvalidArgumentException {
         if (!luaSugars.isEmpty()) {
             for (LuaSugar ls : luaSugars) {
@@ -153,7 +153,7 @@ public class MixinMethodBuilder {
 
         if (code != null) {
             methodVisitor.visitCode();
-            code.write(classWriter, methodVisitor, descriptor, params);
+            code.write(methodVisitor, descriptor, params);
         }
 
         methodVisitor.visitEnd();
@@ -162,7 +162,7 @@ public class MixinMethodBuilder {
 
     @FunctionalInterface
     public interface WriteFactory {
-        void write(ClassWriter classWriter, MethodVisitor methodVisitor, String descriptor, List<MixinParameter> parameters);
+        void write(MethodVisitor methodVisitor, String descriptor, List<MixinParameter> parameters);
     }
 
 }

@@ -12,7 +12,6 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.util.List;
 
-@SuppressWarnings("ClassCanBeRecord")
 public class MixinParameter {
     private final Type type;
     private final List<LuaAnnotationParser> annotations;
