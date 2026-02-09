@@ -1,7 +1,6 @@
 package dev.hugeblank.allium.loader.lib;
 
 import dev.hugeblank.allium.Allium;
-import dev.hugeblank.allium.api.WrappedScriptLibrary;
 import dev.hugeblank.allium.loader.Entrypoint;
 import dev.hugeblank.allium.loader.Script;
 import dev.hugeblank.allium.loader.ScriptRegistry;

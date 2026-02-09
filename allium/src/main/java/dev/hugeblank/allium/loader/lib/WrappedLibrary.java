@@ -1,7 +1,5 @@
-package dev.hugeblank.allium.api;
+package dev.hugeblank.allium.loader.lib;
 
-
-import dev.hugeblank.allium.loader.lib.PackageLib;
 
 /**
  * Interface for lua libraries that take advantage of the LuaWrapped annotation

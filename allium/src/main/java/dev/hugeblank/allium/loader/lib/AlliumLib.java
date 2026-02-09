@@ -1,6 +1,5 @@
 package dev.hugeblank.allium.loader.lib;
 
-import dev.hugeblank.allium.api.WrappedLibrary;
 import dev.hugeblank.allium.loader.Script;
 import dev.hugeblank.allium.loader.ScriptRegistry;
 import dev.hugeblank.allium.loader.type.annotation.CoerceToNative;

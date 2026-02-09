@@ -28,7 +28,6 @@ public class ScriptExecutor extends EnvironmentManager {
     }
 
     public Varargs initialize() throws Throwable {
-        applyLibraries(script);
         if (entrypoint.has(Entrypoint.Type.STATIC) && entrypoint.has(Entrypoint.Type.DYNAMIC)) {
             Varargs out = execute(Entrypoint.Type.STATIC);
             execute(Entrypoint.Type.DYNAMIC);

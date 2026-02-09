@@ -1,9 +1,8 @@
 package dev.hugeblank.allium.loader;
 
 import dev.hugeblank.allium.Allium;
-import dev.hugeblank.allium.api.LibraryInitializer;
-import dev.hugeblank.allium.api.WrappedLibrary;
-import dev.hugeblank.allium.api.WrappedScriptLibrary;
+import dev.hugeblank.allium.loader.lib.WrappedLibrary;
+import dev.hugeblank.allium.loader.lib.WrappedScriptLibrary;
 import dev.hugeblank.allium.loader.lib.AlliumLib;
 import dev.hugeblank.allium.loader.lib.JavaLib;
 import dev.hugeblank.allium.loader.lib.MixinLib;
@@ -17,14 +16,8 @@ import org.squiddev.cobalt.function.LibFunction;
 import org.squiddev.cobalt.function.VarArgFunction;
 import org.squiddev.cobalt.lib.*;
 
-import java.util.HashSet;
-import java.util.Set;
-
 public class EnvironmentManager {
     protected final LuaState state;
-
-    private static final Set<LibraryInitializer> INITIALIZERS = new HashSet<>();
-    private static final Set<Class<? extends WrappedLibrary>> LIBRARIES = new HashSet<>();
 
     EnvironmentManager() {
         this.state = new LuaState();
@@ -56,11 +49,6 @@ public class EnvironmentManager {
         globals.rawset( "_HOST", ValueFactory.valueOf(Allium.ID + "_" + Allium.VERSION) );
     }
 
-    protected void applyLibraries(Script script) {
-        INITIALIZERS.forEach(initializer -> loadLibrary(script, state, initializer.init(script)));
-        LIBRARIES.forEach(library -> loadLibrary(script, state, library));
-    }
-
     private static void loadLibrary(Script script, LuaState state, WrappedScriptLibrary adder) {
         try {
             adder.add(state);
@@ -86,20 +74,6 @@ public class EnvironmentManager {
         }
     }
 
-
-    /// Register a lua library for scripts in the global table. Key in global table is provided by `name`
-    /// in the library class' LuaWrapped annotation.
-    ///
-    /// This specific method overload is for libraries that expect a `script` on instantiation.
-    public static void registerLibrary(LibraryInitializer initializer) {
-        INITIALIZERS.add(initializer);
-    }
-
-    /// Register a lua library for scripts in the global table. Key in global table is provided by `name`
-    /// in the library class' LuaWrapped annotation.
-    public static void registerLibrary(Class<? extends WrappedLibrary> library) {
-        LIBRARIES.add(library);
-    }
 
     private static final class PrintMethod extends VarArgFunction {
         private final Script script;

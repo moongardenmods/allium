@@ -1,4 +1,4 @@
-package dev.hugeblank.allium.api;
+package dev.hugeblank.allium.loader.lib;
 
 import dev.hugeblank.allium.loader.Script;
 import dev.hugeblank.allium.loader.type.annotation.LuaWrapped;

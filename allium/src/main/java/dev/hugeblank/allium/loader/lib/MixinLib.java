@@ -1,6 +1,5 @@
 package dev.hugeblank.allium.loader.lib;
 
-import dev.hugeblank.allium.api.WrappedScriptLibrary;
 import dev.hugeblank.allium.api.event.MixinMethodHook;
 import dev.hugeblank.allium.loader.Script;
 import dev.hugeblank.allium.loader.mixin.annotation.method.MixinMethodAnnotations;
