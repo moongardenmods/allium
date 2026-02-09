@@ -113,19 +113,6 @@ public abstract class AbstractUserdataFactory<T, U extends InstanceUserdata<T>> 
     protected LuaTable createMetatable(boolean isBound) {
         LuaTable metatable = new LuaTable();
 
-        metatable.rawset("__tostring", new VarArgFunction() {
-
-            @Override
-            public Varargs invoke(LuaState state, Varargs args) throws LuaError {
-                try {
-                    // TODO: Can this be reduced to `args.arg(1).toString()`?
-                    return TypeCoercions.toLuaValue(Objects.requireNonNull(TypeCoercions.toJava(state, args.arg(1), targetClass)).toString());
-                } catch (InvalidArgumentException e) {
-                    throw new LuaError(e);
-                }
-            }
-        });
-
         MetatableUtils.applyPairs(metatable, targetClass, cachedProperties, candidates, isBound, filter);
 
         metatable.rawset("__index", new VarArgFunction() {
@@ -142,7 +129,6 @@ public abstract class AbstractUserdataFactory<T, U extends InstanceUserdata<T>> 
                     } else {
                         cachedProperty = PropertyResolver.resolveProperty(targetClass, name, candidates, filter);
                     }
-
 
                     cachedProperties.put(name, cachedProperty);
                 }
