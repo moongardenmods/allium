@@ -1,7 +1,19 @@
 package dev.hugeblank.allium.loader.type.annotation;
 
-import java.lang.annotation.*;
+import dev.hugeblank.allium.loader.lib.JavaLib;
+import dev.hugeblank.allium.loader.type.MethodInvocationFunction;
+import org.squiddev.cobalt.LuaState;
+import org.squiddev.cobalt.Varargs;
 
+import java.lang.annotation.*;
+import java.util.List;
+
+/**
+ * Annotation that flags that the remaining arguments of a Lua invocation of this Java method should
+ * be put into an instance of {@link org.squiddev.cobalt.Varargs}.
+ *
+ * @see JavaLib#callWith(LuaState, MethodInvocationFunction, List, Varargs)
+ */
 @Target(ElementType.PARAMETER)
 @Retention(RetentionPolicy.RUNTIME)
 @Documented
