@@ -1,4 +1,4 @@
-package dev.hugeblank.allium.api.annotation;
+package dev.hugeblank.allium.api;
 
 import java.lang.annotation.*;
 
