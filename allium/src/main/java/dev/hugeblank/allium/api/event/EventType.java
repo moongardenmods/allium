@@ -2,7 +2,7 @@ package dev.hugeblank.allium.api.event;
 
 import dev.hugeblank.allium.api.ScriptResource;
 import dev.hugeblank.allium.loader.Script;
-import dev.hugeblank.allium.api.annotation.OptionalArg;
+import dev.hugeblank.allium.api.OptionalArg;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -28,7 +28,7 @@ public class EventType<T> {
             this.script = script;
 
             if (destroyOnUnload) {
-                this.registration = script.registerResource(this);
+                this.registration = script.registerReloadableResource(this);
             } else {
                 this.registration = null;
             }

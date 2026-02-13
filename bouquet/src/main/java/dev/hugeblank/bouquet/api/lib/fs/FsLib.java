@@ -1,9 +1,9 @@
 package dev.hugeblank.bouquet.api.lib.fs;
 
+import dev.hugeblank.allium.Allium;
+import dev.hugeblank.allium.api.CoerceToNative;
+import dev.hugeblank.allium.api.LuaWrapped;
 import dev.hugeblank.allium.loader.Script;
-import dev.hugeblank.allium.api.annotation.CoerceToNative;
-import dev.hugeblank.allium.api.annotation.LuaWrapped;
-import dev.hugeblank.allium.util.FileHelper;
 import org.squiddev.cobalt.LuaError;
 import org.squiddev.cobalt.LuaTable;
 import org.squiddev.cobalt.LuaValue;
@@ -30,7 +30,7 @@ public class FsLib {
     // Files cannot be created in mods/zips from what I can tell.
     @LuaWrapped
     public FsLib(Script script) {
-        this(script, FileHelper.PERSISTENCE_DIR.resolve(script.getID()));
+        this(script, Allium.PERSISTENCE_DIRECTORY.resolve(script.getID()));
     }
 
     public FsLib(Script script, Path root) {

@@ -10,16 +10,13 @@ import dev.hugeblank.allium.loader.lib.mixin.annotation.LuaAnnotationParser;
 import dev.hugeblank.allium.loader.lib.mixin.annotation.method.InjectorChef;
 import dev.hugeblank.allium.loader.lib.mixin.annotation.method.LuaMethodAnnotation;
 import dev.hugeblank.allium.loader.lib.mixin.annotation.sugar.LuaSugar;
-import dev.hugeblank.allium.api.annotation.LuaWrapped;
-import dev.hugeblank.allium.api.annotation.OptionalArg;
+import dev.hugeblank.allium.api.LuaWrapped;
+import dev.hugeblank.allium.api.OptionalArg;
 import dev.hugeblank.allium.loader.type.exception.InvalidArgumentException;
 import dev.hugeblank.allium.loader.type.exception.InvalidMixinException;
 import dev.hugeblank.allium.util.MixinConfigUtil;
 import dev.hugeblank.allium.util.Registry;
-import dev.hugeblank.allium.util.asm.AsmUtil;
-import dev.hugeblank.allium.util.asm.VisitedClass;
-import dev.hugeblank.allium.util.asm.VisitedField;
-import dev.hugeblank.allium.util.asm.VisitedMethod;
+import dev.hugeblank.allium.util.asm.*;
 import me.basiqueevangelist.enhancedreflection.api.EClass;
 import net.fabricmc.api.EnvType;
 import org.jetbrains.annotations.Nullable;
@@ -56,27 +53,30 @@ public class MixinClassBuilder extends AbstractClassBuilder {
     private final boolean duck;
     private final VisitedClass visitedClass;
     private final Script script;
+    private final MixinConfigUtil config;
 
-    public static MixinClassBuilder create(String target, String[] interfaces, @Nullable EnvType targetEnvironment, boolean duck, Script script) throws LuaError {
-        checkPhase();
+    public static MixinClassBuilder create(String target, String[] interfaces, @Nullable EnvType targetEnvironment, boolean duck, Script script, MixinConfigUtil config) throws LuaError {
+        if (config.isComplete()) throw new IllegalStateException("Mixins cannot be created outside of preLaunch phase.");
         return new MixinClassBuilder(
-                VisitedClass.ofClass(target),
-                interfaces,
-                targetEnvironment,
-                duck,
-                script
+            VisitedClass.ofClass(target),
+            interfaces,
+            targetEnvironment,
+            duck,
+            script,
+            config
         );
     }
 
-    private MixinClassBuilder(VisitedClass visitedClass, String[] interfaces, @Nullable EnvType targetEnvironment, boolean duck, Script script) {
+    private MixinClassBuilder(VisitedClass visitedClass, String[] interfaces, @Nullable EnvType targetEnvironment, boolean duck, Script script, MixinConfigUtil config) {
         super(
-                AsmUtil.getUniqueMixinClassName(),
-                EClass.fromJava(Object.class).name().replace('.', '/'),
-                interfaces,
-                ACC_PUBLIC | (duck ? ACC_ABSTRACT | ACC_INTERFACE : 0) | visitedClass.access(),
-                visitedClass.signature()
+            config.getUniqueMixinClassName(),
+            EClass.fromJava(Object.class).name().replace('.', '/'),
+            interfaces,
+            ACC_PUBLIC | (duck ? ACC_ABSTRACT | ACC_INTERFACE : 0) | visitedClass.access(),
+            visitedClass.signature()
         );
         Allium.PROFILER.push(script.getID(), "mixin", visitedClass.name());
+        this.config = config;
         this.script = script;
         this.targetEnvironment = targetEnvironment;
         this.duck = duck;
@@ -230,14 +230,14 @@ public class MixinClassBuilder extends AbstractClassBuilder {
     }
 
 
-    private static void checkPhase() {
-        if (MixinConfigUtil.isComplete())
+    private void checkPhase() {
+        if (config.isComplete())
             throw new IllegalStateException("Mixins cannot be created outside of preLaunch phase.");
     }
 
     @LuaWrapped
     public void build(@OptionalArg String id) throws LuaError {
-        if (!duck) {
+        if (!duck && script.getManifest().hasMainAlliumEntrypoint()) {
             // In case the class being mixed into loads, we initialize the script so it has a chance to hook before anything else runs.
             MethodVisitor clinit = c.visitMethod(ACC_PRIVATE|ACC_STATIC, "clinit", "(Lorg/spongepowered/asm/mixin/injection/callback/CallbackInfo;)V", null, null);
             AnnotationVisitor inject = clinit.visitAnnotation(Type.getDescriptor(Inject.class), true);
@@ -251,12 +251,9 @@ public class MixinClassBuilder extends AbstractClassBuilder {
             atArray.visitEnd();
             inject.visitEnd();
             clinit.visitCode();
-            clinit.visitMethodInsn(INVOKESTATIC, Type.getInternalName(ScriptRegistry.class), "getInstance", "()Ldev/hugeblank/allium/loader/ScriptRegistry;", false);
-            clinit.visitLdcInsn(script.getID());
-            clinit.visitMethodInsn(INVOKEVIRTUAL, Type.getInternalName(Registry.class), "get", "(Ljava/lang/String;)Ldev/hugeblank/allium/util/Identifiable;", false);
-            String scriptName = Type.getInternalName(Script.class);
-            clinit.visitTypeInsn(CHECKCAST, scriptName);
-            clinit.visitMethodInsn(INVOKEVIRTUAL, scriptName, "initialize", "()V", false);
+            AsmUtil.getScript(clinit, script);
+            clinit.visitLdcInsn(script.getManifest().getMainAlliumEntrypoint());
+            clinit.visitMethodInsn(INVOKEVIRTUAL, Owners.SCRIPT, "initialize", "(Ljava/lang/String;)V", false);
             clinit.visitInsn(RETURN);
             clinit.visitEnd();
         }
@@ -270,14 +267,10 @@ public class MixinClassBuilder extends AbstractClassBuilder {
 
         if (duck) {
             if (id == null) throw new LuaError("Missing 'id' parameter for duck mixin on " + className);
-            MixinLib.DUCK_MAP.put(script.getID() + ':' + id, className);
+            script.getExecutor().getMixinLib().addDuck(script.getID() + ':' + id, className);
         }
 
-        List<MixinClassInfo> envList = (targetEnvironment == null) ? MIXINS : switch (targetEnvironment) {
-            case SERVER -> SERVER;
-            case CLIENT -> CLIENT;
-        };
-        envList.add(info);
+        script.getExecutor().getMixinLib().registerMixin(info, targetEnvironment);
     }
 
 }

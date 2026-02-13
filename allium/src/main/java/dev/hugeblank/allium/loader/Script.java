@@ -2,7 +2,7 @@ package dev.hugeblank.allium.loader;
 
 import dev.hugeblank.allium.Allium;
 import dev.hugeblank.allium.api.ScriptResource;
-import dev.hugeblank.allium.api.annotation.LuaWrapped;
+import dev.hugeblank.allium.api.LuaWrapped;
 import dev.hugeblank.allium.util.Identifiable;
 import dev.hugeblank.allium.util.MixinConfigUtil;
 import org.slf4j.Logger;
@@ -16,6 +16,7 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.Set;
 import java.util.WeakHashMap;
 
@@ -26,30 +27,35 @@ public class Script implements Identifiable {
     private final Path path;
     private final Logger logger;
     private final ScriptExecutor executor;
-    // Whether this script was able to execute (isolated by environment)
-    private State initialized = State.UNINITIALIZED;
+    private final Set<Script> dependencies = new HashSet<>();
     // Resources are stored in a weak set so that if a resource is abandoned, it gets destroyed.
     private final Set<ScriptResource> resources = Collections.newSetFromMap(new WeakHashMap<>());
+    private final Set<Runnable> reloadable = new HashSet<>();
+
+    // Whether this script was able to execute (isolated by environment)
+    private State initialized = State.UNINITIALIZED;
     private boolean destroyingResources = false;
 
     protected LuaValue module;
 
-    public Script(Reference reference) {
-        this.manifest = reference.manifest();
+    public Script(Manifest manifest, Path path) {
+        this.manifest = manifest;
         Allium.PROFILER.push(manifest.id(), "<init>");
-        this.path = reference.path();
-        this.executor = new ScriptExecutor(this, path, manifest.entrypoints());
+        this.path = path;
+        this.executor = new ScriptExecutor(this);
         this.logger = LoggerFactory.getLogger('@' + getID());
         Allium.PROFILER.pop();
     }
 
+    public void addDependency(Script script) {
+        dependencies.add(script);
+    }
+
     public void reload() {
+        if (initialized == State.INVALID) return;
         destroyAllResources();
         try {
-            // Reload and set the module if all that's provided is a dynamic script
-            this.module = manifest.entrypoints().has(Entrypoint.Type.DYNAMIC) ?
-                    executor.reload().arg(1) :
-                    this.module;
+            reloadable.forEach(Runnable::run);
         } catch (Throwable e) {
             getLogger().error("Could not reload allium script {}", getID(), e);
             unload();
@@ -58,7 +64,15 @@ public class Script implements Identifiable {
     }
 
     @LuaWrapped
-    public ResourceRegistration registerResource(ScriptResource resource) {
+    public void registerReloadable(Runnable function) {
+        if (initialized == State.INVALID) return;
+        reloadable.add(function);
+        function.run();
+    }
+
+    @LuaWrapped
+    public ResourceRegistration registerReloadableResource(ScriptResource resource) {
+        if (initialized == State.INVALID) return null;
         resources.add(resource);
 
         return new ResourceRegistration(resource);
@@ -101,35 +115,42 @@ public class Script implements Identifiable {
 
     public void unload() {
         destroyAllResources();
+        reloadable.clear();
+        this.initialized = State.INVALID;
     }
 
-    public void preInitialize() {
-        Allium.PROFILER.push(getID(), "preInitialize");
-        if (MixinConfigUtil.isComplete()) {
+    public void preInitialize(String entrypoint) {
+        if (initialized == State.UNINITIALIZED) {
+            Allium.PROFILER.push(getID(), "preInitialize");
+            try {
+                this.initialized = State.PREINITIALIZING;
+                getExecutor().execute(entrypoint);
+                getExecutor().getMixinLib().applyConfig();
+                this.initialized = State.PREINITIALIZED;
+            } catch (Throwable e) {
+                getLogger().error("Could not pre-initialize allium script {}", getID(), e);
+                this.initialized = State.INVALID;
+            }
+            Allium.PROFILER.pop();
+        } else {
             getLogger().error("Attempted to pre-initialize after mixin configuration was loaded.");
             return;
         }
-        try {
-            getExecutor().preInitialize();
-        } catch (Throwable e) {
-            getLogger().error("Could not pre-initialize allium script {}", getID(), e);
-        }
-        Allium.PROFILER.pop();
     }
 
-    public void initialize() {
+    public void initialize(String entrypoint) {
         Allium.PROFILER.push(getID(), "initialize");
-        if (initialized == State.UNINITIALIZED) {
+        if (initialized == State.UNINITIALIZED || initialized == State.PREINITIALIZED) {
             try {
                 // Initialize and set module used by require
                 this.initialized = State.INITIALIZING; // Guard against duplicate initializations
-                this.module = getExecutor().initialize().first();
+                dependencies.forEach(script -> script.initialize(script.getManifest().getMainAlliumEntrypoint()));
+                this.module = getExecutor().execute(entrypoint).first();
                 this.initialized = State.INITIALIZED; // If all these steps are successful, we can update the state
             } catch (Throwable e) {
                 this.module = Constants.NIL;
                 getLogger().error("Could not initialize allium script {}", getID(), e);
-                unload();
-                this.initialized = State.INVALID;
+                unload(); // unload sets script initialized state to INVALID
             }
         }
         Allium.PROFILER.pop();
@@ -178,7 +199,7 @@ public class Script implements Identifiable {
 
     @LuaWrapped
     public LuaValue getModule() {
-        return module;
+        return module == null ? Constants.NIL : module;
     }
 
     @LuaWrapped
@@ -207,16 +228,10 @@ public class Script implements Identifiable {
         return manifest.name();
     }
 
-    public record Reference(Manifest manifest, Path path) implements Identifiable {
-
-        @Override
-        public String getID() {
-            return manifest().id();
-        }
-    }
-
     public enum State {
         UNINITIALIZED,
+        PREINITIALIZING,
+        PREINITIALIZED,
         INITIALIZING,
         INITIALIZED,
         INVALID

@@ -1,10 +1,15 @@
 package dev.hugeblank.allium.util.asm;
 
+import dev.hugeblank.allium.loader.Script;
+import dev.hugeblank.allium.loader.ScriptExecutor;
+import dev.hugeblank.allium.loader.ScriptRegistry;
+import dev.hugeblank.allium.loader.lib.MixinLib;
 import dev.hugeblank.allium.loader.lib.builder.ClassBuilder;
 import dev.hugeblank.allium.loader.type.StaticBinder;
 import dev.hugeblank.allium.loader.type.coercion.TypeCoercions;
 import dev.hugeblank.allium.loader.type.userdata.*;
 import dev.hugeblank.allium.util.Pair;
+import dev.hugeblank.allium.util.Registry;
 import me.basiqueevangelist.enhancedreflection.api.EClass;
 import org.objectweb.asm.Type;
 import org.squiddev.cobalt.LuaValue;
@@ -24,6 +29,11 @@ public class Owners {
     public static final String ECLASS = Type.getInternalName(EClass.class);
     // Allium
     public static final String PAIR = Type.getInternalName(Pair.class);
+    public static final String SCRIPT = Type.getInternalName(Script.class);
+    public static final String SCRIPT_EXECUTOR = Type.getInternalName(ScriptExecutor.class);
+    public static final String MIXIN_LIB = Type.getInternalName(MixinLib.class);
+    public static final String SCRIPT_REGISTRY = Type.getInternalName(ScriptRegistry.class);
+    public static final String REGISTRY = Type.getInternalName(Registry.class);
     public static final String INSTANCE_USERDATA_FACTORY = Type.getInternalName(InstanceUserdataFactory.class);
     public static final String PRIVATE_USERDATA_FACTORY = Type.getInternalName(PrivateUserdataFactory.class);
     public static final String PRIVATE_USERDATA = Type.getInternalName(PrivateUserdata.class);

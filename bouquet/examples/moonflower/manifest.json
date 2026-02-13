@@ -1,8 +1,0 @@
-{
-  "id": "moonflower",
-  "version": "1.0.0",
-  "name": "Moon Flower",
-  "entrypoints": {
-    "static": "main.lua"
-  }
-}

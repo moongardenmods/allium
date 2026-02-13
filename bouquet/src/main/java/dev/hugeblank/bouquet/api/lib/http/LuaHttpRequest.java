@@ -1,7 +1,7 @@
 package dev.hugeblank.bouquet.api.lib.http;
 
 import dev.hugeblank.allium.Allium;
-import dev.hugeblank.allium.api.annotation.LuaWrapped;
+import dev.hugeblank.allium.api.LuaWrapped;
 import io.netty.buffer.ByteBufUtil;
 import io.netty.buffer.Unpooled;
 import io.netty.handler.codec.http.HttpHeaderNames;

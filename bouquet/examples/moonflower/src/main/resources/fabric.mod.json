@@ -1,0 +1,13 @@
+{
+  "schemaVersion": 1,
+  "id": "${name}",
+  "version": "${version}",
+  "entrypoints": {
+    "main": [
+      {
+        "adapter": "allium",
+        "value": "main"
+      }
+    ]
+  }
+}

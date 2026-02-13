@@ -1,7 +1,7 @@
 package dev.hugeblank.allium.util;
 
-import dev.hugeblank.allium.api.annotation.LuaStateArg;
-import dev.hugeblank.allium.api.annotation.LuaWrapped;
+import dev.hugeblank.allium.api.LuaStateArg;
+import dev.hugeblank.allium.api.LuaWrapped;
 import me.basiqueevangelist.enhancedreflection.api.EAnnotated;
 import me.basiqueevangelist.enhancedreflection.api.EExecutable;
 import me.basiqueevangelist.enhancedreflection.api.EMember;

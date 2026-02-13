@@ -1,8 +1,8 @@
 package dev.hugeblank.bouquet.api.lib.http;
 
 import com.google.gson.*;
-import dev.hugeblank.allium.api.annotation.LuaWrapped;
-import dev.hugeblank.allium.api.annotation.OptionalArg;
+import dev.hugeblank.allium.api.LuaWrapped;
+import dev.hugeblank.allium.api.OptionalArg;
 import dev.hugeblank.allium.loader.type.userdata.InstanceUserdata;
 import dev.hugeblank.bouquet.util.TableUtils;
 import io.netty.buffer.ByteBuf;

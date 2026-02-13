@@ -1,0 +1,16 @@
+{
+  "schemaVersion": 1,
+  "id": "${name}",
+  "version": "${version}",
+  "entrypoints": {
+    "main": [
+      {
+        "adapter": "allium",
+        "value": "main"
+      }
+    ]
+  },
+  "depends": {
+    "bouquet": "~0.3.0-"
+  }
+}

@@ -15,12 +15,12 @@
   "icon": "assets/allium/icon.png",
   "environment": "*",
   "entrypoints": {
-    "preLaunch": [
-      "dev.hugeblank.allium.AlliumPreLaunch"
-    ],
     "main": [
-      "dev.hugeblank.allium.Allium"
+      "dev.hugeblank.allium.loader.distribution.fabric.AlliumInitializer"
     ]
+  },
+  "languageAdapters": {
+    "allium": "dev.hugeblank.allium.loader.distribution.fabric.AlliumLanguageAdapter"
   },
   "depends": {
     "java": ">=25",

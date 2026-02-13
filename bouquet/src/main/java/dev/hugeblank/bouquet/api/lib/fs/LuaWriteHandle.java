@@ -1,7 +1,7 @@
 package dev.hugeblank.bouquet.api.lib.fs;
 
 import dev.hugeblank.allium.loader.Script;
-import dev.hugeblank.allium.api.annotation.LuaWrapped;
+import dev.hugeblank.allium.api.LuaWrapped;
 import org.squiddev.cobalt.LuaError;
 
 import java.io.IOException;

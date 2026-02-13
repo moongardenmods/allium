@@ -2,8 +2,8 @@ package dev.hugeblank.bouquet.api.lib.fs;
 
 import dev.hugeblank.allium.api.ScriptResource;
 import dev.hugeblank.allium.loader.Script;
-import dev.hugeblank.allium.api.annotation.LuaWrapped;
-import dev.hugeblank.allium.api.annotation.OptionalArg;
+import dev.hugeblank.allium.api.LuaWrapped;
+import dev.hugeblank.allium.api.OptionalArg;
 import org.squiddev.cobalt.LuaError;
 
 import java.io.IOException;
@@ -15,7 +15,7 @@ public abstract class LuaHandleBase implements LuaHandle, ScriptResource {
     protected final FileChannel handle;
 
     public LuaHandleBase(Script script, FileChannel handle) {
-        script.registerResource(this);
+        script.registerReloadableResource(this);
         this.handle = handle;
     }
 

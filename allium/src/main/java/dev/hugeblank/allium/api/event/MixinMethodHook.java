@@ -3,8 +3,8 @@ package dev.hugeblank.allium.api.event;
 import dev.hugeblank.allium.api.ScriptResource;
 import dev.hugeblank.allium.loader.Script;
 import dev.hugeblank.allium.loader.lib.MixinLib;
-import dev.hugeblank.allium.api.annotation.LuaWrapped;
-import dev.hugeblank.allium.api.annotation.OptionalArg;
+import dev.hugeblank.allium.api.LuaWrapped;
+import dev.hugeblank.allium.api.OptionalArg;
 import dev.hugeblank.allium.loader.type.coercion.TypeCoercions;
 import dev.hugeblank.allium.loader.type.exception.InvalidArgumentException;
 import dev.hugeblank.allium.util.asm.AsmUtil;
@@ -35,7 +35,7 @@ public class MixinMethodHook {
     }
 
     public static void create(Script script, String id, List<Type> paramTypes, Type returnType) {
-        MixinLib.EVENT_MAP.put(id, new MixinMethodHook(script, id, paramTypes, returnType));
+        script.getExecutor().getMixinLib().addEvent(id, new MixinMethodHook(script, id, paramTypes, returnType));
     }
 
     private static EClass<?> forName(String id, String name) {
@@ -90,7 +90,7 @@ public class MixinMethodHook {
             this.script = script;
 
             if (destroyOnUnload) {
-                this.registration = script.registerResource(this);
+                this.registration = script.registerReloadableResource(this);
             } else {
                 this.registration = null;
             }

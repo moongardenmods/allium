@@ -1,8 +1,8 @@
 package dev.hugeblank.allium.util;
 
-import dev.hugeblank.allium.api.annotation.LuaArgs;
-import dev.hugeblank.allium.api.annotation.LuaStateArg;
-import dev.hugeblank.allium.api.annotation.OptionalArg;
+import dev.hugeblank.allium.api.LuaArgs;
+import dev.hugeblank.allium.api.LuaStateArg;
+import dev.hugeblank.allium.api.OptionalArg;
 import dev.hugeblank.allium.loader.type.coercion.TypeCoercions;
 import dev.hugeblank.allium.loader.type.exception.InvalidArgumentException;
 import me.basiqueevangelist.enhancedreflection.api.EClass;

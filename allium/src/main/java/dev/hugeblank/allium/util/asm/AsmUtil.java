@@ -1,7 +1,9 @@
 package dev.hugeblank.allium.util.asm;
 
 import dev.hugeblank.allium.Allium;
-import dev.hugeblank.allium.util.MixinConfigUtil;
+import dev.hugeblank.allium.loader.Script;
+import dev.hugeblank.allium.loader.ScriptRegistry;
+import dev.hugeblank.allium.util.Registry;
 import org.objectweb.asm.*;
 import org.objectweb.asm.util.CheckClassAdapter;
 
@@ -16,14 +18,17 @@ import static org.objectweb.asm.Opcodes.*;
 // The goofiest class to exist in all of Allium.
 public class AsmUtil {
     private static final AtomicInteger NEXT_CLASS_ID = new AtomicInteger();
-    private static final AtomicInteger NEXT_MIXIN_ID = new AtomicInteger();
     public static final Handle LAMBDA_METAFACTORY = new Handle(H_INVOKESTATIC, "java/lang/invoke/LambdaMetafactory", "metafactory", "(Ljava/lang/invoke/MethodHandles$Lookup;Ljava/lang/String;Ljava/lang/invoke/MethodType;Ljava/lang/invoke/MethodType;Ljava/lang/invoke/MethodHandle;Ljava/lang/invoke/MethodType;)Ljava/lang/invoke/CallSite;", false);
+
+    public static void getScript(MethodVisitor mv, Script script) {
+        mv.visitMethodInsn(INVOKESTATIC, Owners.SCRIPT_REGISTRY, "getInstance", "()Ldev/hugeblank/allium/loader/ScriptRegistry;", false);
+        mv.visitLdcInsn(script.getID());
+        mv.visitMethodInsn(INVOKEVIRTUAL, Owners.REGISTRY, "get", "(Ljava/lang/String;)Ldev/hugeblank/allium/util/Identifiable;", false);
+        mv.visitTypeInsn(CHECKCAST, Owners.SCRIPT);
+    }
 
     public static String getUniqueClassName() {
         return "allium/GeneratedClass_" + NEXT_CLASS_ID.incrementAndGet();
-    }
-    public static String getUniqueMixinClassName() {
-        return MixinConfigUtil.MIXIN_PACKAGE.replace('.', '/') + "/GeneratedClass_" + NEXT_MIXIN_ID.incrementAndGet();
     }
 
     public static void dumpClass(String name, byte[] bytes) {
@@ -66,7 +71,7 @@ public class AsmUtil {
             argIndex += arg.getSize();
         }
 
-        mv.visitVarInsn(ALOAD, varIndex);
+        mv.visitVarInsn(ALOAD, varIndex); // <- 0
     }
 
     public interface ArrayVisitor {

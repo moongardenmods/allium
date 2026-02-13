@@ -14,17 +14,19 @@
   "license": "MIT",
   "icon": "assets/bouquet/icon.png",
   "environment": "*",
-  "custom": {
-    "allium": {
-      "scripts": [
-        {
-          "entrypoints": {
-            "static": "bouquet/init.lua",
-            "mixin": "bouquet/mixin.lua"
-          }
-        }
-      ]
-    }
+  "entrypoints": {
+    "preLaunch": [
+      {
+        "adapter": "allium",
+        "value": "bouquet.mixin"
+      }
+    ],
+    "main": [
+      {
+        "adapter": "allium",
+        "value": "bouquet.init"
+      }
+    ]
   },
 	"mixins": [
       "bouquet.mixins.json",

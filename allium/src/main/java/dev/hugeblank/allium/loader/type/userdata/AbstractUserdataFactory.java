@@ -1,6 +1,6 @@
 package dev.hugeblank.allium.loader.type.userdata;
 
-import dev.hugeblank.allium.api.annotation.LuaIndex;
+import dev.hugeblank.allium.api.LuaIndex;
 import dev.hugeblank.allium.loader.type.coercion.TypeCoercions;
 import dev.hugeblank.allium.loader.type.exception.InvalidArgumentException;
 import dev.hugeblank.allium.loader.type.property.*;

@@ -5,7 +5,7 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import dev.hugeblank.allium.Allium;
-import dev.hugeblank.allium.AlliumPreLaunch;
+import dev.hugeblank.allium.loader.Script;
 import dev.hugeblank.allium.loader.lib.mixin.MixinClassInfo;
 import dev.hugeblank.allium.loader.lib.mixin.builder.MixinClassBuilder;
 import dev.hugeblank.allium.util.asm.VisitedClass;
@@ -23,15 +23,29 @@ import java.util.List;
 import java.util.Map;
 
 public class MixinConfigUtil {
-    public static final String MIXIN_PACKAGE = "allium.mixin";
-    public static final String MIXIN_CONFIG_NAME = "allium-generated.mixins.json";
-    private static boolean complete = false;
 
-    public static boolean isComplete() {
+    private final Script script;
+    private final String mixinPackage;
+    private final String mixinConfigName;
+    private boolean complete = false;
+
+    private int nextMixinId = 0;
+
+    public MixinConfigUtil(Script script) {
+        this.script = script;
+        this.mixinPackage = script.getID()+".mixin";
+        this.mixinConfigName =  script.getID()+"-generated.mixins.json";
+    }
+
+    public String getUniqueMixinClassName() {
+        return mixinPackage.replace('.', '/') + "/GeneratedClass_" + nextMixinId++;
+    }
+
+    public boolean isComplete() {
         return complete;
     }
 
-    public static void applyConfiguration() {
+    public void apply(List<MixinClassInfo> mixins, List<MixinClassInfo> client, List<MixinClassInfo> server) {
         Allium.PROFILER.push("applyConfiguration");
         // Create a new mixin config
 
@@ -40,7 +54,7 @@ public class MixinConfigUtil {
         JsonObject config = JsonObjectBuilder.of()
                 .add("required", true)
                 .add("compatibilityLevel", "JAVA_21")
-                .add("package", MIXIN_PACKAGE)
+                .add("package", mixinPackage)
                 .add("injectors", JsonObjectBuilder.of()
                         .add("defaultRequire", 1)
                         .build()
@@ -49,17 +63,19 @@ public class MixinConfigUtil {
                         .add("minVersion", "0.5.0")
                         .build()
                 )
-                .add("mixins", mixinsToJson(MixinClassBuilder.MIXINS, mixinConfigMap))
-                .add("client", mixinsToJson(MixinClassBuilder.CLIENT, mixinConfigMap))
-                .add("server", mixinsToJson(MixinClassBuilder.SERVER, mixinConfigMap))
+                .add("mixins", mixinsToJson(mixins, mixinConfigMap))
+                .add("client", mixinsToJson(client, mixinConfigMap))
+                .add("server", mixinsToJson(server, mixinConfigMap))
                 .build();
         String configJson = (new Gson()).toJson(config);
-        mixinConfigMap.put(MIXIN_CONFIG_NAME, configJson.getBytes(StandardCharsets.UTF_8));
+        mixinConfigMap.put(mixinConfigName, configJson.getBytes(StandardCharsets.UTF_8));
 
-        URL mixinUrl = ByteArrayStreamHandler.create("allium-mixin", mixinConfigMap);
+        URL mixinUrl = ByteArrayStreamHandler.create(script.getID()+"-allium-mixin", mixinConfigMap);
 
         // Stuff those files into class loader
-        ClassLoader loader = AlliumPreLaunch.class.getClassLoader();
+        // NOTE: This is a fabric only solution! Other mod loaders must find their own workaround for adding the config
+        // map to the class loader!
+        ClassLoader loader = this.getClass().getClassLoader();
         Method addUrlMethod = null;
         for (Method method : loader.getClass().getMethods()) {
             if (method.getName().equals("addUrlFwd")) {
@@ -83,18 +99,18 @@ public class MixinConfigUtil {
             throw new RuntimeException("Error invoking URL handler", e);
         }
 
-        Mixins.addConfiguration(MIXIN_CONFIG_NAME);
+        Mixins.addConfiguration(mixinConfigName);
         VisitedClass.clear();
         complete = true;
         Allium.PROFILER.pop();
     }
 
-    private static JsonArray mixinsToJson(List<MixinClassInfo> list, Map<String, byte[]> configMap) {
+    private JsonArray mixinsToJson(List<MixinClassInfo> list, Map<String, byte[]> configMap) {
         JsonArray mixins = new JsonArray();
         list.forEach((info) -> {
             String className = info.className();
             if (className.matches(".*mixin.*")) {
-                mixins.add(className.replace(MIXIN_PACKAGE + '.', ""));
+                mixins.add(className.replace(mixinPackage + '.', ""));
             }
             configMap.put(className.replace(".", "/") + ".class", info.classBytes());
         });

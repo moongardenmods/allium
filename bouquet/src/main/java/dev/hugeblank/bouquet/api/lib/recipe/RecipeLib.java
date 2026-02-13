@@ -1,8 +1,8 @@
 package dev.hugeblank.bouquet.api.lib.recipe;
 
 import dev.hugeblank.allium.api.event.SimpleEventType;
-import dev.hugeblank.allium.api.annotation.CoerceToBound;
-import dev.hugeblank.allium.api.annotation.LuaWrapped;
+import dev.hugeblank.allium.api.CoerceToBound;
+import dev.hugeblank.allium.api.LuaWrapped;
 import dev.hugeblank.bouquet.api.lib.recipe.context.AddRecipesContext;
 import dev.hugeblank.bouquet.api.lib.recipe.context.ModifyRecipesContext;
 import dev.hugeblank.bouquet.api.lib.recipe.context.RemoveRecipesContext;
