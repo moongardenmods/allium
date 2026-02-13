@@ -1,6 +1,6 @@
 package dev.hugeblank.bouquet.api.lib.recipe.context;
 
-import dev.hugeblank.allium.loader.type.annotation.LuaWrapped;
+import dev.hugeblank.allium.api.annotation.LuaWrapped;
 import dev.hugeblank.allium.util.Pair;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.resources.Identifier;

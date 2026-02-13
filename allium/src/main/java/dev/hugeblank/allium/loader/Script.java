@@ -2,7 +2,7 @@ package dev.hugeblank.allium.loader;
 
 import dev.hugeblank.allium.Allium;
 import dev.hugeblank.allium.api.ScriptResource;
-import dev.hugeblank.allium.loader.type.annotation.LuaWrapped;
+import dev.hugeblank.allium.api.annotation.LuaWrapped;
 import dev.hugeblank.allium.util.Identifiable;
 import dev.hugeblank.allium.util.MixinConfigUtil;
 import org.slf4j.Logger;

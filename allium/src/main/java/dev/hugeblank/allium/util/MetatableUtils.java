@@ -1,6 +1,6 @@
 package dev.hugeblank.allium.util;
 
-import dev.hugeblank.allium.loader.type.annotation.LuaWrapped;
+import dev.hugeblank.allium.api.annotation.LuaWrapped;
 import dev.hugeblank.allium.loader.type.coercion.TypeCoercions;
 import dev.hugeblank.allium.loader.type.exception.InvalidArgumentException;
 import dev.hugeblank.allium.loader.type.property.MemberFilter;

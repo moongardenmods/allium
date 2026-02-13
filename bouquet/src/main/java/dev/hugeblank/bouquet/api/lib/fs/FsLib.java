@@ -1,8 +1,8 @@
 package dev.hugeblank.bouquet.api.lib.fs;
 
 import dev.hugeblank.allium.loader.Script;
-import dev.hugeblank.allium.loader.type.annotation.CoerceToNative;
-import dev.hugeblank.allium.loader.type.annotation.LuaWrapped;
+import dev.hugeblank.allium.api.annotation.CoerceToNative;
+import dev.hugeblank.allium.api.annotation.LuaWrapped;
 import dev.hugeblank.allium.util.FileHelper;
 import org.squiddev.cobalt.LuaError;
 import org.squiddev.cobalt.LuaTable;

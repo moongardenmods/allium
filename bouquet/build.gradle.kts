@@ -1,3 +1,4 @@
+
 plugins {
     id("maven-publish")
     id("allium.fabric-conventions")

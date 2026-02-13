@@ -2,12 +2,12 @@ package dev.hugeblank.allium.loader.lib;
 
 import dev.hugeblank.allium.api.event.MixinMethodHook;
 import dev.hugeblank.allium.loader.Script;
-import dev.hugeblank.allium.loader.mixin.annotation.method.MixinMethodAnnotations;
-import dev.hugeblank.allium.loader.mixin.annotation.sugar.MixinSugars;
-import dev.hugeblank.allium.loader.mixin.builder.MixinClassBuilder;
+import dev.hugeblank.allium.loader.lib.mixin.annotation.method.MixinMethodAnnotations;
+import dev.hugeblank.allium.loader.lib.mixin.annotation.sugar.MixinSugars;
+import dev.hugeblank.allium.loader.lib.mixin.builder.MixinClassBuilder;
 import dev.hugeblank.allium.loader.type.StaticBinder;
-import dev.hugeblank.allium.loader.type.annotation.LuaWrapped;
-import dev.hugeblank.allium.loader.type.annotation.OptionalArg;
+import dev.hugeblank.allium.api.annotation.LuaWrapped;
+import dev.hugeblank.allium.api.annotation.OptionalArg;
 import dev.hugeblank.allium.loader.type.userdata.ClassUserdata;
 import dev.hugeblank.allium.util.MixinConfigUtil;
 import me.basiqueevangelist.enhancedreflection.api.EClass;

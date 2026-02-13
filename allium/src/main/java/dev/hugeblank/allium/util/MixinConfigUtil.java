@@ -6,8 +6,8 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import dev.hugeblank.allium.Allium;
 import dev.hugeblank.allium.AlliumPreLaunch;
-import dev.hugeblank.allium.loader.mixin.MixinClassInfo;
-import dev.hugeblank.allium.loader.mixin.builder.MixinClassBuilder;
+import dev.hugeblank.allium.loader.lib.mixin.MixinClassInfo;
+import dev.hugeblank.allium.loader.lib.mixin.builder.MixinClassBuilder;
 import dev.hugeblank.allium.util.asm.VisitedClass;
 import org.spongepowered.asm.mixin.Mixins;
 
