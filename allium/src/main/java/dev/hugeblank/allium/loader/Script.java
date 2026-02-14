@@ -16,6 +16,7 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.Set;
 import java.util.WeakHashMap;
 
@@ -30,6 +31,7 @@ public class Script implements Identifiable {
     private State initialized = State.UNINITIALIZED;
     // Resources are stored in a weak set so that if a resource is abandoned, it gets destroyed.
     private final Set<ScriptResource> resources = Collections.newSetFromMap(new WeakHashMap<>());
+    private final Set<Runnable> reloadable = new HashSet<>();
     private boolean destroyingResources = false;
 
     protected LuaValue module;
@@ -46,15 +48,18 @@ public class Script implements Identifiable {
     public void reload() {
         destroyAllResources();
         try {
-            // Reload and set the module if all that's provided is a dynamic script
-            this.module = manifest.entrypoints().has(Entrypoint.Type.DYNAMIC) ?
-                    executor.reload().arg(1) :
-                    this.module;
+            reloadable.forEach(Runnable::run);
         } catch (Throwable e) {
             getLogger().error("Could not reload allium script {}", getID(), e);
             unload();
         }
+    }
 
+    @LuaWrapped
+    public void registerReloadable(Runnable function) {
+        if (initialized == State.INVALID) return;
+        reloadable.add(function);
+        function.run();
     }
 
     @LuaWrapped
@@ -125,7 +130,7 @@ public class Script implements Identifiable {
                 this.initialized = State.INITIALIZING; // Guard against duplicate initializations
                 this.module = getExecutor().initialize().first();
                 this.initialized = State.INITIALIZED; // If all these steps are successful, we can update the state
-            } catch (Throwable e) {
+            } catch (Exception e) {
                 this.module = Constants.NIL;
                 getLogger().error("Could not initialize allium script {}", getID(), e);
                 unload();

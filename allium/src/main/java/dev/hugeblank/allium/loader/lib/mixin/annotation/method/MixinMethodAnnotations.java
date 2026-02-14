@@ -1,7 +1,6 @@
 package dev.hugeblank.allium.loader.lib.mixin.annotation.method;
 
 import dev.hugeblank.allium.loader.lib.mixin.annotation.method.injectors.*;
-import dev.hugeblank.allium.loader.mixin.annotation.method.injectors.*;
 import dev.hugeblank.allium.api.LuaStateArg;
 import dev.hugeblank.allium.api.LuaWrapped;
 import dev.hugeblank.allium.loader.type.exception.InvalidArgumentException;

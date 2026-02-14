@@ -3,6 +3,6 @@
   "version": "1.0.0",
   "name": "Script A",
   "entrypoints": {
-    "static": "main.lua"
+    "main": "main.lua"
   }
 }

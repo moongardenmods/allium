@@ -11,7 +11,7 @@ import java.util.Map;
 public record Entrypoint(@Expose(deserialize = false) Map<Type, String> initializers) {
 
     public boolean valid() {
-        return initializers.containsKey(Type.STATIC) || initializers.containsKey(Type.DYNAMIC);
+        return initializers.containsKey(Type.MAIN);
     }
 
     public boolean has(Type t) {
@@ -23,8 +23,7 @@ public record Entrypoint(@Expose(deserialize = false) Map<Type, String> initiali
     }
 
     public enum Type {
-        STATIC("static"),
-        DYNAMIC("dynamic"),
+        MAIN("main"),
         MIXIN("mixin");
 
         private final String key;

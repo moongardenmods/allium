@@ -19,7 +19,7 @@
       "scripts": [
         {
           "entrypoints": {
-            "static": "bouquet/init.lua",
+            "main": "bouquet/init.lua",
             "mixin": "bouquet/mixin.lua"
           }
         }

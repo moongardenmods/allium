@@ -174,7 +174,7 @@ public class FileHelper {
         AtomicReference<Script.Reference> out = new AtomicReference<>();
         container.getRootPaths().forEach((path) -> {
             Entrypoint entrypoints = man.entrypoints();
-            if (exists(entrypoints, path, Entrypoint.Type.STATIC) || exists(entrypoints, path, Entrypoint.Type.DYNAMIC) || exists(entrypoints, path, Entrypoint.Type.MIXIN)) {
+            if (exists(entrypoints, path, Entrypoint.Type.MAIN) || exists(entrypoints, path, Entrypoint.Type.MIXIN)) {
                 // This has an incidental safeguard in the event that if multiple root paths have the same script
                 // the most recent script loaded will just *overwrite* previous ones.
                 out.set(new Script.Reference(man, path));

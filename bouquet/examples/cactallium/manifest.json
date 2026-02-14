@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "name": "Cactus Flower",
   "entrypoints": {
-    "dynamic": "main.lua",
+    "main": "main.lua",
     "mixin": "mixin.lua"
   }
 }

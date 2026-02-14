@@ -82,8 +82,7 @@ public class PackageLib extends WrappedScriptLibrary {
             if (!Files.exists(path)) return Constants.NIL;
             try {
                 // Do not allow entrypoints to get loaded from the path.
-                boolean loadingEntrypoint = isPathForEntrypoint(path, script, entrypoint, Entrypoint.Type.DYNAMIC) ||
-                        isPathForEntrypoint(path, script, entrypoint, Entrypoint.Type.STATIC);
+                boolean loadingEntrypoint = isPathForEntrypoint(path, script, entrypoint, Entrypoint.Type.MAIN);
 
                 if (loadingEntrypoint) {
                     Allium.LOGGER.warn(

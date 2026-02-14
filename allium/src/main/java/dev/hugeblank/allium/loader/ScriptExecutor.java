@@ -88,19 +88,12 @@ public class ScriptExecutor{
         return state;
     }
 
-    public Varargs initialize() throws Throwable {
-        if (entrypoint.has(Entrypoint.Type.STATIC) && entrypoint.has(Entrypoint.Type.DYNAMIC)) {
-            Varargs out = execute(Entrypoint.Type.STATIC);
-            execute(Entrypoint.Type.DYNAMIC);
-            return out;
-        } else if (entrypoint.has(Entrypoint.Type.STATIC)) {
-            return execute(Entrypoint.Type.STATIC);
-        } else if (entrypoint.has(Entrypoint.Type.DYNAMIC)) {
-            execute(Entrypoint.Type.DYNAMIC);
-            return Constants.NIL;
+    public Varargs initialize() throws LuaError, CompileException, IOException {
+         if (entrypoint.has(Entrypoint.Type.MAIN)) {
+            return execute(Entrypoint.Type.MAIN);
         }
         // This should be caught sooner, but who knows maybe a dev (hugeblank) will come along and mess something up
-        throw new Exception("Expected either static or dynamic entrypoint, got none");
+        throw new LuaError("Expected main entrypoint, got none");
     }
 
     public void preInitialize() throws CompileException, LuaError, IOException {
@@ -108,13 +101,7 @@ public class ScriptExecutor{
         if (entrypoint.has(Entrypoint.Type.MIXIN)) execute(Entrypoint.Type.MIXIN);
     }
 
-
-    public Varargs reload() throws LuaError, CompileException, IOException {
-        if (entrypoint.has(Entrypoint.Type.DYNAMIC)) return execute(Entrypoint.Type.DYNAMIC);
-        return null;
-    }
-
-    private Varargs execute(Entrypoint.Type type) throws IOException, CompileException, LuaError {
+    private Varargs execute(Entrypoint.Type type) throws LuaError, CompileException, IOException {
         return LuaThread.runMain(state, load(path.resolve(entrypoint.get(type))));
     }
 
