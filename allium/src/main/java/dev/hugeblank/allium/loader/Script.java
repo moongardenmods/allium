@@ -31,8 +31,10 @@ public class Script implements Identifiable {
     private State initialized = State.UNINITIALIZED;
     // Resources are stored in a weak set so that if a resource is abandoned, it gets destroyed.
     private final Set<ScriptResource> resources = Collections.newSetFromMap(new WeakHashMap<>());
-    private final Set<Runnable> reloadable = new HashSet<>();
     private boolean destroyingResources = false;
+
+    private final Set<Runnable> reloadable = new HashSet<>();
+    private boolean shouldDestroyOnReload = false;
 
     protected LuaValue module;
 
@@ -48,7 +50,9 @@ public class Script implements Identifiable {
     public void reload() {
         destroyAllResources();
         try {
+            shouldDestroyOnReload = true;
             reloadable.forEach(Runnable::run);
+            shouldDestroyOnReload = false;
         } catch (Throwable e) {
             getLogger().error("Could not reload allium script {}", getID(), e);
             unload();
@@ -57,9 +61,17 @@ public class Script implements Identifiable {
 
     @LuaWrapped
     public void registerReloadable(Runnable function) {
-        if (initialized == State.INVALID) return;
+        if (!(initialized == State.INITIALIZING || initialized == State.INITIALIZED)) return;
         reloadable.add(function);
+        shouldDestroyOnReload = true;
         function.run();
+        shouldDestroyOnReload = false;
+    }
+
+    /// Suggest to an event or hook that they should or should not be reloaded.
+    /// The result returned by this method should be allowed to be overridden by a script developer.
+    public boolean destroyOnReload() {
+        return shouldDestroyOnReload;
     }
 
     @LuaWrapped
@@ -67,41 +79,6 @@ public class Script implements Identifiable {
         resources.add(resource);
 
         return new ResourceRegistration(resource);
-    }
-
-    public class ResourceRegistration implements AutoCloseable {
-        private final ScriptResource resource;
-
-        private ResourceRegistration(ScriptResource resource) {
-            this.resource = resource;
-        }
-
-        @Override
-        public void close() {
-            if (destroyingResources) return;
-
-            resources.remove(resource);
-        }
-    }
-
-    private void destroyAllResources() {
-        if (destroyingResources) throw new IllegalStateException("Tried to recursively destroy resources!");
-
-        destroyingResources = true;
-
-        try {
-            for (ScriptResource resource : resources) {
-                try {
-                    resource.close();
-                } catch (Exception e) {
-                    getLogger().error("Failed to close script resource", e);
-                }
-            }
-        } finally {
-            destroyingResources = false;
-
-            resources.clear();
-        }
     }
 
     public void unload() {
@@ -210,6 +187,41 @@ public class Script implements Identifiable {
     @Override
     public String toString() {
         return manifest.name();
+    }
+
+    public class ResourceRegistration implements AutoCloseable {
+        private final ScriptResource resource;
+
+        private ResourceRegistration(ScriptResource resource) {
+            this.resource = resource;
+        }
+
+        @Override
+        public void close() {
+            if (destroyingResources) return;
+
+            resources.remove(resource);
+        }
+    }
+
+    private void destroyAllResources() {
+        if (destroyingResources) throw new IllegalStateException("Tried to recursively destroy resources!");
+
+        destroyingResources = true;
+
+        try {
+            for (ScriptResource resource : resources) {
+                try {
+                    resource.close();
+                } catch (Exception e) {
+                    getLogger().error("Failed to close script resource", e);
+                }
+            }
+        } finally {
+            destroyingResources = false;
+
+            resources.clear();
+        }
     }
 
     public record Reference(Manifest manifest, Path path) implements Identifiable {

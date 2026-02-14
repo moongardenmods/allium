@@ -11,7 +11,7 @@ public class EventType<T> {
     protected final List<EventHandler> handlers = new ArrayList<>();
 
     public ScriptResource register(Script source, T func, @OptionalArg Boolean destroyOnUnload) {
-        if (destroyOnUnload == null) destroyOnUnload = true;
+        if (destroyOnUnload == null) destroyOnUnload = source.destroyOnReload();
 
         var handler = new EventHandler(func, source, destroyOnUnload);
         handlers.add(handler);

@@ -60,7 +60,7 @@ public class MixinMethodHook {
             returnClass = forName(id, AsmUtil.getWrappedTypeName(returnType));
         }
 
-        if (destroyOnUnload == null) destroyOnUnload = false;
+        if (destroyOnUnload == null) destroyOnUnload = script.destroyOnReload();
         handler = new EventHandler(func, script, destroyOnUnload);
         return handler;
     }
