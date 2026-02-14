@@ -1,7 +1,9 @@
 package dev.hugeblank.allium.loader.lib;
 
+import com.google.gson.JsonArray;
 import dev.hugeblank.allium.api.event.MixinMethodHook;
 import dev.hugeblank.allium.loader.Script;
+import dev.hugeblank.allium.loader.lib.mixin.MixinClassInfo;
 import dev.hugeblank.allium.loader.lib.mixin.annotation.method.MixinMethodAnnotations;
 import dev.hugeblank.allium.loader.lib.mixin.annotation.sugar.MixinSugars;
 import dev.hugeblank.allium.loader.lib.mixin.builder.MixinClassBuilder;
@@ -17,6 +19,7 @@ import org.squiddev.cobalt.LuaError;
 import org.squiddev.cobalt.LuaValue;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 @LuaWrapped(name = "mixin")
@@ -32,6 +35,18 @@ public class MixinLib extends WrappedScriptLibrary {
 
     public MixinLib(Script script) {
         super(script);
+    }
+
+    public static JsonArray mixinsToJson(List<MixinClassInfo> list, Map<String, byte[]> configMap) {
+        JsonArray mixins = new JsonArray();
+        list.forEach((info) -> {
+            String className = info.className();
+            if (className.matches(".*mixin.*")) {
+                mixins.add(className.replace(MixinConfigUtil.MIXIN_PACKAGE + '.', ""));
+            }
+            configMap.put(className.replace(".", "/") + ".class", info.classBytes());
+        });
+        return mixins;
     }
 
     @LuaWrapped
