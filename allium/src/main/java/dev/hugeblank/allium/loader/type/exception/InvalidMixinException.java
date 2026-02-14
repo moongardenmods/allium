@@ -7,6 +7,8 @@ public class InvalidMixinException extends Exception {
             case TOO_MANY_INJECTOR_ANNOTATIONS -> "More than one injector annotation found for method with event id '" + message + "'";
             case INVALID_DESCRIPTOR -> "Could not find method matching descriptor: "+message;
             case INVALID_CLASSTYPE -> "Attempt to use "+message+" method on non-"+message+" mixin.";
+            case INJECTOR_EXISTS -> "Inject method already exists with event id '" + message + "'";
+            case DUCK_EXISTS -> "Duck interface already exists with id '" + message + "'";
         });
 
     }
@@ -16,5 +18,7 @@ public class InvalidMixinException extends Exception {
         TOO_MANY_INJECTOR_ANNOTATIONS,
         INVALID_DESCRIPTOR,
         INVALID_CLASSTYPE,
+        INJECTOR_EXISTS,
+        DUCK_EXISTS
     }
 }

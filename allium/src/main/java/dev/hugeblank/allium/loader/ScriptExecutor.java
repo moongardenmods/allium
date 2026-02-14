@@ -109,6 +109,7 @@ public class ScriptExecutor{
 
     public void preInitialize() throws CompileException, LuaError, IOException {
         if (entrypoints.has(Entrypoints.Type.MIXIN)) execute(Entrypoints.Type.MIXIN);
+        mixinLib.applyConfiguration();
     }
 
     private Varargs execute(Entrypoints.Type type) throws LuaError, CompileException, IOException {

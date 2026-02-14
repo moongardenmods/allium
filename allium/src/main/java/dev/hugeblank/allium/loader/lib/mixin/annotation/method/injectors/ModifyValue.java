@@ -49,7 +49,7 @@ public class ModifyValue extends LuaInjectorAnnotation {
                 .annotations(List.of(parser))
                 .signature(visitedMethod.signature())
                 .exceptions(visitedMethod.exceptions())
-                .code(createInjectWriteFactory(eventId))
+                .code(createInjectWriteFactory(script, eventId))
                 .build(script, eventId);
     }
 }

@@ -157,7 +157,15 @@ public class MixinMethodBuilder {
         }
 
         methodVisitor.visitEnd();
-        if (id != null) MixinMethodHook.create(script, id, params.stream().map(MixinParameter::getType).toList(), returnType);
+
+        if (id != null && script != null) {
+            script.getExecutor().getMixinLib().addMethodHook(id, new MixinMethodHook(
+                script,
+                id,
+                params.stream().map(MixinParameter::getType).toList(),
+                returnType
+            ));
+        }
     }
 
     @FunctionalInterface

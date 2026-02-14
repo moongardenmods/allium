@@ -3,8 +3,8 @@ package dev.hugeblank.allium.loader;
 import dev.hugeblank.allium.Allium;
 import dev.hugeblank.allium.api.ScriptResource;
 import dev.hugeblank.allium.api.LuaWrapped;
+import dev.hugeblank.allium.loader.lib.MixinLib;
 import dev.hugeblank.allium.util.Identifiable;
-import dev.hugeblank.allium.util.MixinConfigUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.squiddev.cobalt.*;
@@ -42,8 +42,8 @@ public class Script implements Identifiable {
         this.manifest = reference.manifest();
         Allium.PROFILER.push(manifest.id(), "<init>");
         this.path = reference.path();
-        this.executor = new ScriptExecutor(this, path, manifest.entrypoints());
         this.logger = LoggerFactory.getLogger('@' + getID());
+        this.executor = new ScriptExecutor(this, path, manifest.entrypoints());
         Allium.PROFILER.pop();
     }
 
@@ -87,7 +87,7 @@ public class Script implements Identifiable {
 
     public void preInitialize() {
         Allium.PROFILER.push(getID(), "preInitialize");
-        if (MixinConfigUtil.isComplete()) {
+        if (MixinLib.isComplete()) {
             getLogger().error("Attempted to pre-initialize after mixin configuration was loaded.");
             return;
         }

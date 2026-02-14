@@ -1,8 +1,11 @@
 package dev.hugeblank.allium.loader.lib.mixin.annotation.method;
 
 import dev.hugeblank.allium.api.event.MixinMethodHook;
+import dev.hugeblank.allium.loader.Script;
 import dev.hugeblank.allium.loader.lib.MixinLib;
+import dev.hugeblank.allium.loader.lib.mixin.MixinClassInfo;
 import dev.hugeblank.allium.loader.lib.mixin.annotation.LuaAnnotationParser;
+import dev.hugeblank.allium.loader.lib.mixin.builder.MixinClassBuilder;
 import dev.hugeblank.allium.loader.lib.mixin.builder.MixinMethodBuilder;
 import dev.hugeblank.allium.loader.lib.mixin.builder.MixinParameter;
 import dev.hugeblank.allium.loader.type.exception.InvalidArgumentException;
@@ -38,34 +41,28 @@ public abstract class LuaInjectorAnnotation extends LuaMethodAnnotation implemen
     }
 
     protected static VisitedMethod getVisitedMethod(VisitedClass mixinClass, LuaAnnotationParser annotation) throws InvalidMixinException, LuaError {
-        String descriptor = annotation.findElement("method", String.class);
-        String classType = mixinClass.getType().getDescriptor();
-        if (descriptor.startsWith(classType))
-            descriptor = descriptor.replaceFirst(Matcher.quoteReplacement(classType), "");
+        String descriptor = MixinClassBuilder.cleanDescriptor(
+            mixinClass,
+            annotation.findElement("method", String.class)
+        );
         if (!mixinClass.containsMethod(descriptor))
             throw new InvalidMixinException(InvalidMixinException.Type.INVALID_DESCRIPTOR, descriptor);
         return mixinClass.getMethod(descriptor);
     }
 
-    protected static MixinMethodBuilder.WriteFactory createInjectWriteFactory(String eventName) {
+    protected static MixinMethodBuilder.WriteFactory createInjectWriteFactory(Script script, String eventName) {
         final Type objectType = Type.getType(Object.class);
         return (methodVisitor, desc, paramTypes) -> {
             int varPrefix = paramTypes.size();
             Type returnType = Type.getReturnType(desc);
             List<Type> types = paramTypes.stream().map(MixinParameter::getType).toList();
-            methodVisitor.visitFieldInsn(
-                    GETSTATIC, Type.getInternalName(MixinLib.class),
-                    "EVENT_MAP", Type.getDescriptor(Map.class)
-            ); // <- 0
-            methodVisitor.visitLdcInsn(eventName); // <- 1
-            methodVisitor.visitMethodInsn(
-                    INVOKEINTERFACE,
-                    Type.getInternalName(Map.class),
-                    "get",
-                    Type.getMethodDescriptor(objectType, objectType),
-                    true
-            ); // -> 0, 1 | <- 0
-            methodVisitor.visitTypeInsn(CHECKCAST, Type.getInternalName(MixinMethodHook.class)); // <- 0 | -> 0
+
+            AsmUtil.getScript(methodVisitor, script);
+            methodVisitor.visitMethodInsn(INVOKEVIRTUAL, Owners.SCRIPT, "getExecutor", "()Ldev/hugeblank/allium/loader/ScriptExecutor;", false);
+            methodVisitor.visitMethodInsn(INVOKEVIRTUAL, Owners.SCRIPT_EXECUTOR, "getMixinLib", "()Ldev/hugeblank/allium/loader/lib/MixinLib;", false);
+            methodVisitor.visitLdcInsn(eventName);
+            methodVisitor.visitMethodInsn(INVOKEVIRTUAL, Owners.MIXIN_LIB, "get", "(Ljava/lang/String;)Ldev/hugeblank/allium/api/event/MixinMethodHook;", false);
+
             AsmUtil.createArray(methodVisitor, varPrefix, types, Object.class, (visitor, index, arg) -> {
                 visitor.visitVarInsn(arg.getOpcode(ILOAD), index); // <- 2
                 AsmUtil.wrapPrimitive(visitor, arg); // <- 2 | -> 2 (sometimes)

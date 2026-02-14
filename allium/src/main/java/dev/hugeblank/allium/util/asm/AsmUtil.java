@@ -2,7 +2,6 @@ package dev.hugeblank.allium.util.asm;
 
 import dev.hugeblank.allium.Allium;
 import dev.hugeblank.allium.loader.Script;
-import dev.hugeblank.allium.util.MixinConfigUtil;
 import org.objectweb.asm.*;
 import org.objectweb.asm.util.CheckClassAdapter;
 
@@ -17,7 +16,6 @@ import static org.objectweb.asm.Opcodes.*;
 // The goofiest class to exist in all of Allium.
 public class AsmUtil {
     private static final AtomicInteger NEXT_CLASS_ID = new AtomicInteger();
-    private static final AtomicInteger NEXT_MIXIN_ID = new AtomicInteger();
     public static final Handle LAMBDA_METAFACTORY = new Handle(H_INVOKESTATIC, "java/lang/invoke/LambdaMetafactory", "metafactory", "(Ljava/lang/invoke/MethodHandles$Lookup;Ljava/lang/String;Ljava/lang/invoke/MethodType;Ljava/lang/invoke/MethodType;Ljava/lang/invoke/MethodHandle;Ljava/lang/invoke/MethodType;)Ljava/lang/invoke/CallSite;", false);
 
     public static void getScript(MethodVisitor mv, Script script) {
@@ -29,10 +27,6 @@ public class AsmUtil {
 
     public static String getUniqueClassName() {
         return "allium/GeneratedClass_" + NEXT_CLASS_ID.incrementAndGet();
-    }
-
-    public static String getUniqueMixinClassName() {
-        return MixinConfigUtil.MIXIN_PACKAGE.replace('.', '/') + "/GeneratedClass_" + NEXT_MIXIN_ID.incrementAndGet();
     }
 
     public static void dumpClass(String name, byte[] bytes) {

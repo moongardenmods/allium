@@ -34,10 +34,6 @@ public class MixinMethodHook {
         this.returnType = returnType;
     }
 
-    public static void create(Script script, String id, List<Type> paramTypes, Type returnType) {
-        MixinLib.EVENT_MAP.put(id, new MixinMethodHook(script, id, paramTypes, returnType));
-    }
-
     private static EClass<?> forName(String id, String name) {
         try {
             return EClass.fromJava(Class.forName(name));
@@ -48,6 +44,8 @@ public class MixinMethodHook {
 
     @LuaWrapped
     public ScriptResource hook(LuaFunction func, @OptionalArg Boolean destroyOnUnload) {
+        if (!MixinLib.isComplete())
+            throw new IllegalStateException("Hook cannot be set during pre-launch phase.");
         if (handler != null)
             throw new IllegalStateException("Mixin hook already registered for id '" + id + "' from " + script.getID());
 

@@ -4,6 +4,7 @@ import com.google.common.collect.ImmutableSet;
 import dev.hugeblank.allium.Allium;
 import dev.hugeblank.allium.loader.Script;
 import dev.hugeblank.allium.loader.ScriptRegistry;
+import dev.hugeblank.allium.loader.lib.MixinLib;
 import org.jetbrains.annotations.NotNull;
 
 import java.io.IOException;
@@ -51,6 +52,7 @@ public class SetupHelpers {
         );
 
         registry.forEach(Script::preInitialize);
+        MixinLib.setComplete();
         Allium.PROFILER.pop();
     }
 

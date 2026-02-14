@@ -50,7 +50,7 @@ public class LuaWrapMethod extends LuaInjectorAnnotation {
                 .annotations(annotations.stream().map(LuaMethodAnnotation::parser).toList())
                 .signature(visitedMethod.signature())
                 .exceptions(visitedMethod.exceptions())
-                .code(createInjectWriteFactory(eventId))
+                .code(createInjectWriteFactory(script, eventId))
                 .build(script, eventId);
     }
 }

@@ -2,7 +2,6 @@ package dev.hugeblank.allium.loader.lib.mixin.builder;
 
 import dev.hugeblank.allium.Allium;
 import dev.hugeblank.allium.loader.Script;
-import dev.hugeblank.allium.loader.ScriptRegistry;
 import dev.hugeblank.allium.loader.lib.MixinLib;
 import dev.hugeblank.allium.loader.lib.builder.AbstractClassBuilder;
 import dev.hugeblank.allium.loader.lib.mixin.MixinClassInfo;
@@ -14,8 +13,6 @@ import dev.hugeblank.allium.api.LuaWrapped;
 import dev.hugeblank.allium.api.OptionalArg;
 import dev.hugeblank.allium.loader.type.exception.InvalidArgumentException;
 import dev.hugeblank.allium.loader.type.exception.InvalidMixinException;
-import dev.hugeblank.allium.util.MixinConfigUtil;
-import dev.hugeblank.allium.util.Registry;
 import dev.hugeblank.allium.util.asm.*;
 import me.basiqueevangelist.enhancedreflection.api.EClass;
 import net.fabricmc.api.EnvType;
@@ -35,6 +32,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Locale;
+import java.util.regex.Matcher;
 
 import static org.objectweb.asm.Opcodes.*;
 
@@ -45,9 +43,6 @@ import static org.objectweb.asm.Opcodes.*;
 
 @LuaWrapped
 public class MixinClassBuilder extends AbstractClassBuilder {
-    public static final List<MixinClassInfo> MIXINS = new ArrayList<>();
-    public static final List<MixinClassInfo> CLIENT = new ArrayList<>();
-    public static final List<MixinClassInfo> SERVER = new ArrayList<>();
 
     private final EnvType targetEnvironment;
     private final boolean duck;
@@ -67,7 +62,7 @@ public class MixinClassBuilder extends AbstractClassBuilder {
 
     private MixinClassBuilder(VisitedClass visitedClass, String[] interfaces, @Nullable EnvType targetEnvironment, boolean duck, Script script) {
         super(
-                AsmUtil.getUniqueMixinClassName(),
+                script.getExecutor().getMixinLib().getUniqueMixinClassName(),
                 EClass.fromJava(Object.class).name().replace('.', '/'),
                 interfaces,
                 ACC_PUBLIC | (duck ? ACC_ABSTRACT | ACC_INTERFACE : 0) | visitedClass.access(),
@@ -90,21 +85,21 @@ public class MixinClassBuilder extends AbstractClassBuilder {
     @LuaWrapped
     public void createInjectMethod(String hookId, List<LuaMethodAnnotation> methodAnnotations, @OptionalArg @Nullable List<? extends LuaSugar> sugarParameters) throws InvalidMixinException, InvalidArgumentException, LuaError {
         checkPhase();
-        Allium.PROFILER.push("createInjectMethod", hookId);
         if (visitedClass.isInterface() || this.duck)
             throw new InvalidMixinException(InvalidMixinException.Type.INVALID_CLASSTYPE, "class");
+        if (script.getExecutor().getMixinLib().get(hookId) != null)
+            throw new InvalidMixinException(InvalidMixinException.Type.INJECTOR_EXISTS, hookId);
 
-        String eventId = script.getID() + ':' + hookId;
-
+        Allium.PROFILER.push("createInjectMethod", hookId);
         List<InjectorChef> chefList = methodAnnotations.stream()
                 .filter((methodAnnotation) -> methodAnnotation instanceof InjectorChef)
                 .map(ma -> (InjectorChef) ma).toList();
         if (chefList.isEmpty()) {
-            throw new InvalidMixinException(InvalidMixinException.Type.NO_INJECTOR_ANNOTATION, eventId);
+            throw new InvalidMixinException(InvalidMixinException.Type.NO_INJECTOR_ANNOTATION, hookId);
         } else if (chefList.size() > 1) {
-            throw new InvalidMixinException(InvalidMixinException.Type.TOO_MANY_INJECTOR_ANNOTATIONS, eventId);
+            throw new InvalidMixinException(InvalidMixinException.Type.TOO_MANY_INJECTOR_ANNOTATIONS, hookId);
         }
-        chefList.getFirst().bake(script, eventId, c, visitedClass, methodAnnotations, sugarParameters);
+        chefList.getFirst().bake(script, hookId, c, visitedClass, methodAnnotations, sugarParameters);
         Allium.PROFILER.pop();
     }
 
@@ -131,7 +126,6 @@ public class MixinClassBuilder extends AbstractClassBuilder {
         if (!this.duck)
             throw new InvalidMixinException(InvalidMixinException.Type.INVALID_CLASSTYPE, "interface");
         String descriptor = getTargetValue(annotations);
-        // TODO: if the descriptor starts with the class name remove it!
         if (visitedClass.containsField(descriptor)) {
             VisitedField visitedField = visitedClass.getField(descriptor);
             Type visitedFieldType = Type.getType(visitedField.descriptor());
@@ -222,18 +216,27 @@ public class MixinClassBuilder extends AbstractClassBuilder {
         if (name == null) {
             throw new InvalidArgumentException("Expected field name at key 'value' or index 1");
         } else {
-            return name;
+            return cleanDescriptor(visitedClass, name);
         }
     }
 
+    public static String cleanDescriptor(VisitedClass visitedClass, String descriptor) {
+        String classType = visitedClass.getType().getDescriptor();
+        if (descriptor.startsWith(classType))
+            descriptor = descriptor.replaceFirst(Matcher.quoteReplacement(classType), "");
+        return descriptor;
+    }
 
     private static void checkPhase() {
-        if (MixinConfigUtil.isComplete())
+        if (MixinLib.isComplete())
             throw new IllegalStateException("Mixins cannot be created outside of preLaunch phase.");
     }
 
     @LuaWrapped
-    public void build(@OptionalArg String id) throws LuaError {
+    public void build(@OptionalArg String id) throws LuaError, InvalidMixinException {
+        if (script.getExecutor().getMixinLib().hasDuck(id))
+            throw new InvalidMixinException(InvalidMixinException.Type.DUCK_EXISTS, id);
+
         if (!duck) {
             // In case the class being mixed into loads, we initialize the script so it has a chance to hook before anything else runs.
             MethodVisitor clinit = c.visitMethod(ACC_PRIVATE|ACC_STATIC, "clinit", "(Lorg/spongepowered/asm/mixin/injection/callback/CallbackInfo;)V", null, null);
@@ -261,16 +264,14 @@ public class MixinClassBuilder extends AbstractClassBuilder {
         // give the class back to the user for later use in the case of an interface.
         MixinClassInfo info = new MixinClassInfo(className.replace("/", "."), classBytes);
 
+        MixinLib lib = script.getExecutor().getMixinLib();
+
         if (duck) {
             if (id == null) throw new LuaError("Missing 'id' parameter for duck mixin on " + className);
-            MixinLib.DUCK_MAP.put(script.getID() + ':' + id, className);
+            lib.addDuck(id, className);
         }
 
-        List<MixinClassInfo> envList = (targetEnvironment == null) ? MIXINS : switch (targetEnvironment) {
-            case SERVER -> SERVER;
-            case CLIENT -> CLIENT;
-        };
-        envList.add(info);
+        lib.addClassInfo(info, targetEnvironment);
     }
 
 }
