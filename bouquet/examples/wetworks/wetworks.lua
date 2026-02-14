@@ -1,7 +1,7 @@
 -- Wetworks
 -- By hugeblank - March 22, 2022
 -- Applies the 1.19 mud water bottle mechanic to concrete powder blocks
--- This file is marked as a dynamic entrypoint in the manifest.json.
+-- This file registers the events in a function passed to script:registerReloadable().
 -- Try modifying, and running /reload!
 
 -- Import java classes

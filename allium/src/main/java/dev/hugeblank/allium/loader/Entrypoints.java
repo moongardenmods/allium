@@ -7,8 +7,8 @@ import com.google.gson.annotations.JsonAdapter;
 import java.util.HashMap;
 import java.util.Map;
 
-@JsonAdapter(Entrypoint.Adapter.class)
-public record Entrypoint(@Expose(deserialize = false) Map<Type, String> initializers) {
+@JsonAdapter(Entrypoints.Adapter.class)
+public record Entrypoints(@Expose(deserialize = false) Map<Type, String> initializers) {
 
     public boolean valid() {
         return initializers.containsKey(Type.MAIN);
@@ -42,10 +42,10 @@ public record Entrypoint(@Expose(deserialize = false) Map<Type, String> initiali
         }
     }
 
-    public static class Adapter implements JsonDeserializer<Entrypoint> {
+    public static class Adapter implements JsonDeserializer<Entrypoints> {
 
         @Override
-        public Entrypoint deserialize(JsonElement element, java.lang.reflect.Type typeOfT, JsonDeserializationContext context) throws JsonParseException {
+        public Entrypoints deserialize(JsonElement element, java.lang.reflect.Type typeOfT, JsonDeserializationContext context) throws JsonParseException {
             JsonObject json = element.getAsJsonObject();
             final Map<Type, String> initializers = new HashMap<>();
             for (Type type : Type.values()) {
@@ -53,7 +53,7 @@ public record Entrypoint(@Expose(deserialize = false) Map<Type, String> initiali
                     initializers.put(type, json.get(type.getKey()).getAsString());
                 }
             }
-            return new Entrypoint(initializers);
+            return new Entrypoints(initializers);
         }
     }
 }

@@ -1,7 +1,7 @@
 package dev.hugeblank.allium.loader.lib;
 
 import dev.hugeblank.allium.Allium;
-import dev.hugeblank.allium.loader.Entrypoint;
+import dev.hugeblank.allium.loader.Entrypoints;
 import dev.hugeblank.allium.loader.Script;
 import dev.hugeblank.allium.loader.ScriptRegistry;
 import dev.hugeblank.allium.loader.type.StaticBinder;
@@ -69,20 +69,20 @@ public class PackageLib extends WrappedScriptLibrary {
         return Constants.NIL;
     }
 
-    private static boolean isPathForEntrypoint(Path path, Script script, Entrypoint entrypoint, Entrypoint.Type type) throws IOException {
-        return entrypoint.has(type) && Files.isSameFile( path, script.getPath().resolve(entrypoint.get(type)));
+    private static boolean isPathForEntrypoint(Path path, Script script, Entrypoints entrypoints, Entrypoints.Type type) throws IOException {
+        return entrypoints.has(type) && Files.isSameFile( path, script.getPath().resolve(entrypoints.get(type)));
     }
 
     private Varargs pathLoader(LuaState state, DebugFrame frame, Varargs args) throws LuaError, UnwindThrowable {
         String modStr = args.arg(1).checkString();
-        Entrypoint entrypoint = script.getManifest().entrypoints();
+        Entrypoints entrypoints = script.getManifest().entrypoints();
         String pstr = searchPath(modStr, this.path);
         if (pstr != null) {
             Path path = script.getPath().resolve(pstr);
             if (!Files.exists(path)) return Constants.NIL;
             try {
                 // Do not allow entrypoints to get loaded from the path.
-                boolean loadingEntrypoint = isPathForEntrypoint(path, script, entrypoint, Entrypoint.Type.MAIN);
+                boolean loadingEntrypoint = isPathForEntrypoint(path, script, entrypoints, Entrypoints.Type.MAIN);
 
                 if (loadingEntrypoint) {
                     Allium.LOGGER.warn(

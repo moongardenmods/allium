@@ -1,8 +1,8 @@
 -- Luckbrew
 -- By hugeblank - April 8, 2023
 -- Mixins are just like events under the hood! This means that depending on where you're mixing into, it could be
--- beneficial to put it in a dynamic entrypoint, to enable easy modification and reloading!
--- Unfortunately here, the brewing recipe registry gets created only once on game start, so this file is not dynamic.
+-- beneficial to put it in script:registerReloadable(), to enable easy modification and reloading!
+-- Unfortunately here, the brewing recipe registry gets created only once on game start, so this mixin is not reloadable.
 
 -- Get the event for the mixin we created in mixin.lua using the unique name.
 local addRecipes = mixin.get("add_brewing_recipes")

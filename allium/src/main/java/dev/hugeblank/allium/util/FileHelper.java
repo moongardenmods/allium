@@ -2,7 +2,7 @@ package dev.hugeblank.allium.util;
 
 import com.google.gson.Gson;
 import dev.hugeblank.allium.Allium;
-import dev.hugeblank.allium.loader.Entrypoint;
+import dev.hugeblank.allium.loader.Entrypoints;
 import dev.hugeblank.allium.loader.Manifest;
 import dev.hugeblank.allium.loader.Script;
 import net.fabricmc.loader.api.FabricLoader;
@@ -173,8 +173,8 @@ public class FileHelper {
     private static Script.Reference referenceFromContainer(Manifest man, ModContainer container) {
         AtomicReference<Script.Reference> out = new AtomicReference<>();
         container.getRootPaths().forEach((path) -> {
-            Entrypoint entrypoints = man.entrypoints();
-            if (exists(entrypoints, path, Entrypoint.Type.MAIN) || exists(entrypoints, path, Entrypoint.Type.MIXIN)) {
+            Entrypoints entrypoints = man.entrypoints();
+            if (exists(entrypoints, path, Entrypoints.Type.MAIN) || exists(entrypoints, path, Entrypoints.Type.MIXIN)) {
                 // This has an incidental safeguard in the event that if multiple root paths have the same script
                 // the most recent script loaded will just *overwrite* previous ones.
                 out.set(new Script.Reference(man, path));
@@ -183,7 +183,7 @@ public class FileHelper {
         return out.get();
     }
 
-    private static boolean exists(Entrypoint entrypoints, Path path, Entrypoint.Type type) {
+    private static boolean exists(Entrypoints entrypoints, Path path, Entrypoints.Type type) {
         return entrypoints.has(type) && Files.exists(path.resolve(entrypoints.get(type)));
     }
 
@@ -209,13 +209,13 @@ public class FileHelper {
         return source.containsKey(key) ? getAs.apply(source.get(key)) : def;
     }
 
-    private static Entrypoint makeEntrypointContainer(CustomValue.CvObject entrypointsObject) {
-        Map<Entrypoint.Type, String> entrypointMap = new HashMap<>();
-        for (Entrypoint.Type type : Entrypoint.Type.values()) {
+    private static Entrypoints makeEntrypointContainer(CustomValue.CvObject entrypointsObject) {
+        Map<Entrypoints.Type, String> entrypointMap = new HashMap<>();
+        for (Entrypoints.Type type : Entrypoints.Type.values()) {
             if (entrypointsObject.containsKey(type.getKey())) {
                 entrypointMap.put(type, entrypointsObject.get(type.getKey()).getAsString());
             }
         }
-        return new Entrypoint(entrypointMap);
+        return new Entrypoints(entrypointMap);
     }
 }

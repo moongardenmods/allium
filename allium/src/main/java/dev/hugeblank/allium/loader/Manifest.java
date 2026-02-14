@@ -1,6 +1,6 @@
 package dev.hugeblank.allium.loader;
 
-public record Manifest(String id, String version, String name, Entrypoint entrypoints) {
+public record Manifest(String id, String version, String name, Entrypoints entrypoints) {
 
     public boolean isComplete() {
         return !(id == null || version == null || name == null || entrypoints == null);

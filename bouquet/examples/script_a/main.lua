@@ -3,7 +3,7 @@
 -- Very simple script pair for demonstrating cross-script module design.
 -- These scripts are primarily used for debugging Allium, but also happen to demonstrate the versatility of `require`,
 -- being able to load APIs from other scripts.
--- Note that when require()ing another script, only the value returned from the scripts "static" entrypoint
+-- Note that when require()ing another script, only the value returned from the scripts "main" entrypoint
 -- can be obtained. This also means that files in another script cannot be require()d.
 
 local Component = require("net.minecraft.network.chat.Component")

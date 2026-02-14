@@ -22,18 +22,24 @@ import java.nio.file.Path;
 
 public class ScriptExecutor{
     private final LuaState state;
-    private final Script script;
+    private final Logger logger;
+    private final String id;
     private final Path path;
-    private final Entrypoint entrypoint;
+    private final Entrypoints entrypoints;
 
-    public ScriptExecutor(Script script, Path path, Entrypoint entrypoint) {
+    private final MixinLib mixinLib;
+    private final PackageLib packageLib;
+
+    public ScriptExecutor(Script script, Path path, Entrypoints entrypoints) {
         this.state = new LuaState();
-        this.script = script;
+        this.logger = script.getLogger();
+        this.id = script.getID();
         this.path = path;
-        this.entrypoint = entrypoint;
-    }
+        this.entrypoints = entrypoints;
 
-    private void createEnvironment() {
+        this.mixinLib = new MixinLib(script);
+        this.packageLib = new PackageLib(script);
+
         BaseLib.add(state);
         try {
             TableLib.add(state);
@@ -47,13 +53,14 @@ public class ScriptExecutor{
                 TypeCoercions.toLuaValue(script, EClass.fromJava(Script.class))
             );
 
-            loadLibrary(new PackageLib(script));
-            loadLibrary(new MixinLib(script));
+            loadLibrary(mixinLib);
+            loadLibrary(packageLib);
             loadLibrary(JavaLib.class);
             loadLibrary(AlliumLib.class);
         } catch (LuaError error) {
             script.getLogger().error("Error loading library:", error);
         }
+
         LuaTable globals = state.globals();
         globals.rawset( "print", new PrintMethod(script.getLogger()) );
         globals.rawset( "_HOST", ValueFactory.valueOf(Allium.ID + "_" + Allium.VERSION) );
@@ -63,7 +70,7 @@ public class ScriptExecutor{
         try {
             adder.add(state);
         } catch (LuaError error) {
-            script.getLogger().error("Error loading library:", error);
+            logger.error("Error loading library:", error);
         }
     }
 
@@ -80,7 +87,7 @@ public class ScriptExecutor{
                 LibFunction.setGlobalLibrary(state, name, lib);
             }
         } catch (LuaError error) {
-            script.getLogger().error("Error loading library:", error);
+            logger.error("Error loading library:", error);
         }
     }
 
@@ -88,31 +95,33 @@ public class ScriptExecutor{
         return state;
     }
 
+    public MixinLib getMixinLib() { return mixinLib; }
+
+    public PackageLib getPackageLib() { return packageLib; }
+
     public Varargs initialize() throws LuaError, CompileException, IOException {
-         if (entrypoint.has(Entrypoint.Type.MAIN)) {
-            return execute(Entrypoint.Type.MAIN);
+         if (entrypoints.has(Entrypoints.Type.MAIN)) {
+            return execute(Entrypoints.Type.MAIN);
         }
         // This should be caught sooner, but who knows maybe a dev (hugeblank) will come along and mess something up
         throw new LuaError("Expected main entrypoint, got none");
     }
 
     public void preInitialize() throws CompileException, LuaError, IOException {
-        createEnvironment();
-        if (entrypoint.has(Entrypoint.Type.MIXIN)) execute(Entrypoint.Type.MIXIN);
+        if (entrypoints.has(Entrypoints.Type.MIXIN)) execute(Entrypoints.Type.MIXIN);
     }
 
-    private Varargs execute(Entrypoint.Type type) throws LuaError, CompileException, IOException {
-        return LuaThread.runMain(state, load(path.resolve(entrypoint.get(type))));
+    private Varargs execute(Entrypoints.Type type) throws LuaError, CompileException, IOException {
+        return LuaThread.runMain(state, load(path.resolve(entrypoints.get(type))));
     }
 
     public LuaFunction load(Path libPath) throws CompileException, LuaError, IOException {
-        // data, script.getID() + ":" + entrypoint.get(type))
         InputStream stream = Files.newInputStream(libPath);
-        Allium.PROFILER.push(script.getID(), "executor", "load", path.relativize(libPath).toString());
+        Allium.PROFILER.push(id, "executor", "load", path.relativize(libPath).toString());
         LuaFunction out = LoadState.load(
                 state,
                 stream,
-                '='+script.getID() + ":/" + path.relativize(libPath),
+                '=' + id + ":/" + path.relativize(libPath),
                 state.globals()
         );
         Allium.PROFILER.pop();

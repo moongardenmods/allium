@@ -5,8 +5,7 @@ print("I'm feeling lucky!")
 
 -- Furthermore, since the mixin entrypoint is invoked during the preLaunch phase, as a convention, absolutely no game
 -- classes should be `require`d. For more information, see the [fabric wiki](https://wiki.fabricmc.net/documentation:entrypoint?s[]=prelaunch).
--- Note that the `mixin` script entrypoint corresponds to `preLaunch`, while `static` and `dynamic` corresponds to `main`
--- and one of `client` or `server` depending on the launch configuration.
+-- Note that the `mixin` script entrypoint corresponds to `preLaunch`, while `main` corresponds to `main`
 
 -- For registering our recipe in the right location
 local PotionBrewingMixinBuilder = mixin.to("net.minecraft.world.item.alchemy.PotionBrewing")
