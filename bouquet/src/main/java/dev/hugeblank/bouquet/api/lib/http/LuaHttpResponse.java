@@ -1,7 +1,7 @@
 package dev.hugeblank.bouquet.api.lib.http;
 
-import dev.hugeblank.allium.api.annotation.CoerceToNative;
-import dev.hugeblank.allium.api.annotation.LuaWrapped;
+import dev.hugeblank.allium.api.CoerceToNative;
+import dev.hugeblank.allium.api.LuaWrapped;
 import io.netty.buffer.Unpooled;
 
 import java.net.http.HttpResponse;

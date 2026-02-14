@@ -2,8 +2,8 @@ package dev.hugeblank.allium.loader.lib;
 
 import dev.hugeblank.allium.loader.Script;
 import dev.hugeblank.allium.loader.ScriptRegistry;
-import dev.hugeblank.allium.api.annotation.CoerceToNative;
-import dev.hugeblank.allium.api.annotation.LuaWrapped;
+import dev.hugeblank.allium.api.CoerceToNative;
+import dev.hugeblank.allium.api.LuaWrapped;
 import net.fabricmc.loader.api.FabricLoader;
 import org.jetbrains.annotations.Nullable;
 

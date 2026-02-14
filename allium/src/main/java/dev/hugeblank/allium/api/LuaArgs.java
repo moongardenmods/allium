@@ -1,4 +1,4 @@
-package dev.hugeblank.allium.api.annotation;
+package dev.hugeblank.allium.api;
 
 import dev.hugeblank.allium.loader.lib.JavaLib;
 import dev.hugeblank.allium.loader.type.MethodInvocationFunction;

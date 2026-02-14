@@ -8,7 +8,7 @@ import dev.hugeblank.allium.loader.lib.JavaLib;
 import dev.hugeblank.allium.loader.lib.MixinLib;
 import dev.hugeblank.allium.loader.lib.PackageLib;
 import dev.hugeblank.allium.loader.type.StaticBinder;
-import dev.hugeblank.allium.api.annotation.LuaWrapped;
+import dev.hugeblank.allium.api.LuaWrapped;
 import dev.hugeblank.allium.loader.type.coercion.TypeCoercions;
 import me.basiqueevangelist.enhancedreflection.api.EClass;
 import org.squiddev.cobalt.*;

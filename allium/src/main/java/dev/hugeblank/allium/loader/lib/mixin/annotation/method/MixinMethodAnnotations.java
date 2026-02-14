@@ -2,8 +2,8 @@ package dev.hugeblank.allium.loader.lib.mixin.annotation.method;
 
 import dev.hugeblank.allium.loader.lib.mixin.annotation.method.injectors.*;
 import dev.hugeblank.allium.loader.mixin.annotation.method.injectors.*;
-import dev.hugeblank.allium.api.annotation.LuaStateArg;
-import dev.hugeblank.allium.api.annotation.LuaWrapped;
+import dev.hugeblank.allium.api.LuaStateArg;
+import dev.hugeblank.allium.api.LuaWrapped;
 import dev.hugeblank.allium.loader.type.exception.InvalidArgumentException;
 import me.basiqueevangelist.enhancedreflection.api.EClass;
 import org.squiddev.cobalt.LuaError;

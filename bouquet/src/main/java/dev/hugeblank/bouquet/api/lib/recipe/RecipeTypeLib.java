@@ -1,6 +1,6 @@
 package dev.hugeblank.bouquet.api.lib.recipe;
 
-import dev.hugeblank.allium.api.annotation.LuaIndex;
+import dev.hugeblank.allium.api.LuaIndex;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.resources.Identifier;
 import net.minecraft.world.item.crafting.RecipeType;

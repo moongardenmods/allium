@@ -1,8 +1,8 @@
 package dev.hugeblank.allium.loader.lib.mixin.annotation.sugar;
 
-import dev.hugeblank.allium.api.annotation.LuaStateArg;
-import dev.hugeblank.allium.api.annotation.LuaWrapped;
-import dev.hugeblank.allium.api.annotation.OptionalArg;
+import dev.hugeblank.allium.api.LuaStateArg;
+import dev.hugeblank.allium.api.LuaWrapped;
+import dev.hugeblank.allium.api.OptionalArg;
 import dev.hugeblank.allium.loader.type.exception.InvalidArgumentException;
 import org.jetbrains.annotations.Nullable;
 import org.squiddev.cobalt.LuaError;
