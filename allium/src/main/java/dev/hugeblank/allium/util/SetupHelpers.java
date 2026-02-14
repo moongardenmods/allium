@@ -2,12 +2,8 @@ package dev.hugeblank.allium.util;
 
 import com.google.common.collect.ImmutableSet;
 import dev.hugeblank.allium.Allium;
-import dev.hugeblank.allium.api.AlliumExtension;
 import dev.hugeblank.allium.loader.Script;
 import dev.hugeblank.allium.loader.ScriptRegistry;
-import net.fabricmc.api.EnvType;
-import net.fabricmc.loader.api.FabricLoader;
-import net.fabricmc.loader.api.ModContainer;
 import org.jetbrains.annotations.NotNull;
 
 import java.io.IOException;
@@ -17,7 +13,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.util.Collection;
-import java.util.HashSet;
 import java.util.Set;
 import java.util.function.BiConsumer;
 import java.util.stream.Collectors;
@@ -57,28 +52,6 @@ public class SetupHelpers {
 
         registry.forEach(Script::preInitialize);
         Allium.PROFILER.pop();
-    }
-
-    public static void initializeExtensions(EnvType envType) {
-        Allium.PROFILER.push("initializeExtensions");
-        Set<ModContainer> mods = new HashSet<>();
-        getExtensionLocations(Allium.ID, mods);
-        switch (envType) {
-            case CLIENT -> getExtensionLocations(Allium.ID + "-client", mods);
-            case SERVER -> getExtensionLocations(Allium.ID + "-server", mods);
-        }
-        list(mods, "Initialized " + mods.size() + " extensions",
-                (builder, mod) -> builder.append(mod.getMetadata().getId())
-        );
-        Allium.PROFILER.pop();
-    }
-
-    private static void getExtensionLocations(String id, Set<ModContainer> mods) {
-        FabricLoader.getInstance().getEntrypointContainers(id, AlliumExtension.class)
-                .forEach((initializer) -> {
-                    initializer.getEntrypoint().onInitialize();
-                    mods.add(initializer.getProvider());
-                });
     }
 
     private static <T> void list(Collection<T> collection, String initial, BiConsumer<StringBuilder, T> func) {

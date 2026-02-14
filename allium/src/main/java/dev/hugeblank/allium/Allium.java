@@ -32,8 +32,6 @@ public class Allium implements ModInitializer {
 
     @Override
     public void onInitialize() {
-        EnvType envType = FabricLoader.getInstance().getEnvironmentType();
-        SetupHelpers.initializeExtensions(envType);
         SetupHelpers.initializeEnvironment();
         PROFILER.print();
     }
