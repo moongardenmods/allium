@@ -10,6 +10,7 @@ import org.slf4j.Logger;
 import org.squiddev.cobalt.*;
 import org.squiddev.cobalt.compiler.CompileException;
 import org.squiddev.cobalt.compiler.LoadState;
+import org.squiddev.cobalt.function.Dispatch;
 import org.squiddev.cobalt.function.LibFunction;
 import org.squiddev.cobalt.function.LuaFunction;
 import org.squiddev.cobalt.function.VarArgFunction;
@@ -24,18 +25,14 @@ public class ScriptExecutor{
     private final LuaState state;
     private final Logger logger;
     private final String id;
-    private final Path path;
-    private final Entrypoints entrypoints;
 
     private final MixinLib mixinLib;
     private final PackageLib packageLib;
 
-    public ScriptExecutor(Script script, Path path, Entrypoints entrypoints) {
+    public ScriptExecutor(Script script) {
         this.state = new LuaState();
         this.logger = script.getLogger();
         this.id = script.getID();
-        this.path = path;
-        this.entrypoints = entrypoints;
 
         this.mixinLib = new MixinLib(script);
         this.packageLib = new PackageLib(script);
@@ -99,34 +96,22 @@ public class ScriptExecutor{
 
     public PackageLib getPackageLib() { return packageLib; }
 
-    public Varargs initialize() throws LuaError, CompileException, IOException {
-         if (entrypoints.has(Entrypoints.Type.MAIN)) {
-            return execute(Entrypoints.Type.MAIN);
-        }
-        // This should be caught sooner, but who knows maybe a dev (hugeblank) will come along and mess something up
-        throw new LuaError("Expected main entrypoint, got none");
-    }
-
-    public void preInitialize() throws CompileException, LuaError, IOException {
-        if (entrypoints.has(Entrypoints.Type.MIXIN)) execute(Entrypoints.Type.MIXIN);
-        mixinLib.applyConfiguration();
-    }
-
-    private Varargs execute(Entrypoints.Type type) throws LuaError, CompileException, IOException {
-        return LuaThread.runMain(state, load(path.resolve(entrypoints.get(type))));
-    }
-
-    public LuaFunction load(Path libPath) throws CompileException, LuaError, IOException {
-        InputStream stream = Files.newInputStream(libPath);
-        Allium.PROFILER.push(id, "executor", "load", path.relativize(libPath).toString());
-        LuaFunction out = LoadState.load(
-                state,
-                stream,
-                '=' + id + ":/" + path.relativize(libPath),
-                state.globals()
+    public LuaValue execute(Path path) throws LuaError, CompileException, IOException {
+        InputStream stream = Files.newInputStream(path);
+        Allium.PROFILER.push(id, "executor", "load", path.relativize(path).toString());
+        LuaFunction func = LoadState.load(
+            state,
+            stream,
+            '=' + id + ":/" + path.relativize(path),
+            state.globals()
         );
         Allium.PROFILER.pop();
-        return out;
+        try {
+            return Dispatch.call(state, func);
+        } catch (UnwindThrowable e) {
+            logger.warn("Unhandled yield. Avoid using coroutine.yield in places that will bleed into Java logic.");
+        }
+        return Constants.NIL;
     }
 
     private static final class PrintMethod extends VarArgFunction {

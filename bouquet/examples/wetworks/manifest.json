@@ -3,6 +3,6 @@
   "version": "1.0.0",
   "name": "Wetworks",
   "entrypoints": {
-    "main": "wetworks.lua"
+    "main": "main.lua"
   }
 }

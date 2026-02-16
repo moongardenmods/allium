@@ -1,7 +1,6 @@
 package dev.hugeblank.allium.util.asm;
 
 import dev.hugeblank.allium.loader.Script;
-import dev.hugeblank.allium.loader.ScriptExecutor;
 import dev.hugeblank.allium.loader.ScriptRegistry;
 import dev.hugeblank.allium.loader.lib.MixinLib;
 import dev.hugeblank.allium.loader.lib.builder.ClassBuilder;
@@ -30,7 +29,6 @@ public class Owners {
     // Allium
     public static final String PAIR = Type.getInternalName(Pair.class);
     public static final String SCRIPT = Type.getInternalName(Script.class);
-    public static final String SCRIPT_EXECUTOR = Type.getInternalName(ScriptExecutor.class);
     public static final String MIXIN_LIB = Type.getInternalName(MixinLib.class);
     public static final String SCRIPT_REGISTRY = Type.getInternalName(ScriptRegistry.class);
     public static final String REGISTRY = Type.getInternalName(Registry.class);

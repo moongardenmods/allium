@@ -4,21 +4,18 @@ import dev.hugeblank.allium.Allium;
 import dev.hugeblank.allium.api.ScriptResource;
 import dev.hugeblank.allium.api.LuaWrapped;
 import dev.hugeblank.allium.loader.lib.MixinLib;
+import dev.hugeblank.allium.loader.lib.PackageLib;
 import dev.hugeblank.allium.util.Identifiable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.squiddev.cobalt.*;
 import org.squiddev.cobalt.compiler.CompileException;
-import org.squiddev.cobalt.function.Dispatch;
-import org.squiddev.cobalt.function.LuaFunction;
 
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.Set;
-import java.util.WeakHashMap;
+import java.util.*;
 
 @LuaWrapped
 public class Script implements Identifiable {
@@ -33,7 +30,7 @@ public class Script implements Identifiable {
     private final Set<ScriptResource> resources = Collections.newSetFromMap(new WeakHashMap<>());
     private boolean destroyingResources = false;
 
-    private final Set<Runnable> reloadable = new HashSet<>();
+    private final Set<Path> reloadable = new HashSet<>();
     private boolean shouldDestroyOnReload = false;
 
     protected LuaValue module;
@@ -43,7 +40,7 @@ public class Script implements Identifiable {
         Allium.PROFILER.push(manifest.id(), "<init>");
         this.path = reference.path();
         this.logger = LoggerFactory.getLogger('@' + getID());
-        this.executor = new ScriptExecutor(this, path, manifest.entrypoints());
+        this.executor = new ScriptExecutor(this);
         Allium.PROFILER.pop();
     }
 
@@ -51,7 +48,9 @@ public class Script implements Identifiable {
         destroyAllResources();
         try {
             shouldDestroyOnReload = true;
-            reloadable.forEach(Runnable::run);
+            for (Path p : reloadable) {
+                executor.execute(p);
+            }
             shouldDestroyOnReload = false;
         } catch (Throwable e) {
             getLogger().error("Could not reload allium script {}", getID(), e);
@@ -60,11 +59,15 @@ public class Script implements Identifiable {
     }
 
     @LuaWrapped
-    public void registerReloadable(Runnable function) {
+    public void registerReloadable(String location) throws LuaError, CompileException, IOException {
         if (!(initialized == State.INITIALIZING || initialized == State.INITIALIZED)) return;
-        reloadable.add(function);
+        PackageLib packageLib = executor.getPackageLib();
+        String resolved = packageLib.searchPath(location, packageLib.path);
+        if (resolved == null) throw new FileNotFoundException();
+        Path p = path.resolve(resolved);
+        reloadable.add(p);
         shouldDestroyOnReload = true;
-        function.run();
+        executor.execute(p);
         shouldDestroyOnReload = false;
     }
 
@@ -92,7 +95,10 @@ public class Script implements Identifiable {
             return;
         }
         try {
-            getExecutor().preInitialize();
+            if (manifest.entrypoints().has(Entrypoints.Type.MIXIN)) {
+                executor.execute(path.resolve(manifest.entrypoints().get(Entrypoints.Type.MIXIN)));
+            }
+            executor.getMixinLib().applyConfiguration();
         } catch (Throwable e) {
             getLogger().error("Could not pre-initialize allium script {}", getID(), e);
         }
@@ -103,9 +109,11 @@ public class Script implements Identifiable {
         Allium.PROFILER.push(getID(), "initialize");
         if (initialized == State.UNINITIALIZED) {
             try {
-                // Initialize and set module used by require
+                if (!manifest.entrypoints().has(Entrypoints.Type.MAIN))
+                    throw new LuaError("Expected main entrypoint, got none");
+
                 this.initialized = State.INITIALIZING; // Guard against duplicate initializations
-                this.module = getExecutor().initialize().first();
+                this.module = executor.execute(path.resolve(manifest.entrypoints().get(Entrypoints.Type.MAIN)));
                 this.initialized = State.INITIALIZED; // If all these steps are successful, we can update the state
             } catch (Exception e) {
                 this.module = Constants.NIL;
@@ -122,21 +130,15 @@ public class Script implements Identifiable {
     }
 
     // return null if file isn't contained within Scripts path, or if it doesn't exist.
-    public LuaValue loadLibrary(LuaState state, Path mod) throws UnwindThrowable, LuaError {
+    public LuaValue loadLibrary(Path mod) throws LuaError {
         Allium.PROFILER.push(getID(), "loadLibrary");
         // Ensure the modules parent path is the root path, and that the module exists before loading
         try {
-            LuaFunction loadValue = getExecutor().load(mod);
             Allium.PROFILER.push(getID(), "dispatch");
-            LuaValue value = Dispatch.call(state, loadValue);
+            LuaValue value = executor.execute(mod);
             Allium.PROFILER.pop();
             Allium.PROFILER.pop();
             return value;
-        } catch (FileNotFoundException e) {
-            Allium.PROFILER.pop();
-            // This should never happen, but if it does, boy do I want to know.
-            Allium.LOGGER.warn("File claimed to exist but threw a not found exception... </3", e);
-            return null;
         } catch (CompileException | IOException e) {
             Allium.PROFILER.pop();
             throw new LuaError(e);
@@ -168,10 +170,6 @@ public class Script implements Identifiable {
         return executor.getState();
     }
 
-    public Manifest getManifest() {
-        return manifest;
-    }
-
     public Path getPath() {
         return path;
     }
@@ -180,8 +178,11 @@ public class Script implements Identifiable {
         return logger;
     }
 
-    public ScriptExecutor getExecutor() {
-        return executor;
+    public MixinLib getMixinLib() { return executor.getMixinLib(); }
+
+    public boolean isPathForEntrypoint(Path path, Entrypoints.Type type) throws IOException {
+        Entrypoints entrypoints = manifest.entrypoints();
+        return entrypoints.has(type) && Files.isSameFile( path, this.path.resolve(entrypoints.get(type)));
     }
 
     @Override

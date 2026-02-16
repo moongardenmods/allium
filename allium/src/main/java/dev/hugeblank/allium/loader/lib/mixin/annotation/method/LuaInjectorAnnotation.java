@@ -58,8 +58,7 @@ public abstract class LuaInjectorAnnotation extends LuaMethodAnnotation implemen
             List<Type> types = paramTypes.stream().map(MixinParameter::getType).toList();
 
             AsmUtil.getScript(methodVisitor, script);
-            methodVisitor.visitMethodInsn(INVOKEVIRTUAL, Owners.SCRIPT, "getExecutor", "()Ldev/hugeblank/allium/loader/ScriptExecutor;", false);
-            methodVisitor.visitMethodInsn(INVOKEVIRTUAL, Owners.SCRIPT_EXECUTOR, "getMixinLib", "()Ldev/hugeblank/allium/loader/lib/MixinLib;", false);
+            methodVisitor.visitMethodInsn(INVOKEVIRTUAL, Owners.SCRIPT, "getMixinLib", "()Ldev/hugeblank/allium/loader/lib/MixinLib;", false);
             methodVisitor.visitLdcInsn(eventName);
             methodVisitor.visitMethodInsn(INVOKEVIRTUAL, Owners.MIXIN_LIB, "get", "(Ljava/lang/String;)Ldev/hugeblank/allium/api/event/MixinMethodHook;", false);
 

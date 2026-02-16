@@ -47,7 +47,7 @@ public class MixinMethodHook {
         if (!MixinLib.isComplete())
             throw new IllegalStateException("Hook cannot be set during pre-launch phase.");
         if (handler != null)
-            throw new IllegalStateException("Mixin hook already registered for id '" + id + "' from " + script.getID());
+            throw new IllegalStateException("Mixin hook already registered for id '" + id + "'");
 
         // This method should only be called once, and after preLaunch. Trusting that that's the case,
         // load the parameter and return type classes for this method.

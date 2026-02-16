@@ -159,7 +159,7 @@ public class MixinMethodBuilder {
         methodVisitor.visitEnd();
 
         if (id != null && script != null) {
-            script.getExecutor().getMixinLib().addMethodHook(id, new MixinMethodHook(
+            script.getMixinLib().addMethodHook(id, new MixinMethodHook(
                 script,
                 id,
                 params.stream().map(MixinParameter::getType).toList(),

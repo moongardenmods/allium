@@ -1,6 +1,7 @@
 package dev.hugeblank.allium.loader.lib.mixin.builder;
 
 import dev.hugeblank.allium.Allium;
+import dev.hugeblank.allium.api.LuaStateArg;
 import dev.hugeblank.allium.loader.Script;
 import dev.hugeblank.allium.loader.lib.MixinLib;
 import dev.hugeblank.allium.loader.lib.builder.AbstractClassBuilder;
@@ -26,6 +27,7 @@ import org.spongepowered.asm.mixin.gen.Invoker;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.squiddev.cobalt.LuaError;
+import org.squiddev.cobalt.LuaState;
 import org.squiddev.cobalt.LuaTable;
 
 import java.util.ArrayList;
@@ -62,7 +64,7 @@ public class MixinClassBuilder extends AbstractClassBuilder {
 
     private MixinClassBuilder(VisitedClass visitedClass, String[] interfaces, @Nullable EnvType targetEnvironment, boolean duck, Script script) {
         super(
-                script.getExecutor().getMixinLib().getUniqueMixinClassName(),
+                script.getMixinLib().getUniqueMixinClassName(),
                 EClass.fromJava(Object.class).name().replace('.', '/'),
                 interfaces,
                 ACC_PUBLIC | (duck ? ACC_ABSTRACT | ACC_INTERFACE : 0) | visitedClass.access(),
@@ -87,7 +89,7 @@ public class MixinClassBuilder extends AbstractClassBuilder {
         checkPhase();
         if (visitedClass.isInterface() || this.duck)
             throw new InvalidMixinException(InvalidMixinException.Type.INVALID_CLASSTYPE, "class");
-        if (script.getExecutor().getMixinLib().get(hookId) != null)
+        if (script.getMixinLib().get(hookId) != null)
             throw new InvalidMixinException(InvalidMixinException.Type.INJECTOR_EXISTS, hookId);
 
         Allium.PROFILER.push("createInjectMethod", hookId);
@@ -104,25 +106,25 @@ public class MixinClassBuilder extends AbstractClassBuilder {
     }
 
     @LuaWrapped
-    public void accessor(LuaTable annotations) throws InvalidArgumentException, InvalidMixinException, LuaError {
+    public void accessor(@LuaStateArg LuaState state, LuaTable annotations) throws InvalidArgumentException, InvalidMixinException, LuaError {
         // Shorthand method for writing both setter and getter accessor methods
-        setAccessor(annotations);
-        getAccessor(annotations);
+        setAccessor(state, annotations);
+        getAccessor(state, annotations);
     }
 
     @LuaWrapped
-    public void setAccessor(LuaTable annotations) throws LuaError, InvalidArgumentException, InvalidMixinException {
+    public void setAccessor(@LuaStateArg LuaState state, LuaTable annotations) throws LuaError, InvalidArgumentException, InvalidMixinException {
         checkPhase();
-        writeAccessor(true, annotations);
+        writeAccessor(state, true, annotations);
     }
 
     @LuaWrapped
-    public void getAccessor(LuaTable annotations) throws LuaError, InvalidArgumentException, InvalidMixinException {
+    public void getAccessor(@LuaStateArg LuaState state, LuaTable annotations) throws LuaError, InvalidArgumentException, InvalidMixinException {
         checkPhase();
-        writeAccessor(false, annotations);
+        writeAccessor(state, false, annotations);
     }
 
-    private void writeAccessor(boolean isSetter, LuaTable annotations) throws InvalidMixinException, LuaError, InvalidArgumentException {
+    private void writeAccessor(@LuaStateArg LuaState state, boolean isSetter, LuaTable annotations) throws InvalidMixinException, LuaError, InvalidArgumentException {
         if (!this.duck)
             throw new InvalidMixinException(InvalidMixinException.Type.INVALID_CLASSTYPE, "interface");
         String descriptor = getTargetValue(annotations);
@@ -138,7 +140,7 @@ public class MixinClassBuilder extends AbstractClassBuilder {
             MixinMethodBuilder methodBuilder = MixinMethodBuilder.of(c, visitedField, name, params);
 
             methodBuilder.annotations(List.of(new LuaAnnotationParser(
-                    script.getState(),
+                    state,
                     annotations,
                     EClass.fromJava(Accessor.class)
             )));
@@ -165,7 +167,7 @@ public class MixinClassBuilder extends AbstractClassBuilder {
 
 
     @LuaWrapped
-    public void invoker(LuaTable annotations) throws InvalidMixinException, LuaError, InvalidArgumentException {
+    public void invoker(@LuaStateArg LuaState state, LuaTable annotations) throws InvalidMixinException, LuaError, InvalidArgumentException {
         checkPhase();
         String methodName = getTargetValue(annotations);
         if (visitedClass.containsMethod(methodName)) {
@@ -182,7 +184,7 @@ public class MixinClassBuilder extends AbstractClassBuilder {
             MixinMethodBuilder methodBuilder = MixinMethodBuilder.of(c, visitedMethod, name, params);
 
             methodBuilder.annotations(List.of(new LuaAnnotationParser(
-                    script.getState(),
+                    state,
                     annotations,
                     EClass.fromJava(Invoker.class)
             )));
@@ -234,7 +236,7 @@ public class MixinClassBuilder extends AbstractClassBuilder {
 
     @LuaWrapped
     public void build(@OptionalArg String id) throws LuaError, InvalidMixinException {
-        if (script.getExecutor().getMixinLib().hasDuck(id))
+        if (script.getMixinLib().hasDuck(id))
             throw new InvalidMixinException(InvalidMixinException.Type.DUCK_EXISTS, id);
 
         if (!duck) {
@@ -264,7 +266,7 @@ public class MixinClassBuilder extends AbstractClassBuilder {
         // give the class back to the user for later use in the case of an interface.
         MixinClassInfo info = new MixinClassInfo(className.replace("/", "."), classBytes);
 
-        MixinLib lib = script.getExecutor().getMixinLib();
+        MixinLib lib = script.getMixinLib();
 
         if (duck) {
             if (id == null) throw new LuaError("Missing 'id' parameter for duck mixin on " + className);

@@ -62,27 +62,22 @@ public class PackageLib extends WrappedScriptLibrary {
         return super.add(state);
     }
 
-    public Varargs preloadLoader(LuaState state, DebugFrame frame, Varargs args) throws LuaError, UnwindThrowable {
+    private Varargs preloadLoader(LuaState state, DebugFrame frame, Varargs args) throws LuaError, UnwindThrowable {
         if (preload.get(args.arg(1).checkString()) instanceof LuaFunction function){
             return Dispatch.call(state, function);
         }
         return Constants.NIL;
     }
 
-    private static boolean isPathForEntrypoint(Path path, Script script, Entrypoints entrypoints, Entrypoints.Type type) throws IOException {
-        return entrypoints.has(type) && Files.isSameFile( path, script.getPath().resolve(entrypoints.get(type)));
-    }
-
-    private Varargs pathLoader(LuaState state, DebugFrame frame, Varargs args) throws LuaError, UnwindThrowable {
+    private Varargs pathLoader(LuaState state, DebugFrame frame, Varargs args) throws LuaError {
         String modStr = args.arg(1).checkString();
-        Entrypoints entrypoints = script.getManifest().entrypoints();
         String pstr = searchPath(modStr, this.path);
         if (pstr != null) {
             Path path = script.getPath().resolve(pstr);
             if (!Files.exists(path)) return Constants.NIL;
             try {
                 // Do not allow entrypoints to get loaded from the path.
-                boolean loadingEntrypoint = isPathForEntrypoint(path, script, entrypoints, Entrypoints.Type.MAIN);
+                boolean loadingEntrypoint = script.isPathForEntrypoint(path, Entrypoints.Type.MAIN);
 
                 if (loadingEntrypoint) {
                     Allium.LOGGER.warn(
@@ -94,7 +89,7 @@ public class PackageLib extends WrappedScriptLibrary {
                 }
             } catch (IOException ignored) {}
             // Sometimes the loader returns the module *as well* as the path they were loaded from.
-            Varargs res = ValueFactory.varargsOf(script.loadLibrary(state, path), ValueFactory.valueOf(path.toString()));
+            Varargs res = ValueFactory.varargsOf(script.loadLibrary(path), ValueFactory.valueOf(path.toString()));
             return res.first().equals(Constants.NIL) ? Constants.TRUE : res;
         }
         return Constants.NIL;
@@ -107,7 +102,7 @@ public class PackageLib extends WrappedScriptLibrary {
         return candidate.getModule();
     }
 
-    public LuaValue javaLoader(LuaState state, LuaValue arg) {
+    private LuaValue javaLoader(LuaState state, LuaValue arg) {
         try {
             return StaticBinder.bindClass(JavaHelpers.asClass(arg));
         } catch (LuaError ignored) {}
