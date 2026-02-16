@@ -34,6 +34,12 @@ tasks {
         jvmArgs = listOf(output, extensions, "-Dcombine.ignoreAccess")
         workingDir = file("../run")
     }
+
+    register<Exec>("updateGlobals") {
+        group = "allium"
+        commandLine = listOf("git", "submodule", "update", "--recursive")
+        workingDir = file("..")
+    }
 }
 
 dependencies {
