@@ -10,6 +10,7 @@ repositories {
         content {
             includeGroup("dev.hugeblank")
             includeGroup("cc.tweaked")
+            includeGroup("dev.moongarden")
         }
     }
     maven("https://basique.top/maven/releases") {

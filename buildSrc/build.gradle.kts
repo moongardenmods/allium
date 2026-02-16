@@ -15,12 +15,6 @@ dependencies {
     implementation("net.fabricmc:fabric-loom:${project.properties["loomVersion"]}")
 }
 
-tasks {
-    jar {
-        enabled = false
-    }
-}
-
 repositories {
     gradlePluginPortal()
     maven("https://maven.fabricmc.net/")

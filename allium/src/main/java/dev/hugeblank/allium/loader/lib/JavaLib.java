@@ -113,7 +113,7 @@ public class JavaLib implements WrappedLibrary {
     }
 
     @LuaWrapped(name = "throw")
-    public void exception(Throwable error) throws Throwable {
+    public static void exception(Throwable error) throws Throwable {
         throw error;
     }
 
