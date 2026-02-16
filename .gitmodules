@@ -1,0 +1,3 @@
+[submodule "globals"]
+	path = globals
+	url = git@github.com:moongardenmods/allium-globals.git
