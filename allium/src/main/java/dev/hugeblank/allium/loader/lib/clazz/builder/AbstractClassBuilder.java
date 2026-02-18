@@ -1,4 +1,4 @@
-package dev.hugeblank.allium.loader.lib.builder;
+package dev.hugeblank.allium.loader.lib.clazz.builder;
 
 import org.objectweb.asm.ClassWriter;
 
@@ -15,5 +15,9 @@ public class AbstractClassBuilder {
         this.className = className;
         this.access = access;
         this.c.visit(V25, access, className, signature, superClass, interfaces);
+    }
+
+    protected void test() {
+
     }
 }

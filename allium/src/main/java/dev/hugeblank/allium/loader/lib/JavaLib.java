@@ -1,6 +1,6 @@
 package dev.hugeblank.allium.loader.lib;
 
-import dev.hugeblank.allium.loader.lib.builder.ClassBuilder;
+import dev.hugeblank.allium.loader.lib.clazz.builder.ClassBuilder;
 import dev.hugeblank.allium.loader.type.MethodInvocationFunction;
 import dev.hugeblank.allium.loader.type.StaticBinder;
 import dev.hugeblank.allium.api.LuaArgs;

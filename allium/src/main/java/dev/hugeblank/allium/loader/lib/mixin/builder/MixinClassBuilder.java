@@ -4,7 +4,7 @@ import dev.hugeblank.allium.Allium;
 import dev.hugeblank.allium.api.LuaStateArg;
 import dev.hugeblank.allium.loader.Script;
 import dev.hugeblank.allium.loader.lib.MixinLib;
-import dev.hugeblank.allium.loader.lib.builder.AbstractClassBuilder;
+import dev.hugeblank.allium.loader.lib.clazz.builder.AbstractClassBuilder;
 import dev.hugeblank.allium.loader.lib.mixin.MixinClassInfo;
 import dev.hugeblank.allium.loader.lib.mixin.annotation.LuaAnnotationParser;
 import dev.hugeblank.allium.loader.lib.mixin.annotation.method.InjectorChef;
@@ -30,7 +30,6 @@ import org.squiddev.cobalt.LuaError;
 import org.squiddev.cobalt.LuaState;
 import org.squiddev.cobalt.LuaTable;
 
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Locale;

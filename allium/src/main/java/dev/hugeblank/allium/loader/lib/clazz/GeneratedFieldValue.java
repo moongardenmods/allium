@@ -1,4 +1,4 @@
-package dev.hugeblank.allium.loader.lib.builder;
+package dev.hugeblank.allium.loader.lib.clazz;
 
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;

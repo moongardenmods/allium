@@ -1,5 +1,6 @@
-package dev.hugeblank.allium.loader.lib.builder;
+package dev.hugeblank.allium.loader.lib.clazz.builder;
 
+import dev.hugeblank.allium.loader.lib.clazz.GeneratedFieldValue;
 import dev.hugeblank.allium.util.Pair;
 import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.MethodVisitor;
@@ -12,13 +13,16 @@ import java.util.function.Function;
 
 import static org.objectweb.asm.Opcodes.*;
 
-public class FieldBuilder extends AbstractFieldBuilder {
+public class InternalFieldBuilder {
+    private final String className;
+    private final ClassVisitor c;
     private int fieldIndex = 0;
     private final HashMap<String, Pair<Object, Class<?>>> storedFields = new HashMap<>();
     private final HashMap<String, Pair<Function<Class<?>, ?>, Class<?>>> complexFields = new HashMap<>();
 
-    public FieldBuilder(String className, ClassVisitor c) {
-        super(className, c);
+    public InternalFieldBuilder(String className, ClassVisitor c) {
+        this.className = className;
+        this.c = c;
     }
 
     public <T> String store(T o, Class<T> fieldType) {

@@ -1,6 +1,6 @@
 package dev.hugeblank.allium.loader.type.property;
 
-import dev.hugeblank.allium.loader.lib.builder.ClassBuilder;
+import dev.hugeblank.allium.loader.lib.clazz.builder.ClassBuilder;
 import dev.hugeblank.allium.loader.type.coercion.TypeCoercions;
 import dev.hugeblank.allium.loader.type.exception.InvalidArgumentException;
 import me.basiqueevangelist.enhancedreflection.api.EField;

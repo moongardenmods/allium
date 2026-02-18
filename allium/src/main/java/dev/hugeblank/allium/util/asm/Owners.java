@@ -3,7 +3,7 @@ package dev.hugeblank.allium.util.asm;
 import dev.hugeblank.allium.loader.Script;
 import dev.hugeblank.allium.loader.ScriptRegistry;
 import dev.hugeblank.allium.loader.lib.MixinLib;
-import dev.hugeblank.allium.loader.lib.builder.ClassBuilder;
+import dev.hugeblank.allium.loader.lib.clazz.builder.ClassBuilder;
 import dev.hugeblank.allium.loader.type.StaticBinder;
 import dev.hugeblank.allium.loader.type.coercion.TypeCoercions;
 import dev.hugeblank.allium.loader.type.userdata.*;

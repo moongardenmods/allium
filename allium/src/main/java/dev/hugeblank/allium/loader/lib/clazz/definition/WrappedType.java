@@ -1,4 +1,4 @@
-package dev.hugeblank.allium.loader.lib.builder.definition;
+package dev.hugeblank.allium.loader.lib.clazz.definition;
 
 import me.basiqueevangelist.enhancedreflection.api.EClass;
 import me.basiqueevangelist.enhancedreflection.api.EParameter;
