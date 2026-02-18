@@ -16,8 +16,4 @@ public class AbstractClassBuilder {
         this.access = access;
         this.c.visit(V25, access, className, signature, superClass, interfaces);
     }
-
-    protected void test() {
-
-    }
 }

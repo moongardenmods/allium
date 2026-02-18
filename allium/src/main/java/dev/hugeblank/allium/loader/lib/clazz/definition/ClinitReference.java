@@ -7,27 +7,51 @@ import dev.hugeblank.allium.util.asm.Owners;
 import org.objectweb.asm.MethodVisitor;
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;
+import org.squiddev.cobalt.*;
+import org.squiddev.cobalt.function.Dispatch;
+import org.squiddev.cobalt.function.LuaFunction;
+import org.squiddev.cobalt.function.VarArgFunction;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.function.Supplier;
 
 import static org.objectweb.asm.Opcodes.*;
 
-public class ClinitDefinition extends MethodDefinition {
-    public ClinitDefinition() {
-        super("<clinit>", new WrappedType[]{}, new WrappedType(MethodBuilder.VOID, MethodBuilder.VOID), Opcodes.ACC_STATIC);
+public class ClinitReference extends ExecutableReference {
+    private final List<LuaFunction> functions = new ArrayList<>();
+    public ClinitReference(LuaState state, Supplier<LuaValue> hooksSupplier) {
+        super("<clinit>", null, new WrappedType[]{}, new WrappedType(MethodBuilder.VOID, MethodBuilder.VOID), Opcodes.ACC_STATIC, true);
+        this.function = new VarArgFunction() {
+            @Override
+            protected Varargs invoke(LuaState luaState, Varargs varargs) throws LuaError, UnwindThrowable {
+                LuaValue holder = hooksSupplier.get();
+                for (LuaFunction function : functions) {
+                    Dispatch.invoke(state, function, ValueFactory.varargsOf(holder, varargs));
+                }
+                return Constants.NIL;
+            }
+        };
+    }
+
+    protected void addFunction(LuaFunction func) {
+        functions.add(func);
     }
 
     @Override
-    public void write(ClassBuilder.BuilderContext bctx) {
-        WriteContext ctx = createContext(bctx);
+    public String getTypeName() {
+        return "class initializer";
+    }
 
+    @Override
+    public boolean isValid() {
+        return true;
+    }
+
+    @Override
+    protected void prepareOffsets(WriteContext ctx) {
         ctx.setArrayPos((Type.getArgumentsAndReturnSizes(ctx.descriptor()) >> 2)-1);
         ctx.setParamOffset(1);
-
-        if (definesHandler()) {
-            writeStart(ctx);
-            writeFirstElement(ctx);
-            writeHook(ctx);
-            writeEnd(ctx);
-        }
     }
 
     @Override
@@ -41,7 +65,7 @@ public class ClinitDefinition extends MethodDefinition {
     }
 
     @Override
-    protected void writeEnd(WriteContext ctx) {
+    protected void writeReturn(WriteContext ctx) {
         if (definesFields) {
             MethodVisitor m = ctx.visitor();
             for (ClassBuilder.FieldReference reference : ctx.classFields()) {
@@ -54,8 +78,7 @@ public class ClinitDefinition extends MethodDefinition {
                 if (rawType.isPrimitive()) AsmUtil.unwrapPrimitive(m, Type.getType(rawType)); // <-> realFieldValue
                 m.visitFieldInsn(PUTSTATIC, ctx.className(), reference.name(), Type.getDescriptor(rawType)); // -> realFieldValue
             }
-
         }
-        super.writeEnd(ctx);
+        super.writeReturn(ctx);
     }
 }

@@ -8,7 +8,6 @@ import dev.hugeblank.allium.util.asm.AsmUtil;
 import dev.hugeblank.allium.util.asm.Owners;
 import me.basiqueevangelist.enhancedreflection.api.EClass;
 import org.objectweb.asm.MethodVisitor;
-import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;
 import org.squiddev.cobalt.LuaState;
 import org.squiddev.cobalt.LuaValue;
@@ -23,47 +22,42 @@ import static org.objectweb.asm.Opcodes.INVOKEVIRTUAL;
 import static org.objectweb.asm.Opcodes.SWAP;
 
 @LuaWrapped
-public class ConstructorDefinition extends ExecutableDefinition {
+public class ConstructorReference extends ExecutableReference {
     protected final LuaFunction remapper;
 
-    public ConstructorDefinition(LuaFunction remapper, WrappedType[] params, int access, boolean definesFields) {
-        super("<init>", params, new WrappedType(MethodBuilder.VOID, MethodBuilder.VOID), access, definesFields);
+    public ConstructorReference(LuaFunction remapper, String index, WrappedType[] params, int access, boolean definesFields) {
+        super("<init>", index == null ? "constructor" : index, params, new WrappedType(MethodBuilder.VOID, MethodBuilder.VOID), access, definesFields);
         this.remapper = remapper;
+    }
+
+    @Override
+    public boolean isValid() {
+        return !definesFields || function != null;
+    }
+
+    @Override
+    public String getTypeName() {
+        return "constructor";
     }
 
     public void applyRemap(WriteContext ctx) {
         // No need for remap if this() or super() are not invoked.
     }
 
-    @LuaWrapped
     @Override
-    public void put(String key, LuaFunction value) {
-        if (function != null) throw new IllegalStateException("Function already registered for constructor.");
-        if ((access & Opcodes.ACC_ABSTRACT) != 0) return; // TODO: warn
-        if (key.equals("constructor")) {
-            function = value;
-        }
-    }
-
-    @Override
-    protected void writeStart(WriteContext ctx) {
-        MethodVisitor m = ctx.visitor();
-
-        m.visitCode();
-
+    protected void writeBeforeHandler(WriteContext ctx) {
         applyRemap(ctx);
-        ClassBuilder.addToFieldHooks(m);
 
+        MethodVisitor m = ctx.visitor();
 
-        m.visitLdcInsn(params.length + ctx.paramOffset());
-        m.visitTypeInsn(ANEWARRAY, Owners.LUA_VALUE);
-        m.visitVarInsn(ASTORE, ctx.arrayPos());
+        m.visitVarInsn(ALOAD, 0);
+        if (definesFields) m.visitMethodInsn(INVOKESTATIC, Owners.CLASS_BUILDER, "initInstanceFieldHolder", "(Ljava/lang/Object;)V", false);
     }
 
     @Override
-    protected void writeEnd(WriteContext ctx) {
-        MethodVisitor m = ctx.visitor();
-        if (definesFields) {
+    protected void writeReturn(WriteContext ctx) {
+        if (definesFields) { // Net 0 effect on stack
+            MethodVisitor m = ctx.visitor();
             for (ClassBuilder.FieldReference reference : ctx.instanceFields()) {
                 Class<?> rawType = reference.type().raw();
 
@@ -79,9 +73,10 @@ public class ConstructorDefinition extends ExecutableDefinition {
             ctx.visitor().visitVarInsn(ALOAD, 0);
             ctx.visitor().visitMethodInsn(INVOKESTATIC, Owners.CLASS_BUILDER, "removeInstanceFieldHolder", "(Ljava/lang/Object;)V", false);
         }
-        super.writeEnd(ctx);
+        super.writeReturn(ctx);
     }
 
+    // Only execute if remapper is not null!
     protected void runRemapper(WriteContext ctx) {
         List<Type> paramTypes = new ArrayList<>();
         List<EClass<?>> paramEClasses = new ArrayList<>();

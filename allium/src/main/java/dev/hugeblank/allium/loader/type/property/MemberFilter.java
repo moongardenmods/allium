@@ -29,7 +29,7 @@ public record MemberFilter(boolean expectStatic, boolean expectPublic, boolean e
         return (expectStatic == holder.isStatic()) &&
                 ((expectPublic == holder.isPublic()) ||
                 (expectProtected == holder.isProtected()) ||
-                (expectPrivate == holder.isPrivate()));
+                expectPrivate);
     }
 
     public MethodHandles.Lookup lookup(Class<?> clazz) throws IllegalAccessException {

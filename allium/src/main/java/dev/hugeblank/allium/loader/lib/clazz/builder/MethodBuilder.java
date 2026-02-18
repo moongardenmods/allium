@@ -1,7 +1,7 @@
 package dev.hugeblank.allium.loader.lib.clazz.builder;
 
 import dev.hugeblank.allium.api.LuaWrapped;
-import dev.hugeblank.allium.loader.lib.clazz.definition.MethodDefinition;
+import dev.hugeblank.allium.loader.lib.clazz.definition.MethodReference;
 import dev.hugeblank.allium.loader.lib.clazz.definition.WrappedType;
 import dev.hugeblank.allium.loader.type.property.PropertyResolver;
 import me.basiqueevangelist.enhancedreflection.api.EClass;
@@ -18,22 +18,25 @@ public class MethodBuilder {
     public static final EClass<?> VOID = EClass.fromJava(void.class);
 
     private final ClassBuilder classBuilder;
+    private final List<EMethod> methods;
 
     private int access = 0;
     private WrappedType[] params = new WrappedType[]{};
     private String name = null;
-    private EClass<?> returnType = MethodBuilder.VOID;
+    private String index = null;
+    private WrappedType returnType = new WrappedType(MethodBuilder.VOID, MethodBuilder.VOID);
     private boolean override = false;
 
-    public MethodBuilder(ClassBuilder classBuilder) {
+    public MethodBuilder(ClassBuilder classBuilder, List<EMethod> methods) {
         this.classBuilder = classBuilder;
+        this.methods = methods;
     }
 
     @LuaWrapped
-    public MethodBuilder override(String name, List<EClass<?>> parameters) {
+    public MethodBuilder override(String name, List<EClass<?>> parameters) throws ClassBuildException {
         var methods = new ArrayList<EMethod>();
         PropertyResolver.collectMethods(
-            classBuilder.methods.stream()
+            this.methods.stream()
                 .filter((m) -> !m.isPrivate() && !m.isStatic())
                 .toList(),
             name,
@@ -57,47 +60,57 @@ public class MethodBuilder {
                     this.name = name;
                     access = method.modifiers() & ~ACC_ABSTRACT;
                     params = methParams.stream().map(WrappedType::fromParameter).toArray(WrappedType[]::new);
-//                    methodDefinitions.put(method.name(), new MethodDefinition(method.name(),
-                        methParams.stream().map(WrappedType::fromParameter).toArray(WrappedType[]::new),
-                        new WrappedType(method.rawReturnType(), method.returnType().upperBound()),
-//                        method.modifiers() & ~ACC_ABSTRACT
-//                    ));
+                    returnType = new WrappedType(method.rawReturnType(), method.returnType().upperBound());
                     return this;
                 }
             }
         }
-        throw new IllegalStateException("No such override-able method '" + name + "' exists on class.");
+        throw new ClassBuildException("No such method '" + name + "' available for override on class.");
     }
 
-    public MethodBuilder name(String name) {
-        if (override) throw new IllegalStateException("Cannot modify name of method override.");
+    @LuaWrapped
+    public MethodBuilder name(String name) throws ClassBuildException {
+        if (override) throw new ClassBuildException("Cannot modify name of method override.");
         this.name = name;
         return this;
     }
 
     @LuaWrapped
-    public MethodBuilder access(Map<String, Boolean> access) {
+    public MethodBuilder index(String index) {
+        this.index = index;
+        return this;
+    }
+
+    @LuaWrapped
+    public MethodBuilder access(Map<String, Boolean> access) throws ClassBuildException {
         int accessInt = ClassBuilder.handleMethodAccess(access);
         if (override && (accessInt & ACC_STATIC) == ACC_STATIC) {
-            throw new IllegalStateException("Cannot change access of method override to static.");
+            throw new ClassBuildException("Cannot change access of method override to static.");
         } else if (override && (accessInt & ACC_ABSTRACT) == ACC_ABSTRACT) {
-            throw new IllegalStateException("Cannot change access of method override to abstract.");
+            throw new ClassBuildException("Cannot change access of method override to abstract.");
         } else if ((classBuilder.access & ACC_INTERFACE) == ACC_INTERFACE && (accessInt & ACC_ABSTRACT) != ACC_ABSTRACT) {
-            throw new IllegalStateException("Interfaces can not contain a non-abstract method");
+            throw new ClassBuildException("Interfaces can not contain a non-abstract method");
         }
         this.access = accessInt;
         return this;
     }
 
     @LuaWrapped
-    public MethodBuilder parameters(List<EClass<?>> parameters) {
-        if (override) throw new IllegalStateException("Cannot modify parameters of method override.");
-        this.params = parameters.stream().map((ec) -> new WrappedType(ec, ec.type())).toArray(WrappedType[]::new);
+    public MethodBuilder parameters(List<EClass<?>> parameters) throws ClassBuildException {
+        if (override) throw new ClassBuildException("Cannot modify parameters of method override.");
+        this.params = parameters.stream().map((ec) -> new WrappedType(ec, ec)).toArray(WrappedType[]::new);
         return this;
     }
 
     @LuaWrapped
     public void returnType(EClass<?> returnType) {
-        this.returnType = returnType;
+        this.returnType = new WrappedType(returnType, returnType);
+    }
+
+    @LuaWrapped
+    public ClassBuilder build() throws ClassBuildException {
+        MethodReference definition = new MethodReference(name, index, params, returnType, access);
+        classBuilder.apply(definition);
+        return classBuilder;
     }
 }

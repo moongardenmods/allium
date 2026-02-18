@@ -10,12 +10,12 @@ import java.util.List;
 
 import static org.objectweb.asm.Opcodes.INVOKESPECIAL;
 
-public class ThisConstructorDefinition extends ConstructorDefinition {
-    private final ConstructorDefinition thisDef;
+public class ThisConstructorReference extends ConstructorReference {
+    private final ConstructorReference thisDef;
     private final String className;
 
-    public ThisConstructorDefinition(ConstructorDefinition thisDef, LuaFunction remapper, String className, WrappedType[] params, int access, boolean definesFields) {
-        super(remapper, params, access, definesFields);
+    public ThisConstructorReference(ConstructorReference thisDef, LuaFunction remapper, String index, String className, WrappedType[] params, int access, boolean definesFields) {
+        super(remapper, index, params, access, definesFields);
         this.thisDef = thisDef;
         this.className = className;
     }

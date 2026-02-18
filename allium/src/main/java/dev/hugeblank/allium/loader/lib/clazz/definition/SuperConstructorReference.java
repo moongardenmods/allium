@@ -13,11 +13,11 @@ import java.util.List;
 import static org.objectweb.asm.Opcodes.INVOKESPECIAL;
 
 @LuaWrapped
-public class SuperConstructorDefinition extends ConstructorDefinition {
+public class SuperConstructorReference extends ConstructorReference {
     private final EConstructor<?> superCtor;
 
-    public SuperConstructorDefinition(EConstructor<?> superCtor, LuaFunction remapper, WrappedType[] params, int access, boolean definesFields) {
-        super(remapper, params, access, definesFields);
+    public SuperConstructorReference(EConstructor<?> superCtor, LuaFunction remapper, String index, WrappedType[] params, int access, boolean definesFields) {
+        super(remapper, index, params, access, definesFields);
         this.superCtor = superCtor;
     }
 

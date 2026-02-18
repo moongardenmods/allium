@@ -1,12 +1,10 @@
 package dev.hugeblank.allium.loader.lib.clazz.definition;
 
-import dev.hugeblank.allium.api.LuaWrapped;
 import dev.hugeblank.allium.loader.lib.clazz.builder.ClassBuilder;
 import dev.hugeblank.allium.util.asm.AsmUtil;
 import dev.hugeblank.allium.util.asm.Owners;
 import me.basiqueevangelist.enhancedreflection.api.EClass;
 import org.objectweb.asm.MethodVisitor;
-import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;
 import org.squiddev.cobalt.LuaState;
 import org.squiddev.cobalt.function.LuaFunction;
@@ -14,17 +12,11 @@ import org.squiddev.cobalt.function.LuaFunction;
 import java.util.Arrays;
 
 import static org.objectweb.asm.Opcodes.*;
-import static org.objectweb.asm.Opcodes.AASTORE;
-import static org.objectweb.asm.Opcodes.ALOAD;
-import static org.objectweb.asm.Opcodes.CHECKCAST;
-import static org.objectweb.asm.Opcodes.DUP;
-import static org.objectweb.asm.Opcodes.INVOKESTATIC;
-import static org.objectweb.asm.Opcodes.INVOKEVIRTUAL;
-import static org.objectweb.asm.Opcodes.SWAP;
 
-public class ExecutableDefinition {
+public class ExecutableReference {
 
     protected final String name;
+    protected final String index;
     protected final WrappedType[] params;
     protected final WrappedType returns;
     protected final int access;
@@ -32,25 +24,33 @@ public class ExecutableDefinition {
 
     protected LuaFunction function;
 
-    public ExecutableDefinition(String name, WrappedType[] params, WrappedType returns, int access, boolean definesFields) {
+    public ExecutableReference(String name, String index, WrappedType[] params, WrappedType returns, int access, boolean definesFields) {
         this.name = name;
+        this.index = index;
         this.params = params;
         this.returns = returns;
         this.access = access;
         this.definesFields = definesFields;
     }
 
-    @LuaWrapped
-    public void put(String key, LuaFunction value) {
-        if (function != null) throw new IllegalStateException("Function already registered for constructor.");
-        if ((access & Opcodes.ACC_ABSTRACT) != 0) return; // TODO: warn
-        if (key.equals(name)) {
-            function = value;
-        }
+    public void setFunction(LuaFunction function) {
+        this.function = function;
+    }
+
+    public String getTypeName() {
+        return "executable";
+    }
+
+    public boolean isValid() {
+        return (this.access & ACC_ABSTRACT) == ACC_ABSTRACT || function != null;
     }
 
     public String name() {
         return name;
+    }
+
+    public String index() {
+        return index;
     }
 
     public WrappedType[] params() {
@@ -72,17 +72,31 @@ public class ExecutableDefinition {
     public void write(ClassBuilder.BuilderContext bctx) {
         WriteContext ctx = createContext(bctx);
 
+
+        if ((access & ACC_ABSTRACT) == 0) {
+            prepareOffsets(ctx);
+
+            ctx.visitor().visitCode();
+
+            writeBeforeHandler(ctx);
+
+            if (definesHandler()) {
+                writeArray(ctx);
+                writeFirstElement(ctx);
+                writeHook(ctx);
+            }
+
+            writeReturn(ctx);
+        }
+        // Method is visited in createContext
+        ctx.visitor().visitEnd();
+    }
+
+    protected void prepareOffsets(WriteContext ctx) {
         boolean isStatic = (this.access() & ACC_STATIC) != 0;
         ctx.setArrayPos(Type.getArgumentsAndReturnSizes(ctx.descriptor()) >> 2);
         if (isStatic) ctx.setArrayPos(ctx.arrayPos()-1);
         ctx.setParamOffset(isStatic ? 0 : 1);
-
-        if (definesHandler()) {
-            writeStart(ctx);
-            if (isStatic) writeFirstElement(ctx);
-            writeHook(ctx);
-            writeEnd(ctx);
-        }
     }
 
     protected boolean definesHandler() {
@@ -91,10 +105,7 @@ public class ExecutableDefinition {
 
     protected WriteContext createContext(ClassBuilder.BuilderContext bctx) {
         Type[] paramsType = Arrays.stream(this.params()).map(WrappedType::raw).map(EClass::raw).map(Type::getType).toArray(Type[]::new);
-        Type returnType = this.returns() == null ? Type.VOID_TYPE : Type.getType(this.returns().raw().raw());
-//        boolean isStatic = (this.access() & ACC_STATIC) != 0;
-//        boolean isAbstract = (this.access() & ACC_ABSTRACT) != 0;
-//        boolean isVoid = this.returns() == null || returnType.getSort() == Type.VOID;
+        Type returnType = Type.getType(this.returns().raw().raw());
 
         String desc = Type.getMethodDescriptor(returnType, paramsType);
         return new WriteContext(
@@ -104,18 +115,17 @@ public class ExecutableDefinition {
         );
     }
 
-    protected void writeStart(WriteContext ctx) {
+    protected void writeBeforeHandler(WriteContext ctx) {}
+
+    protected void writeArray(WriteContext ctx) {
         MethodVisitor m = ctx.visitor();
-
-        m.visitCode();
-
         m.visitLdcInsn(params.length + ctx.paramOffset());
         m.visitTypeInsn(ANEWARRAY, Owners.LUA_VALUE);
         m.visitVarInsn(ASTORE, ctx.arrayPos());
     }
 
     protected void writeFirstElement(WriteContext ctx) {
-        if ((this.access() & ACC_STATIC) != 0) {
+        if ((this.access() & ACC_STATIC) == 0) {
             MethodVisitor m = ctx.visitor();
 
             String eClass = ctx.fields().storeAndGetComplex(m, EClass::fromJava, EClass.class, ctx.className()); // thisEClass
@@ -141,11 +151,13 @@ public class ExecutableDefinition {
 
     protected void writeHook(WriteContext ctx) {
         MethodVisitor m = ctx.visitor();
+        Type returnType = Type.getReturnType(ctx.descriptor());
 
-        boolean isVoid = Type.getReturnType(ctx.descriptor()).getSort() == Type.VOID;
+        boolean isVoid = returnType.getSort() == Type.VOID;
         int argIndex = ctx.paramOffset();
         var args = Type.getArgumentTypes(ctx.descriptor());
 
+        // Add all parameters to array created by writeArray()
         for (int i = 0; i < args.length; i++) {
             m.visitVarInsn(ALOAD, ctx.arrayPos()); // param
             m.visitLdcInsn(i + ctx.paramOffset()); // param, index
@@ -162,20 +174,16 @@ public class ExecutableDefinition {
             argIndex += args[i].getSize();
         }
 
+        // Execute hook
         ctx.fields().storeAndGet(m, ctx.state(), LuaState.class); // state
         if (!isVoid) m.visitInsn(DUP); // state, state?
         ctx.fields().storeAndGet(m, function, LuaFunction.class); // state, state?, function
         m.visitVarInsn(ALOAD, ctx.arrayPos()); // state, state, function, luavalue[]
         m.visitMethodInsn(INVOKESTATIC, Owners.VALUE_FACTORY, "varargsOf", "([Lorg/squiddev/cobalt/LuaValue;)Lorg/squiddev/cobalt/Varargs;", false); // state, state?, function, varargs
         m.visitMethodInsn(INVOKESTATIC, Owners.DISPATCH, "invoke", "(Lorg/squiddev/cobalt/LuaState;Lorg/squiddev/cobalt/LuaValue;Lorg/squiddev/cobalt/Varargs;)Lorg/squiddev/cobalt/Varargs;", false); // state?, varargs
-    }
 
-    protected void writeEnd(WriteContext ctx) {
-        MethodVisitor m = ctx.visitor();
-        Type returnType = Type.getReturnType(ctx.descriptor());
-
+        // Coerce output in preparation for return.
         if (returnType.getSort() != Type.VOID) {
-
             m.visitMethodInsn(INVOKEVIRTUAL, Owners.VARARGS, "first", "()Lorg/squiddev/cobalt/LuaValue;", false); // state, luavalue
             ctx.fields().storeAndGet(m, returns.real().wrapPrimitive(), EClass.class); // state, luavalue, eclass
             m.visitMethodInsn(INVOKESTATIC, Owners.TYPE_COERCIONS, "toJava", "(Lorg/squiddev/cobalt/LuaState;Lorg/squiddev/cobalt/LuaValue;Lme/basiqueevangelist/enhancedreflection/api/EClass;)Ljava/lang/Object;", false); // object
@@ -185,10 +193,14 @@ public class ExecutableDefinition {
                 AsmUtil.unwrapPrimitive(m, returnType); // primitive
             }
         }
+    }
+
+    protected void writeReturn(WriteContext ctx) {
+        MethodVisitor m = ctx.visitor();
+        Type returnType = Type.getReturnType(ctx.descriptor());
 
         m.visitInsn(returnType.getOpcode(IRETURN));
         m.visitMaxs(0, 0);
-        m.visitEnd();
     }
 
 }

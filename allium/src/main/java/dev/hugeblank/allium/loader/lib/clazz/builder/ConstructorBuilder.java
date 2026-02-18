@@ -1,10 +1,7 @@
 package dev.hugeblank.allium.loader.lib.clazz.builder;
 
 import dev.hugeblank.allium.api.LuaWrapped;
-import dev.hugeblank.allium.loader.lib.clazz.definition.ConstructorDefinition;
-import dev.hugeblank.allium.loader.lib.clazz.definition.SuperConstructorDefinition;
-import dev.hugeblank.allium.loader.lib.clazz.definition.ThisConstructorDefinition;
-import dev.hugeblank.allium.loader.lib.clazz.definition.WrappedType;
+import dev.hugeblank.allium.loader.lib.clazz.definition.*;
 import me.basiqueevangelist.enhancedreflection.api.EClass;
 import me.basiqueevangelist.enhancedreflection.api.EConstructor;
 import me.basiqueevangelist.enhancedreflection.api.EParameter;
@@ -12,55 +9,69 @@ import org.squiddev.cobalt.function.LuaFunction;
 
 import java.util.List;
 import java.util.Map;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
+import static org.objectweb.asm.Opcodes.ACC_ABSTRACT;
 import static org.objectweb.asm.Opcodes.ACC_INTERFACE;
 
 @LuaWrapped
 public class ConstructorBuilder {
     private final ClassBuilder classBuilder;
+    private final Supplier<List<ExecutableReference>> definitions;
+    private final EClass<?> parentClass;
 
     private int access = 0;
     private boolean definesFields = false;
-    private ConstructorDefinition thisDef = null;
+    private ConstructorReference thisDef = null;
     private EConstructor<?> superDef = null;
     private LuaFunction remapper = null;
     private List<EClass<?>> params = null;
+    private String index;
 
 
-    public ConstructorBuilder(ClassBuilder classBuilder) {
+    public ConstructorBuilder(ClassBuilder classBuilder, Supplier<List<ExecutableReference>> definitions, EClass<?> parentClass) {
         this.classBuilder = classBuilder;
+        this.definitions = definitions;
+        this.parentClass = parentClass;
     }
 
-    public ConstructorBuilder access(Map<String, Boolean> access) {
+    @LuaWrapped
+    public ConstructorBuilder index(String index) {
+        this.index = index;
+        return this;
+    }
+
+    @LuaWrapped
+    public ConstructorBuilder access(Map<String, Boolean> access) throws ClassBuildException {
         this.access = ClassBuilder.handleMethodAccess(access);
         if ((classBuilder.access & ACC_INTERFACE) == ACC_INTERFACE) {
-            throw new IllegalStateException("Interfaces can not contain a constructor");
+            throw new ClassBuildException("Interfaces can not contain a constructor");
+        } else if ((this.access & ACC_ABSTRACT) == ACC_ABSTRACT) {
+            throw new ClassBuildException("Constructors can not be abstract");
         }
         return this;
     }
 
     @LuaWrapped(name = "this")
-    public ConstructorBuilder usingThis(List<EClass<?>> parameters) {
-        ConstructorDefinition def = testDefinitions(parameters);
-        if (def == null) throw new IllegalStateException("No such constructor matching parameters.");
+    public ConstructorBuilder usingThis(List<EClass<?>> parameters) throws ClassBuildException {
+        ConstructorReference def = testDefinitions(parameters);
+        if (def == null) throw new ClassBuildException("No such constructor matching parameters.");
         this.thisDef = def;
         return this;
     }
 
-    private ConstructorDefinition testDefinitions(List<EClass<?>> parameters) {
-        for (ConstructorDefinition definition : classBuilder.ctorDefinitions) {
-            if (testDefinition(parameters, definition)) return definition;
-        }
-        for (ClassBuilder.MethodReference reference : classBuilder.methodReferences.get("<init>")) {
-            if (reference.definition() instanceof ConstructorDefinition ctorDef) {
-                if (testDefinition(parameters, ctorDef)) return ctorDef;
+    private ConstructorReference testDefinitions(List<EClass<?>> parameters) {
+        List<ExecutableReference> definitions = this.definitions.get();
+        for (ExecutableReference definition : definitions) {
+            if (testDefinition(parameters, definition) && definition instanceof ConstructorReference ctorDef) {
+                return ctorDef;
             }
         }
         return null;
     }
 
-    private static boolean testDefinition(List<EClass<?>> parameters, ConstructorDefinition definition) {
+    private static boolean testDefinition(List<EClass<?>> parameters, ExecutableReference definition) {
         if (parameters.size() == definition.params().length) {
             boolean match = true;
             for (int i = 0; i < definition.params().length; i++) {
@@ -75,8 +86,8 @@ public class ConstructorBuilder {
     }
 
     @LuaWrapped(name = "super")
-    public ConstructorBuilder usingSuper(List<EClass<?>> parameters) {
-        List<EConstructor<?>> ctors = classBuilder.parentClass.constructors().stream()
+    public ConstructorBuilder usingSuper(List<EClass<?>> parameters) throws ClassBuildException {
+        List<EConstructor<?>> ctors = parentClass.constructors().stream()
             .filter((m) -> !m.isPrivate())
             .collect(Collectors.toList());
 
@@ -98,7 +109,7 @@ public class ConstructorBuilder {
                 }
             }
         }
-        throw new IllegalStateException("No such super constructor matching parameters.");
+        throw new ClassBuildException("No such super constructor matching parameters.");
     }
 
     @LuaWrapped
@@ -116,21 +127,24 @@ public class ConstructorBuilder {
     }
 
     @LuaWrapped
-    public ConstructorBuilder definesFields(boolean definesFields) {
-        this.definesFields = definesFields;
+    public ConstructorBuilder definesFields() {
+        this.definesFields = true;
         return this;
     }
 
-    public ConstructorDefinition build() {
+    @LuaWrapped
+    public ClassBuilder build() throws ClassBuildException {
         if (params != null && remapper == null && (thisDef != null || superDef != null)) {
-            throw new IllegalStateException(
+            throw new ClassBuildException(
                 "Expected remapper function for constructor with either 'this' or 'super' constructors defined."
             );
         }
-        ConstructorDefinition def;
+
+        ConstructorReference def;
         if (thisDef != null) {
-            def = new ThisConstructorDefinition(
+            def = new ThisConstructorReference(
                 thisDef, remapper, classBuilder.className,
+                index,
                 params == null ?
                     thisDef.params() :
                     params.stream().map((ec) -> new WrappedType(ec, ec)).toArray(WrappedType[]::new),
@@ -138,8 +152,9 @@ public class ConstructorBuilder {
                 definesFields
             );
         } else if (superDef != null) {
-            def = new SuperConstructorDefinition(
+            def = new SuperConstructorReference(
                 superDef, remapper,
+                index,
                 (params == null ?
                     superDef.parameters().stream().map(WrappedType::fromParameter) :
                     params.stream().map((ec) -> new WrappedType(ec, ec))
@@ -147,21 +162,22 @@ public class ConstructorBuilder {
                 access,
                 definesFields
             );
-        } else if (params != null) {
-            // TODO: Can this class accept a constructor that doesn't invoke super when it should?
-            def = new ConstructorDefinition(
-                remapper,
+        } else if (params != null && parentClass.constructor() != null) {
+            def = new SuperConstructorReference(
+                parentClass.constructor(), remapper,
+                index,
                 params.stream().map((ec) -> new WrappedType(ec, ec)).toArray(WrappedType[]::new),
                 access,
                 definesFields
             );
         } else {
-            throw new IllegalStateException("Invalid constructor definition.");
+
+            throw new ClassBuildException("Invalid constructor definition.");
         }
 
-        classBuilder.ctorDefinitions.add(def);
+        classBuilder.apply(def);
         classBuilder.definesValidConstructor = true;
-        return def;
+        return classBuilder;
     }
 
 }

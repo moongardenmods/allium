@@ -36,21 +36,42 @@ local function registerBlock(id, blockInitializer, settings)
     return block
 end
 
-local builder = java.extendClass(FlowerBlock)
-
-builder:constructor(builder:usingSuper({Holder, java.float, BlockBehaviourProperties}), nil, nil)
--- If defining a constructor that matches one in the parent class, a constructor function definition is optional.
-
-builder:override("onPlace", {BlockState, Level, BlockPos, BlockState, java.boolean})
-function builder:onPlace(state, level, pos, oldState, movedByPiston)
-    --print(tostring(self), tostring(state), tostring(level), tostring(pos), tostring(oldState), movedByPiston)
+local definition = {}
+function definition:constructor(holder, float, behavior)
+    print(holder, float, behavior)
+    self.meaningOfLife = 42
+end
+function definition:onPlace(state, level, pos, oldState, movedByPiston)
+    print(self.meaningOfLife)
 end
 
-local MoonFlowerBlock = builder:build()
+-- Note: If defining a constructor that matches one in the parent class, a constructor function definition is optional.
+local MoonFlowerBlock = java.extendClass(FlowerBlock)
+    :field("meaningOfLife", java.int, { final = true }, nil)
+    :constructor()
+        :super({Holder, java.float, BlockBehaviourProperties})
+        :access({ public = true })
+        :definesFields()
+        :build()
+    :method()
+        :access({ public = true })
+        :override("onPlace", {BlockState, Level, BlockPos, BlockState, java.boolean})
+        :build()
+    :define(definition)
+    :build()
 
-local moonflower = registerBlock("moonflower", function(p)
-    return MoonFlowerBlock(MobEffects.NIGHT_VISION, 8.0, p)
-end, BlockBehaviourProperties.of():mapColor(MapColor.DIAMOND):noCollision():instabreak():sound(SoundType.GRASS):offsetType(OffsetType.XZ):pushReaction(PushReaction.DESTROY))
+local moonflower = registerBlock(
+    "moonflower",
+    function(p)
+        return MoonFlowerBlock(MobEffects.NIGHT_VISION, 8.0, p)
+    end,
+    BlockBehaviourProperties.of()
+        :mapColor(MapColor.DIAMOND)
+        :noCollision():instabreak()
+        :sound(SoundType.GRASS)
+        :offsetType(OffsetType.XZ)
+        :pushReaction(PushReaction.DESTROY)
+)
 
 if allium.environment() == "client" then
     local ChunkSectionLayerMap = require("net.fabricmc.fabric.api.client.rendering.v1.ChunkSectionLayerMap")

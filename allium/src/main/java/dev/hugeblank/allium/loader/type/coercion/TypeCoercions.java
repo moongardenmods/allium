@@ -23,7 +23,7 @@ public class TypeCoercions {
     private static final Map<Class<?>, BiFunction<Object, EClassUse<?>, JavaToLuaConverter<?>>> TO_LUA = new HashMap<>();
 
     public static <T> void registerJavaToLua(Class<T> klass, JavaToLuaConverter<T> serializer) {
-        if (TO_LUA.put(klass, (unused, ignored) -> serializer) != null)
+        if (TO_LUA.put(klass, (_, ignored) -> serializer) != null)
             throw new IllegalStateException("Converter already registered for " + klass);
     }
 
@@ -34,7 +34,7 @@ public class TypeCoercions {
     }
 
     public static <T> void registerLuaToJava(Class<T> klass, LuaToJavaConverter<T> deserializer) {
-        if (FROM_LUA.put(klass, unused -> deserializer) != null)
+        if (FROM_LUA.put(klass, _ -> deserializer) != null)
             throw new IllegalStateException("Converter already registered for " + klass);
     }
 
@@ -44,12 +44,12 @@ public class TypeCoercions {
             throw new IllegalStateException("Converter already registered for " + klass);
     }
 
-    public static Object toJava(LuaState state, LuaValue value, Class<?> clatz) throws InvalidArgumentException, LuaError {
-        return toJava(state, value, EClass.fromJava(clatz));
+    public static Object toJava(LuaState state, LuaValue value, Class<?> clazz) throws InvalidArgumentException, LuaError {
+        return toJava(state, value, EClass.fromJava(clazz));
     }
 
-    public static Object toJava(LuaState state, LuaValue value, EClass<?> clatz) throws LuaError, InvalidArgumentException {
-        if (clatz.isAssignableFrom(value.getClass()) && !clatz.equals(CommonTypes.OBJECT)) {
+    public static Object toJava(LuaState state, LuaValue value, EClass<?> clazz) throws LuaError, InvalidArgumentException {
+        if (clazz.isAssignableFrom(value.getClass()) && !clazz.equals(CommonTypes.OBJECT)) {
             return value;
         }
 
@@ -58,7 +58,7 @@ public class TypeCoercions {
 
         if (value instanceof InstanceUserdata<?> userdata) {
             try {
-                return userdata.toUserdata(clatz.wrapPrimitive());
+                return userdata.toUserdata(clazz.wrapPrimitive());
             } catch (ClassCastException e) {
                 throw new InvalidArgumentException(e);
             }
@@ -66,9 +66,9 @@ public class TypeCoercions {
             return userdata.toUserdata();
         }
 
-        var deserializerFactory = FROM_LUA.get(clatz.raw());
+        var deserializerFactory = FROM_LUA.get(clazz.raw());
         if (deserializerFactory != null) {
-            var deserializer = deserializerFactory.apply(clatz);
+            var deserializer = deserializerFactory.apply(clazz);
 
             if (deserializer != null) {
                 Object result = deserializer.fromLua(state, value);
@@ -77,30 +77,30 @@ public class TypeCoercions {
             }
         }
 
-        if (clatz.type() == ClassType.ARRAY) {
+        if (clazz.type() == ClassType.ARRAY) {
             try {
                 LuaTable table = value.checkTable();
                 int length = table.length();
-                Object arr = Array.newInstance(clatz.arrayComponent().raw(), table.length());
+                Object arr = Array.newInstance(clazz.arrayComponent().raw(), table.length());
                 for (int i = 0; i < length; i++) {
-                    Array.set(arr, i, toJava(state, table.rawget(i + 1), clatz.arrayComponent()));
+                    Array.set(arr, i, toJava(state, table.rawget(i + 1), clazz.arrayComponent()));
                 }
-                return clatz.cast(arr);
+                return clazz.cast(arr);
             } catch (Exception e) {
                 throw new LuaError(
                         "Expected table of "
-                                + clatz.arrayComponent()
+                                + clazz.arrayComponent()
                                 + "s, got "
                                 + value.typeName()
                 );
             }
         }
 
-        if (value instanceof LuaFunction func && clatz.type() == ClassType.INTERFACE) { // Callbacks
+        if (value instanceof LuaFunction func && clazz.type() == ClassType.INTERFACE) { // Callbacks
             EMethod ifaceMethod = null;
 
             int unimplemented = 0;
-            for (var meth : clatz.methods()) {
+            for (var meth : clazz.methods()) {
                 if (meth.isAbstract()) {
                     unimplemented++;
                     ifaceMethod = meth;
@@ -112,11 +112,11 @@ public class TypeCoercions {
             }
 
             if (unimplemented == 1) {
-                return ProxyGenerator.getProxyFactory(clatz, ifaceMethod).apply(state, func);
+                return ProxyGenerator.getProxyFactory(clazz, ifaceMethod).apply(state, func);
             }
         }
 
-        throw new InvalidArgumentException("Couldn't convert " + value + " to java! Target type is " + clatz);
+        throw new InvalidArgumentException("Couldn't convert " + value + " to java! Target type is " + clazz);
     }
 
     public static LuaValue toLuaValue(Object out) {
@@ -382,26 +382,6 @@ public class TypeCoercions {
             return checkValue.get();
         } catch (LuaError ignored) {}
         return null;
-    }
-
-    private static <T extends Collection<Object>> LuaToJavaConverter<T> collectorConverter(Function<Integer, T> initializer, EClass<T> target) {
-        EClass<?> componentType = target.typeVariableValues().getFirst().upperBound();
-        return (state, value) -> {
-            LuaTable table = value.checkTable();
-            int length = table.length();
-
-            T list = initializer.apply(length);
-
-            for (int i = 0; i < length; i++) {
-                list.add(TypeCoercions.toJava(state, table.rawget(i + 1), componentType));
-            }
-
-            return list;
-        };
-    }
-
-    private interface Converter<T> {
-        LuaToJavaConverter<T> apply(Function<Integer, Collection<Object>> initializer, EClass<?> componentType);
     }
 
     private interface SupplierThrowsLuaError<T> {
