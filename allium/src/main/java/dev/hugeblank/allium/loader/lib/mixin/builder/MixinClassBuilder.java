@@ -84,7 +84,7 @@ public class MixinClassBuilder extends AbstractClassBuilder {
     }
 
     @LuaWrapped
-    public void createInjectMethod(String hookId, List<LuaMethodAnnotation> methodAnnotations, @OptionalArg @Nullable List<? extends LuaSugar> sugarParameters) throws InvalidMixinException, InvalidArgumentException, LuaError {
+    public MixinClassBuilder createInjectMethod(String hookId, List<LuaMethodAnnotation> methodAnnotations, @OptionalArg @Nullable List<? extends LuaSugar> sugarParameters) throws InvalidMixinException, InvalidArgumentException, LuaError {
         checkPhase();
         if (visitedClass.isInterface() || this.duck)
             throw new InvalidMixinException(InvalidMixinException.Type.INVALID_CLASSTYPE, "class");
@@ -102,25 +102,29 @@ public class MixinClassBuilder extends AbstractClassBuilder {
         }
         chefList.getFirst().bake(script, hookId, c, visitedClass, methodAnnotations, sugarParameters);
         Allium.PROFILER.pop();
+        return this;
     }
 
     @LuaWrapped
-    public void accessor(@LuaStateArg LuaState state, LuaTable annotations) throws InvalidArgumentException, InvalidMixinException, LuaError {
+    public MixinClassBuilder accessor(@LuaStateArg LuaState state, LuaTable annotations) throws InvalidArgumentException, InvalidMixinException, LuaError {
         // Shorthand method for writing both setter and getter accessor methods
         setAccessor(state, annotations);
         getAccessor(state, annotations);
+        return this;
     }
 
     @LuaWrapped
-    public void setAccessor(@LuaStateArg LuaState state, LuaTable annotations) throws LuaError, InvalidArgumentException, InvalidMixinException {
+    public MixinClassBuilder setAccessor(@LuaStateArg LuaState state, LuaTable annotations) throws LuaError, InvalidArgumentException, InvalidMixinException {
         checkPhase();
         writeAccessor(state, true, annotations);
+        return this;
     }
 
     @LuaWrapped
-    public void getAccessor(@LuaStateArg LuaState state, LuaTable annotations) throws LuaError, InvalidArgumentException, InvalidMixinException {
+    public MixinClassBuilder getAccessor(@LuaStateArg LuaState state, LuaTable annotations) throws LuaError, InvalidArgumentException, InvalidMixinException {
         checkPhase();
         writeAccessor(state, false, annotations);
+        return this;
     }
 
     private void writeAccessor(@LuaStateArg LuaState state, boolean isSetter, LuaTable annotations) throws InvalidMixinException, LuaError, InvalidArgumentException {
@@ -166,7 +170,7 @@ public class MixinClassBuilder extends AbstractClassBuilder {
 
 
     @LuaWrapped
-    public void invoker(@LuaStateArg LuaState state, LuaTable annotations) throws InvalidMixinException, LuaError, InvalidArgumentException {
+    public MixinClassBuilder invoker(@LuaStateArg LuaState state, LuaTable annotations) throws InvalidMixinException, LuaError, InvalidArgumentException {
         checkPhase();
         String methodName = getTargetValue(annotations);
         if (visitedClass.containsMethod(methodName)) {
@@ -203,6 +207,7 @@ public class MixinClassBuilder extends AbstractClassBuilder {
                     .exceptions(visitedMethod.exceptions())
                     .build();
         }
+        return this;
     }
 
     private String getTargetValue(LuaTable annotations) throws InvalidMixinException, LuaError, InvalidArgumentException {
