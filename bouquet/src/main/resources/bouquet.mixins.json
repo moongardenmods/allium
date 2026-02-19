@@ -1,8 +1,8 @@
 {
   "required": true,
-  "package": "dev.hugeblank.bouquet.mixin",
+  "package": "dev.moongarden.bouquet.mixin",
   "compatibilityLevel": "JAVA_21",
-  "plugin": "dev.hugeblank.bouquet.mixin.BouquetMixinPlugin",
+  "plugin": "dev.moongarden.bouquet.mixin.BouquetMixinPlugin",
   "mixins": [
     "RecipeMapAccessor",
     "block.BlockBehaviourMixin",

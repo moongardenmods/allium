@@ -15,8 +15,8 @@ Allium installs just like any other Fabric mod. Depending on the scripts you use
 an additional mod that adds libraries to make scripting easier. Much like Fabric API, this mod is independent and not 
 built into the loader side of Allium and must be downloaded individually.
 
-If you'd like to use Allium or Bouquet to extend functionality of your own Java mod, publications can be found on
-[hugeblank's maven](https://maven.hugeblank.dev/#/releases/dev/hugeblank).
+If you'd like to use Allium or Bouquet to extend functionality of your own Java mod, publications can be found on the
+[Moongarden Maven](https://maven.moongarden.dev/#/releases/dev/moongarden).
 
 ### Scripts
 In the same place that you create your `mods` directory, create a folder named `allium`. This is where your lua scripts 
@@ -26,7 +26,7 @@ similar.
 
 ## Documentation
 
-- [Allium Loader](https://moongardenmods.github.io/allium-docs/)
+- [Allium Loader](https://allium.moongarden.dev/)
 - Bouquet API (TODO)
 
 ## Logos

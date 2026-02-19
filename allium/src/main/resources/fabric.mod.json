@@ -16,10 +16,10 @@
   "environment": "*",
   "entrypoints": {
     "preLaunch": [
-      "dev.hugeblank.allium.AlliumPreLaunch"
+      "dev.moongarden.allium.AlliumPreLaunch"
     ],
     "main": [
-      "dev.hugeblank.allium.Allium"
+      "dev.moongarden.allium.Allium"
     ]
   },
   "depends": {

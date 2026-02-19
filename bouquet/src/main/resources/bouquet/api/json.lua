@@ -87,7 +87,7 @@ return {
             return type(value) == "string" or java.instanceOf(value, JsonElement)
         end)
         if type(value) == "string" then
-            return parseElement(JsonParser.parseString(json))
+            return parseElement(JsonParser.parseString(value))
         else
             return parseElement(value)
         end

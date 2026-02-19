@@ -1,6 +1,6 @@
-local Script = require("dev.hugeblank.allium.loader.Script")
+local Script = require("dev.moongarden.allium.loader.Script")
 local ComponentSerialization = require("net.minecraft.network.chat.ComponentSerialization")
-local LuaOps = require("dev.hugeblank.bouquet.util.LuaOps")
+local LuaOps = require("dev.moongarden.bouquet.util.LuaOps")
 local LuaValue = require("org.squiddev.cobalt.LuaValue")
 local Component = require("net.minecraft.network.chat.Component")
 

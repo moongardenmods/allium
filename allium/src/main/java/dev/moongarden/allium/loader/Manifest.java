@@ -1,0 +1,8 @@
+package dev.moongarden.allium.loader;
+
+public record Manifest(String id, String version, String name, Entrypoints entrypoints) {
+
+    public boolean isComplete() {
+        return !(id == null || version == null || name == null || entrypoints == null);
+    }
+}

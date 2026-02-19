@@ -1,4 +1,4 @@
-local FileHelper = require("dev.hugeblank.allium.util.FileHelper")
+local FileHelper = require("dev.moongarden.allium.util.FileHelper")
 local Files = require("java.nio.file.Files")
 local StandardCharsets = require("java.nio.charset.StandardCharsets")
 

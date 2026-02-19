@@ -1,8 +1,8 @@
-local Script = require("dev.hugeblank.allium.loader.Script")
+local Script = require("dev.moongarden.allium.loader.Script")
 local LiteralArgumentBuilder = require("com.mojang.brigadier.builder.LiteralArgumentBuilder")
 local CommandSourceStack = require("net.minecraft.commands.CommandSourceStack")
 local CommandSelection = require("net.minecraft.commands.Commands$CommandSelection")
-local StaticBinder = require("dev.hugeblank.allium.loader.type.StaticBinder")
+local StaticBinder = require("dev.moongarden.allium.loader.type.StaticBinder")
 local EClass = require("me.basiqueevangelist.enhancedreflection.api.EClass")
 
 local util = require("bouquet.util")

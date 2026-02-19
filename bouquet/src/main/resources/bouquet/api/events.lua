@@ -1,5 +1,5 @@
-local CommonEvents = require("dev.hugeblank.bouquet.api.event.CommonEvents")
-local ServerEvents = require("dev.hugeblank.bouquet.api.event.ServerEvents")
+local CommonEvents = require("dev.moongarden.bouquet.api.event.CommonEvents")
+local ServerEvents = require("dev.moongarden.bouquet.api.event.ServerEvents")
 
 local out = {
     common = {
@@ -21,7 +21,7 @@ local out = {
 }
 
 if allium.environment() == "client" then
-    local ClientEvents = require("dev.hugeblank.bouquet.api.event.ClientEvents")
+    local ClientEvents = require("dev.moongarden.bouquet.api.event.ClientEvents")
     out.client = {
         guiRenderHead = ClientEvents.GUI_RENDER_HEAD,
         guiRenderTail = ClientEvents.GUI_RENDER_TAIL,

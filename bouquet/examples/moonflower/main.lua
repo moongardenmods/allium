@@ -62,7 +62,7 @@ local MoonFlowerBlock = java.extendClass(FlowerBlock)
     :define(definition)
     :build()
 
-local moonflower = registerBlock(
+local RegisteredMoonFlower = registerBlock(
     "moonflower",
     function(p)
         return MoonFlowerBlock(MobEffects.NIGHT_VISION, 8.0, p)
@@ -75,8 +75,4 @@ local moonflower = registerBlock(
         :pushReaction(PushReaction.DESTROY)
 )
 
-if allium.environment() == "client" then
-    local ChunkSectionLayerMap = require("net.fabricmc.fabric.api.client.rendering.v1.ChunkSectionLayerMap")
-    local ChunkSectionLayer = require("net.minecraft.client.renderer.chunk.ChunkSectionLayer")
-    ChunkSectionLayerMap.putBlock(moonflower, ChunkSectionLayer.CUTOUT)
-end
+return RegisteredMoonFlower

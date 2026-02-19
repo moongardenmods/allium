@@ -1,8 +1,8 @@
 require("bouquet.hooks")
 
-local FsLib = require("dev.hugeblank.bouquet.api.lib.fs.FsLib")
-local HttpLib = require("dev.hugeblank.bouquet.api.lib.http.HttpLib")
-local RecipeLib = require("dev.hugeblank.bouquet.api.lib.recipe.RecipeLib")
+local FsLib = require("dev.moongarden.bouquet.api.lib.fs.FsLib")
+local HttpLib = require("dev.moongarden.bouquet.api.lib.http.HttpLib")
+local RecipeLib = require("dev.moongarden.bouquet.api.lib.recipe.RecipeLib")
 
 local function wrapAs(class)
     return function(script)

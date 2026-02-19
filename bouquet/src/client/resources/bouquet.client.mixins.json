@@ -1,10 +1,10 @@
 {
 	"required": true,
-	"package": "dev.hugeblank.bouquet.mixin",
+	"package": "dev.moongarden.bouquet.mixin",
 	"compatibilityLevel": "JAVA_21",
 	"client": [
       "client.gui.hud.GuiMixin",
-		"server.integrated.IntegratedServerMixin"
+      "server.integrated.IntegratedServerMixin"
 	],
 	"injectors": {
 		"defaultRequire": 1

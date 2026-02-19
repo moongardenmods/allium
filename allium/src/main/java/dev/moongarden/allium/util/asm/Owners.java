@@ -1,0 +1,54 @@
+package dev.moongarden.allium.util.asm;
+
+import dev.moongarden.allium.loader.Script;
+import dev.moongarden.allium.loader.ScriptRegistry;
+import dev.moongarden.allium.loader.lib.MixinLib;
+import dev.moongarden.allium.loader.lib.clazz.builder.ClassBuilder;
+import dev.moongarden.allium.loader.lib.clazz.builder.InternalFieldBuilder;
+import dev.moongarden.allium.loader.type.StaticBinder;
+import dev.moongarden.allium.loader.type.coercion.TypeCoercions;
+import dev.moongarden.allium.loader.type.property.MemberFilter;
+import dev.moongarden.allium.loader.type.userdata.*;
+import dev.moongarden.allium.util.Pair;
+import dev.moongarden.allium.util.Registry;
+import me.basiqueevangelist.enhancedreflection.api.EClass;
+import org.objectweb.asm.Type;
+import org.squiddev.cobalt.LuaValue;
+import org.squiddev.cobalt.ValueFactory;
+import org.squiddev.cobalt.Varargs;
+import org.squiddev.cobalt.function.Dispatch;
+
+import java.util.List;
+import java.util.Map;
+
+public class Owners {
+    // Java
+    public static final String OBJECT = Type.getInternalName(Object.class);
+    public static final String LIST = Type.getInternalName(List.class);
+    public static final String MAP = Type.getInternalName(Map.class);
+    // Enhanced Reflection
+    public static final String ECLASS = Type.getInternalName(EClass.class);
+    // Allium
+    public static final String PAIR = Type.getInternalName(Pair.class);
+    public static final String SCRIPT = Type.getInternalName(Script.class);
+    public static final String MIXIN_LIB = Type.getInternalName(MixinLib.class);
+    public static final String SCRIPT_REGISTRY = Type.getInternalName(ScriptRegistry.class);
+    public static final String REGISTRY = Type.getInternalName(Registry.class);
+    public static final String MEMBER_FILTER = Type.getInternalName(MemberFilter.class);
+    public static final String INSTANCE_USERDATA_FACTORY = Type.getInternalName(InstanceUserdataFactory.class);
+    public static final String PRIVATE_USERDATA_FACTORY = Type.getInternalName(PrivateUserdataFactory.class);
+    public static final String PRIVATE_USERDATA = Type.getInternalName(PrivateUserdata.class);
+    public static final String SUPER_USERDATA_FACTORY = Type.getInternalName(SuperUserdataFactory.class);
+    public static final String SUPER_USERDATA = Type.getInternalName(SuperUserdata.class);
+    public static final String STATIC_BINDER = Type.getInternalName(StaticBinder.class);
+    public static final String TYPE_COERCIONS = Type.getInternalName(TypeCoercions.class);
+    public static final String CLASS_BUILDER = Type.getInternalName(ClassBuilder.class);
+    public static final String INTERNAL_FIELD_BUILDER = Type.getInternalName(InternalFieldBuilder.class);
+    public static final String CLASS_FINAL_FIELD_HOLDER = Type.getInternalName(ClassBuilder.ClassFinalFieldHolder.class);
+    public static final String INSTANCE_FINAL_FIELD_HOLDER = Type.getInternalName(ClassBuilder.InstanceFinalFieldHolder.class);
+    // Cobalt
+    public static final String LUA_VALUE = Type.getInternalName(LuaValue.class);
+    public static final String VARARGS = Type.getInternalName(Varargs.class);
+    public static final String VALUE_FACTORY = Type.getInternalName(ValueFactory.class);
+    public static final String DISPATCH = Type.getInternalName(Dispatch.class);
+}
