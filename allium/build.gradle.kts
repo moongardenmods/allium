@@ -16,7 +16,7 @@ configurations {
 
 tasks {
     var output = "-Dcombine.output=./docs"
-    var extensions = "-Dcombine.extensions=dev.hugeblank.allium.util.combine.AlliumCombineExtension"
+    var extensions = "-Dcombine.extensions=dev.moongarden.allium.util.combine.AlliumCombineExtension"
     register<JavaExec>("genLuaSources") {
         group = "allium"
 
