@@ -13,7 +13,7 @@ import java.util.Map;
 import java.util.function.Predicate;
 import java.util.stream.Stream;
 
-public record Candidates(List<EMethod> methods, List<EField> fields) {
+public record Candidates(List<EMethod> methods, List<EField> fields, boolean isStatic) {
 
     public Stream<EMember> memberStream() {
         Stream.Builder<EMember> memberBuilder = Stream.builder();
@@ -37,7 +37,7 @@ public record Candidates(List<EMethod> methods, List<EField> fields) {
         for (EClass<?> iface : interfaces) {
             methods.addAll(iface.declaredMethods().stream().filter(testMember(nameMap, filter)).toList());
         }
-        return new Candidates(methods, fields);
+        return new Candidates(methods, fields, filter.expectStatic());
     }
 
     private static Predicate<EMember> testMember(Map<String, EClass<?>> nameMap, MemberFilter filter) {

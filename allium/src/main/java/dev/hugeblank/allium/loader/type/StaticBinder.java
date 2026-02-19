@@ -32,7 +32,7 @@ public final class StaticBinder {
         LuaTable metatable = new LuaTable();
         Candidates candidates = Candidates.derive(clazz, filter);
 
-        MetatableUtils.applyPairs(metatable, clazz, cachedProperties, candidates, false, filter);
+        MetatableUtils.applyPairs(metatable, clazz, cachedProperties, candidates, false);
 
         metatable.rawset("__index", LibFunction.create((state, arg1, arg2) -> {
             if (arg2.isString()) {
@@ -44,7 +44,7 @@ public final class StaticBinder {
                     if (name.equals("class")) {
                         cachedProperty = new CustomData<>(TypeCoercions.toLuaValue(clazz.raw()));
                     } else {
-                        cachedProperty = PropertyResolver.resolveProperty(clazz, name, candidates, filter);
+                        cachedProperty = PropertyResolver.resolveProperty(clazz, name, candidates);
                     }
 
                     cachedProperties.put(name, cachedProperty);
@@ -84,7 +84,7 @@ public final class StaticBinder {
             PropertyData<? super T> cachedProperty = cachedProperties.get(name);
 
             if (cachedProperty == null) {
-                cachedProperty = PropertyResolver.resolveProperty(clazz, name, candidates, filter);
+                cachedProperty = PropertyResolver.resolveProperty(clazz, name, candidates);
 
                 cachedProperties.put(name, cachedProperty);
             }

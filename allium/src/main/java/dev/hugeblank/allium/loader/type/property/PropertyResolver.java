@@ -16,11 +16,8 @@ import java.util.function.Predicate;
 
 public final class PropertyResolver {
 
-    public static <T> PropertyData<? super T> resolveProperty(EClass<T> clazz, String name, Candidates candidates, MemberFilter filter) {
-        return resolvePropertyFrom(clazz, candidates.methods(), candidates.fields(), name, filter);
-    }
-
-    public static <T> PropertyData<? super T> resolvePropertyFrom(EClass<T> clazz, List<EMethod> methods, Collection<EField> fields, String name, MemberFilter filter) {
+    public static <T> PropertyData<? super T> resolveProperty(EClass<T> clazz, String name, Candidates candidates) {
+        List<EMethod> methods = candidates.methods();
 
         if (!methods.isEmpty()) {
             List<EMethod> foundMethods = new ArrayList<>();
@@ -28,7 +25,7 @@ public final class PropertyResolver {
             collectMethods(methods, name, foundMethods::add);
 
             if (!foundMethods.isEmpty())
-                return new MethodData<>(clazz, foundMethods, name, filter);
+                return new MethodData<>(clazz, foundMethods, name, candidates.isStatic());
 
             EMethod getter = findMethod(methods, "get" + StringUtils.capitalize(name),
                     method -> AnnotationUtils.countLuaArguments(method) == 0 && method.isStatic());
@@ -41,12 +38,14 @@ public final class PropertyResolver {
             }
         }
 
+        List<EField> fields = candidates.fields();
+
         if (!fields.isEmpty()) {
             EField field = findField(fields, name);
 
             if (field != null) {
                 try {
-                    return new FieldData<>(field, filter);
+                    return new FieldData<>(field);
                 } catch (IllegalAccessException e) {
                     Allium.LOGGER.warn("Attempt to access '{}' resulted in: ", field.name(), e);
                 }

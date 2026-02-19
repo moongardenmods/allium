@@ -8,15 +8,20 @@ import org.squiddev.cobalt.LuaError;
 import org.squiddev.cobalt.LuaState;
 import org.squiddev.cobalt.LuaValue;
 
+import java.lang.invoke.MethodHandles;
 import java.lang.invoke.VarHandle;
 
 public final class FieldData<I> implements PropertyData<I> {
     private final EField field;
     private final VarHandle handle;
 
-    public FieldData(EField field, MemberFilter filter) throws IllegalAccessException {
+    public FieldData(EField field) throws IllegalAccessException {
         this.field = field;
-        this.handle = filter.lookup(field.declaringClass().raw()).unreflectVarHandle(field.raw());
+        MethodHandles.Lookup lookup = MethodHandles.lookup();
+        if (!field.isPublic()) {
+            lookup = MethodHandles.privateLookupIn(field.declaringClass().raw(), lookup);
+        }
+        this.handle = lookup.unreflectVarHandle(field.raw());
     }
 
     @Override

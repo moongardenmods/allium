@@ -13,10 +13,10 @@ public class MethodData<I> implements PropertyData<I> {
     public final List<EMethod> methods;
     public final MethodInvocationFunction<I> unboundFunction;
 
-    public MethodData(EClass<I> sourceClass, List<EMethod> methods, String name, MemberFilter filter) {
+    public MethodData(EClass<I> sourceClass, List<EMethod> methods, String name, boolean isStatic) {
         this.sourceClass = sourceClass;
         this.methods = methods;
-        this.unboundFunction = new MethodInvocationFunction<>(sourceClass, methods, name, null, filter.expectStatic());
+        this.unboundFunction = new MethodInvocationFunction<>(sourceClass, methods, name, null, isStatic);
 
         methods.sort(MethodSorter.INSTANCE);
     }

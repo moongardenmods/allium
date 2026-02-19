@@ -114,8 +114,8 @@ public class ClassBuilder extends AbstractClassBuilder {
 
     @LuaWrapped
     public LuaValue build() throws ClassBuildException {
-        if (!classFields.isEmpty() && definitions.getOrDefault("<clinit>", List.of()).isEmpty()) {
-            definitions.put("<clinit>", List.of(new ClinitReference()));
+        if (definitions.getOrDefault("<clinit>", List.of()).isEmpty()) {
+            definitions.put("<clinit>", List.of(new ClinitReference(!classFields.isEmpty())));
         }
 
         if (definitions.getOrDefault("<init>", List.of()).isEmpty()) {
@@ -294,6 +294,10 @@ public class ClassBuilder extends AbstractClassBuilder {
             if (isEmpty()) CLASS_FIELD_HOOKS.remove(clazz);
             return out;
         }
+
+        public void close() {
+            CLASS_FIELD_HOOKS.remove(clazz);
+        }
     }
 
     public static class InstanceFinalFieldHolder extends FinalFieldHolder {
@@ -309,6 +313,10 @@ public class ClassBuilder extends AbstractClassBuilder {
             Object out = super.remove(name);
             if (isEmpty()) INSTANCE_FIELD_HOOKS.remove(instance);
             return out;
+        }
+
+        public void close() {
+            INSTANCE_FIELD_HOOKS.remove(instance);
         }
     }
 }

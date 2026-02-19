@@ -29,13 +29,11 @@ public abstract class AbstractUserdataFactory<T, U extends InstanceUserdata<T>> 
     protected @Nullable LuaTable boundMetatable;
 
     protected final EClass<? super T> targetClass;
-    protected final MemberFilter filter;
 
     protected final Map<String, PropertyData<? super T>> cachedProperties = new HashMap<>();
 
     AbstractUserdataFactory(EClass<T> clazz, EClass<? super T> targetClass, MemberFilter filter) {
         this.targetClass = targetClass;
-        this.filter = filter;
         this.candidates = Candidates.derive(targetClass, filter);
         this.clazz = clazz;
         this.indexImpl = tryFindOp(candidates.methods(), LuaIndex.class, 1, "get");
@@ -87,7 +85,7 @@ public abstract class AbstractUserdataFactory<T, U extends InstanceUserdata<T>> 
     protected LuaTable createMetatable(boolean isBound) {
         LuaTable metatable = new LuaTable();
 
-        MetatableUtils.applyPairs(metatable, targetClass, cachedProperties, candidates, isBound, filter);
+        MetatableUtils.applyPairs(metatable, targetClass, cachedProperties, candidates, isBound);
 
         metatable.rawset("__len", new VarArgFunction() {
             @Override
@@ -116,7 +114,7 @@ public abstract class AbstractUserdataFactory<T, U extends InstanceUserdata<T>> 
                 PropertyData<? super T> cachedProperty = cachedProperties.get("length");
 
                 if (cachedProperty == EmptyData.INSTANCE) {
-                    cachedProperty = PropertyResolver.resolveProperty(targetClass, "length", candidates, filter);
+                    cachedProperty = PropertyResolver.resolveProperty(targetClass, "length", candidates);
                     cachedProperties.put("length", cachedProperty);
                 }
 
@@ -139,7 +137,7 @@ public abstract class AbstractUserdataFactory<T, U extends InstanceUserdata<T>> 
                     if (name.equals("super") && args.arg(1) instanceof PrivateUserdata<?> instance) {
                         cachedProperty = new CustomData<>(instance.superInstance());
                     } else {
-                        cachedProperty = PropertyResolver.resolveProperty(targetClass, name, candidates, filter);
+                        cachedProperty = PropertyResolver.resolveProperty(targetClass, name, candidates);
                     }
 
                     cachedProperties.put(name, cachedProperty);
@@ -163,7 +161,7 @@ public abstract class AbstractUserdataFactory<T, U extends InstanceUserdata<T>> 
                 PropertyData<? super T> cachedProperty = cachedProperties.get(name);
 
                 if (cachedProperty == null) {
-                    cachedProperty = PropertyResolver.resolveProperty(targetClass, name, candidates, filter);
+                    cachedProperty = PropertyResolver.resolveProperty(targetClass, name, candidates);
 
                     cachedProperties.put(name, cachedProperty);
                 }

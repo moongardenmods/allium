@@ -3,7 +3,6 @@ package dev.hugeblank.allium.util;
 import dev.hugeblank.allium.api.LuaWrapped;
 import dev.hugeblank.allium.loader.type.coercion.TypeCoercions;
 import dev.hugeblank.allium.loader.type.exception.InvalidArgumentException;
-import dev.hugeblank.allium.loader.type.property.MemberFilter;
 import dev.hugeblank.allium.loader.type.property.PropertyData;
 import dev.hugeblank.allium.loader.type.property.PropertyResolver;
 import me.basiqueevangelist.enhancedreflection.api.EClass;
@@ -86,7 +85,7 @@ public class MetatableUtils {
         return null;
     }
 
-    public static <T> void applyPairs(LuaTable metatable, EClass<? super T> clazz, Map<String, PropertyData<? super T>> cachedProperties, Candidates candidates, boolean isBound, MemberFilter filter) {
+    public static <T> void applyPairs(LuaTable metatable, EClass<? super T> clazz, Map<String, PropertyData<? super T>> cachedProperties, Candidates candidates, boolean isBound) {
         metatable.rawset("__pairs", LibFunction.create((state, arg1) -> {
             T instance;
             if (isBound) {
@@ -115,7 +114,7 @@ public class MetatableUtils {
                 PropertyData<? super T> propertyData = cachedProperties.get(memberName);
 
                 if (propertyData == null) { // caching
-                    propertyData = PropertyResolver.resolveProperty(clazz, memberName, candidates, filter);
+                    propertyData = PropertyResolver.resolveProperty(clazz, memberName, candidates);
                     cachedProperties.put(memberName, propertyData);
                 }
 

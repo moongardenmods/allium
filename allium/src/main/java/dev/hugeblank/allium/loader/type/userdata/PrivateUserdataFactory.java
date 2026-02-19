@@ -18,16 +18,6 @@ public class PrivateUserdataFactory<T> extends AbstractUserdataFactory<T, Privat
         super(clazz, MemberFilter.ALL_MEMBERS);
     }
 
-//    @Override
-//    protected Candidates deriveCandidates(EClass<?> clazz, MemberFilter filter) {
-//        List<EMethod> methods = new ArrayList<>(clazz.declaredMethods().stream().filter(filter).toList());
-//        List<EField> fields = clazz.declaredFields().stream().filter(filter).toList();
-//        clazz.interfaces().forEach((iface) ->
-//                methods.addAll(iface.declaredMethods().stream().filter(filter).toList())
-//        );
-//        return new Candidates(methods, fields);
-//    }
-
     @SuppressWarnings("unchecked")
     public static <T> PrivateUserdataFactory<T> from(EClass<T> clazz) {
         return (PrivateUserdataFactory<T>) FACTORIES.computeIfAbsent(clazz, PrivateUserdataFactory::new);

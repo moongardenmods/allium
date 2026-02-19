@@ -23,7 +23,7 @@ public class ClinitBuilder {
     @LuaWrapped
     public ClassBuilder build() throws ClassBuildException {
         if (reference == null) {
-            reference = new ClinitReference();
+            reference = new ClinitReference(true);
             classBuilder.apply(reference);
         }
         classBuilder.apply(new ProxyClinitReference(reference, index));

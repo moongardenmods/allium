@@ -5,7 +5,6 @@ import dev.hugeblank.allium.loader.lib.clazz.builder.MethodBuilder;
 import dev.hugeblank.allium.loader.type.property.MemberFilter;
 import dev.hugeblank.allium.util.asm.AsmUtil;
 import dev.hugeblank.allium.util.asm.Owners;
-import org.lwjgl.openal.AL;
 import org.objectweb.asm.MethodVisitor;
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;
@@ -21,20 +20,25 @@ import static org.objectweb.asm.Opcodes.*;
 
 public class ClinitReference extends ExecutableReference {
     private final List<LuaFunction> functions = new ArrayList<>();
-    public ClinitReference() {
+    private final boolean initHolder;
+
+    public ClinitReference(boolean initHolder) {
         super("<clinit>", null, new WrappedType[]{}, new WrappedType(MethodBuilder.VOID, MethodBuilder.VOID), Opcodes.ACC_STATIC, true);
-        this.function = new VarArgFunction() {
-            @Override
-            protected Varargs invoke(LuaState luaState, Varargs varargs) throws LuaError, UnwindThrowable {
-                for (LuaFunction function : functions) {
-                    Dispatch.invoke(luaState, function, varargs);
-                }
-                return Constants.NIL;
-            }
-        };
+        this.initHolder = initHolder;
     }
 
     protected void addFunction(LuaFunction func) {
+        if (this.function == null) {
+            this.function = new VarArgFunction() {
+                @Override
+                protected Varargs invoke(LuaState luaState, Varargs varargs) throws LuaError, UnwindThrowable {
+                    for (LuaFunction function : functions) {
+                        Dispatch.invoke(luaState, function, varargs);
+                    }
+                    return Constants.NIL;
+                }
+            };
+        }
         functions.add(func);
     }
 
@@ -50,7 +54,7 @@ public class ClinitReference extends ExecutableReference {
 
     @Override
     protected void prepareOffsets(WriteContext ctx) {
-        ctx.setArrayPos((Type.getArgumentsAndReturnSizes(ctx.descriptor()) >> 2)-1);
+        ctx.setArrayPos((Type.getArgumentsAndReturnSizes(ctx.descriptor()) >> 2));
         ctx.setParamOffset(1);
     }
 
@@ -60,9 +64,13 @@ public class ClinitReference extends ExecutableReference {
 
         m.visitLdcInsn(Type.getType('L' + ctx.className() + ';')); // classType
         m.visitMethodInsn(INVOKESTATIC, Owners.INTERNAL_FIELD_BUILDER, "apply", "(Ljava/lang/Class;)V", false); //
-        m.visitTypeInsn(NEW, Owners.CLASS_FINAL_FIELD_HOLDER); // fieldHolder
-        m.visitLdcInsn(Type.getType('L' + ctx.className() + ';')); // fieldHolder, classType
-        m.visitMethodInsn(INVOKESPECIAL, Owners.CLASS_FINAL_FIELD_HOLDER,"<init>", "(Ljava/lang/Class;)V", false); //
+        if (initHolder) {
+            m.visitTypeInsn(NEW, Owners.CLASS_FINAL_FIELD_HOLDER); // fieldHolder
+            m.visitInsn(DUP); // fieldHolder, fieldHolder
+            m.visitLdcInsn(Type.getType('L' + ctx.className() + ';')); // fieldHolder, fieldHolder, classType
+            m.visitMethodInsn(INVOKESPECIAL, Owners.CLASS_FINAL_FIELD_HOLDER,"<init>", "(Ljava/lang/Class;)V", false); // fieldHolder
+            m.visitVarInsn(ASTORE, ctx.arrayPos()-1); //
+        }
     }
 
     @Override
@@ -79,8 +87,8 @@ public class ClinitReference extends ExecutableReference {
 
     @Override
     protected void writeReturn(WriteContext ctx) {
+        MethodVisitor m = ctx.visitor();
         if (definesFields) {
-            MethodVisitor m = ctx.visitor();
             for (ClassBuilder.FieldReference reference : ctx.classFields()) {
                 Class<?> rawType = reference.type().raw();
 
@@ -92,6 +100,12 @@ public class ClinitReference extends ExecutableReference {
                 m.visitFieldInsn(PUTSTATIC, ctx.className(), reference.name(), Type.getDescriptor(rawType)); // -> realFieldValue
             }
         }
+
+        if (initHolder) {
+            m.visitVarInsn(ALOAD, ctx.arrayPos()-1); // fieldHolder
+            m.visitMethodInsn(INVOKEVIRTUAL, Owners.CLASS_FINAL_FIELD_HOLDER, "close", "()V", false); //
+        }
+
         super.writeReturn(ctx);
     }
 }
