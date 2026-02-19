@@ -51,7 +51,11 @@ public class ConstructorReference extends ExecutableReference {
         MethodVisitor m = ctx.visitor();
 
         m.visitVarInsn(ALOAD, 0);
-        if (definesFields) m.visitMethodInsn(INVOKESTATIC, Owners.CLASS_BUILDER, "initInstanceFieldHolder", "(Ljava/lang/Object;)V", false);
+        if (definesFields) {
+            m.visitTypeInsn(NEW, Owners.INSTANCE_FINAL_FIELD_HOLDER); // fieldHolder
+            m.visitVarInsn(ALOAD, 0); // fieldHolder, this
+            m.visitMethodInsn(INVOKESPECIAL, Owners.INSTANCE_FINAL_FIELD_HOLDER,"<init>", "(Ljava/lang/Object;)V", false); //
+        }
     }
 
     @Override
@@ -70,8 +74,6 @@ public class ConstructorReference extends ExecutableReference {
                 m.visitInsn(SWAP); // this, realFieldValue
                 m.visitFieldInsn(PUTFIELD, ctx.className(), reference.name(), Type.getDescriptor(reference.type().raw())); // -> this, realFieldValue
             }
-            ctx.visitor().visitVarInsn(ALOAD, 0);
-            ctx.visitor().visitMethodInsn(INVOKESTATIC, Owners.CLASS_BUILDER, "removeInstanceFieldHolder", "(Ljava/lang/Object;)V", false);
         }
         super.writeReturn(ctx);
     }

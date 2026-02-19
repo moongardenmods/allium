@@ -289,7 +289,13 @@ public class TypeCoercions {
         TypeCoercions.registerLuaToJava(long.class, (_, val) -> suppressError(val::checkLong));
         TypeCoercions.registerLuaToJava(float.class, (_, val) -> suppressError(() -> (float)val.checkDouble()));
         TypeCoercions.registerLuaToJava(double.class, (_, val) -> suppressError(val::checkDouble));
-        TypeCoercions.registerLuaToJava(char.class, (_, val) -> suppressError(() -> (char)val.checkInteger()));
+        TypeCoercions.registerLuaToJava(char.class, (_, val) -> suppressError(() -> {
+            if (val.isNumber()) {
+                return (char) val.checkInteger();
+            } else {
+                return val.checkString().charAt(0);
+            }
+        }));
         TypeCoercions.registerLuaToJava(Boolean.class, (_, val) -> suppressError(val::checkBoolean));
         TypeCoercions.registerLuaToJava(Byte.class, (_, val) -> suppressError(() -> (byte)val.checkInteger()));
         TypeCoercions.registerLuaToJava(Short.class, (_, val) -> suppressError(() -> (short)val.checkInteger()));

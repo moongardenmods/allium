@@ -82,7 +82,7 @@ public class ExecutableReference {
 
             if (definesHandler()) {
                 writeArray(ctx);
-                writeFirstElement(ctx);
+                writeInitialElements(ctx);
                 writeHook(ctx);
             }
 
@@ -124,7 +124,8 @@ public class ExecutableReference {
         m.visitVarInsn(ASTORE, ctx.arrayPos());
     }
 
-    protected void writeFirstElement(WriteContext ctx) {
+    /// Writes the initial elements into the array. Number of elements permitted is dictated by param offset
+    protected void writeInitialElements(WriteContext ctx) {
         if ((this.access() & ACC_STATIC) == 0) {
             MethodVisitor m = ctx.visitor();
 

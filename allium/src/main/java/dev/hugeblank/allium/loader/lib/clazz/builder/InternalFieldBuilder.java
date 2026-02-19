@@ -9,11 +9,14 @@ import org.objectweb.asm.Type;
 import java.lang.invoke.MethodHandles;
 import java.lang.invoke.VarHandle;
 import java.util.HashMap;
+import java.util.Map;
 import java.util.function.Function;
 
 import static org.objectweb.asm.Opcodes.*;
 
 public class InternalFieldBuilder {
+    private static final Map<Class<?>, Fields> REFERENCES = new HashMap<>();
+
     private final String className;
     private final ClassVisitor c;
     private int fieldIndex = 0;
@@ -85,15 +88,24 @@ public class InternalFieldBuilder {
         m.visitFieldInsn(GETSTATIC, className, fieldName, Type.getDescriptor(type));
     }
 
-    public void apply(Class<?> builtClass) {
+    public void save(Class<?> builtClass) {
+        REFERENCES.put(builtClass, new Fields(storedFields, complexFields));
+    }
+
+    public static void apply(Class<?> builtClass) {
+        if (!REFERENCES.containsKey(builtClass))
+            throw new RuntimeException("No such reference to generated class " + builtClass.toString());
+
+        Fields fields = REFERENCES.get(builtClass);
+
         try {
             MethodHandles.Lookup lookup = MethodHandles.privateLookupIn(builtClass, MethodHandles.lookup());
-            for (var entry : storedFields.entrySet()) {
+            for (var entry : fields.storedFields.entrySet()) {
                 VarHandle var = lookup.findStaticVarHandle(builtClass, entry.getKey(), entry.getValue().right());
                 var.set(entry.getValue().left());
             }
 
-            for (var entry : complexFields.entrySet()) {
+            for (var entry : fields.complexFields.entrySet()) {
                 Object value = entry.getValue().left().apply(builtClass);
                 VarHandle var = lookup.findStaticVarHandle(builtClass, entry.getKey(), entry.getValue().right());
                 var.set(value);
@@ -102,5 +114,7 @@ public class InternalFieldBuilder {
             throw new RuntimeException("Failed to apply fields to class", e);
         }
     }
+
+    private record Fields(HashMap<String, Pair<Object, Class<?>>> storedFields, HashMap<String, Pair<Function<Class<?>, ?>, Class<?>>> complexFields) {}
 
 }

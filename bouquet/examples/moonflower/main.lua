@@ -37,10 +37,12 @@ local function registerBlock(id, blockInitializer, settings)
 end
 
 local definition = {}
+
 function definition:constructor(holder, float, behavior)
     print(holder, float, behavior)
     self.meaningOfLife = 42
 end
+
 function definition:onPlace(state, level, pos, oldState, movedByPiston)
     print(self.meaningOfLife)
 end

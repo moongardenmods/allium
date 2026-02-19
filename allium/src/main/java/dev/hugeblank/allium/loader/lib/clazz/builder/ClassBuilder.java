@@ -21,8 +21,8 @@ import static org.objectweb.asm.Opcodes.*;
 
 @LuaWrapped
 public class ClassBuilder extends AbstractClassBuilder {
-    private static final Map<Object, FieldHolder> INSTANCE_FIELD_HOOKS = new ConcurrentHashMap<>();
-    private static final Map<String, FieldHolder> CLASS_FIELD_HOOKS = new ConcurrentHashMap<>();
+    private static final Map<Object, FinalFieldHolder> INSTANCE_FIELD_HOOKS = new ConcurrentHashMap<>();
+    private static final Map<Class<?>, FinalFieldHolder> CLASS_FIELD_HOOKS = new ConcurrentHashMap<>();
 
     private final LuaState state;
     private final List<FieldReference> instanceFields = new ArrayList<>();
@@ -84,7 +84,7 @@ public class ClassBuilder extends AbstractClassBuilder {
 
     @LuaWrapped
     public ClinitBuilder clinit() {
-        return new ClinitBuilder(this, state, this::computeHooks);
+        return new ClinitBuilder(this);
     }
 
     @LuaWrapped
@@ -115,7 +115,7 @@ public class ClassBuilder extends AbstractClassBuilder {
     @LuaWrapped
     public LuaValue build() throws ClassBuildException {
         if (!classFields.isEmpty() && definitions.getOrDefault("<clinit>", List.of()).isEmpty()) {
-            definitions.put("<clinit>", List.of(new ClinitReference(state, this::computeHooks)));
+            definitions.put("<clinit>", List.of(new ClinitReference()));
         }
 
         if (definitions.getOrDefault("<init>", List.of()).isEmpty()) {
@@ -152,7 +152,7 @@ public class ClassBuilder extends AbstractClassBuilder {
 
         Class<?> klass = AsmUtil.defineClass(className, classBytes);
 
-        fields.apply(klass);
+        fields.save(klass);
 
         return StaticBinder.bindClass(EClass.fromJava(klass));
     }
@@ -160,24 +160,26 @@ public class ClassBuilder extends AbstractClassBuilder {
     public void apply(ExecutableReference definition) throws ClassBuildException {
         definitions.computeIfAbsent(definition.name(), (_) -> new ArrayList<>());
         List<ExecutableReference> defs = definitions.get(definition.name());
-        for (ExecutableReference other : defs) {
-            final WrappedType[] params = definition.params();
-            if (params.length == other.params().length) {
-                boolean match = true;
-                for (int i = 0; i < params.length; i++) {
-                    final WrappedType param = params[i];
-                    final WrappedType otherParam = other.params()[i];
-                    if (!(param.raw().equals(otherParam.raw()) && param.real().equals(otherParam.real()))) {
-                        match = false;
-                        break;
+        if (!definition.name().equals("<clinit>")) {
+            for (ExecutableReference other : defs) {
+                final WrappedType[] params = definition.params();
+                if (params.length == other.params().length) {
+                    boolean match = true;
+                    for (int i = 0; i < params.length; i++) {
+                        final WrappedType param = params[i];
+                        final WrappedType otherParam = other.params()[i];
+                        if (!(param.raw().equals(otherParam.raw()) && param.real().equals(otherParam.real()))) {
+                            match = false;
+                            break;
+                        }
                     }
+                    String type = definition.getTypeName();
+                    if (match) throw new ClassBuildException(
+                        type.substring(0, 1).toUpperCase(Locale.ROOT) + type.substring(1) +
+                            " '" + definition.name() + "' cannot define two methods with the same parameters. " +
+                            "Identical paramaters are:\n" + buildParameters(definition)
+                    );
                 }
-                String type = definition.getTypeName();
-                if (match) throw new ClassBuildException(
-                    type.substring(0, 1).toUpperCase(Locale.ROOT) + type.substring(1) +
-                        " '" + definition.name() + "' cannot define two methods with the same parameters. " +
-                        "Identical paramaters are:\n" + buildParameters(definition)
-                );
             }
         }
 
@@ -185,16 +187,6 @@ public class ClassBuilder extends AbstractClassBuilder {
             throw new ClassBuildException("Index '" + definition.index() + "' is already defined.");
 
         defs.add(definition);
-    }
-
-    private LuaValue computeHooks() {
-        return TypeCoercions.toLuaValue(
-            CLASS_FIELD_HOOKS.compute(
-                className,
-                (_, v) -> v == null ? new ClassBuilder.FieldHolder() : v
-            ),
-            EClass.fromJava(ClassBuilder.FieldHolder.class)
-        );
     }
 
     public static int handleMethodAccess(Map<String, Boolean> access) {
@@ -244,50 +236,36 @@ public class ClassBuilder extends AbstractClassBuilder {
         return INSTANCE_FIELD_HOOKS.containsKey(instance);
     }
 
+    public static boolean hasClassFieldHooks(Class<?> clazz) {
+        return CLASS_FIELD_HOOKS.containsKey(clazz);
+    }
+
     public static void setInstanceFieldHooks(Object instance, String name, Object value) {
         if (INSTANCE_FIELD_HOOKS.containsKey(instance)) {
             INSTANCE_FIELD_HOOKS.get(instance).put(name, value);
         }
     }
 
+    public static void setClassFieldHooks(Class<?> clazz, String name, Object value) {
+        if (CLASS_FIELD_HOOKS.containsKey(clazz)) {
+            CLASS_FIELD_HOOKS.get(clazz).put(name, value);
+        }
+    }
+
     // Used in bytecode.
     public static Object getField(String name, Object instance) {
         if (!INSTANCE_FIELD_HOOKS.containsKey(instance)) return null;
-        Object out = INSTANCE_FIELD_HOOKS.get(instance).remove(name);
-        if (INSTANCE_FIELD_HOOKS.get(instance).isEmpty()) INSTANCE_FIELD_HOOKS.remove(instance);
-        return out;
+        return INSTANCE_FIELD_HOOKS.get(instance).remove(name);
     }
 
     // Used in bytecode.
-    public static Object getField(String name, String className) {
+    public static Object getField(String name, Class<?> className) {
         if (!CLASS_FIELD_HOOKS.containsKey(className)) return null;
-        Object out = CLASS_FIELD_HOOKS.get(className).remove(name);
-        if (CLASS_FIELD_HOOKS.get(className).isEmpty()) CLASS_FIELD_HOOKS.remove(className);
-        return out;
+        return CLASS_FIELD_HOOKS.get(className).remove(name);
     }
 
-    // Used in bytecode.
-    public static FieldHolder initClassFieldHolder(String className) {
-        FieldHolder holder = new FieldHolder();
-        CLASS_FIELD_HOOKS.putIfAbsent(className, holder);
-        return holder;
-    }
-
-    // Used in bytecode.
-    public static void initInstanceFieldHolder(Object instance) {
-        FieldHolder holder = new FieldHolder();
-        INSTANCE_FIELD_HOOKS.putIfAbsent(instance, holder);
-    }
-
-    // Used in bytecode.
-    public static void removeInstanceFieldHolder(Object instance) {
-        INSTANCE_FIELD_HOOKS.remove(instance);
-    }
-
-    public static class FieldHolder {
+    private static class FinalFieldHolder {
         private final Map<String, Object> fields = new HashMap<>();
-
-        public FieldHolder() {}
 
         public void put(String name, Object value) {
             fields.put(name, value);
@@ -300,6 +278,37 @@ public class ClassBuilder extends AbstractClassBuilder {
         public Object remove(String name) {
             return fields.remove(name);
         }
+    }
 
+    public static class ClassFinalFieldHolder extends FinalFieldHolder {
+        private final Class<?> clazz;
+
+        public ClassFinalFieldHolder(Class<?> clazz) {
+            this.clazz = clazz;
+            CLASS_FIELD_HOOKS.put(clazz, this);
+        }
+
+        @Override
+        public Object remove(String name) {
+            Object out = super.remove(name);
+            if (isEmpty()) CLASS_FIELD_HOOKS.remove(clazz);
+            return out;
+        }
+    }
+
+    public static class InstanceFinalFieldHolder extends FinalFieldHolder {
+        private final Object instance;
+
+        public InstanceFinalFieldHolder(Object instance) {
+            this.instance = instance;
+            INSTANCE_FIELD_HOOKS.put(instance, this);
+        }
+
+        @Override
+        public Object remove(String name) {
+            Object out = super.remove(name);
+            if (isEmpty()) INSTANCE_FIELD_HOOKS.remove(instance);
+            return out;
+        }
     }
 }

@@ -6,8 +6,6 @@ import dev.hugeblank.allium.loader.type.exception.InvalidArgumentException;
 import dev.hugeblank.allium.loader.type.property.*;
 import dev.hugeblank.allium.util.*;
 import me.basiqueevangelist.enhancedreflection.api.EClass;
-import me.basiqueevangelist.enhancedreflection.api.EField;
-import me.basiqueevangelist.enhancedreflection.api.EMember;
 import me.basiqueevangelist.enhancedreflection.api.EMethod;
 import me.basiqueevangelist.enhancedreflection.api.typeuse.EClassUse;
 import org.apache.commons.lang3.ArrayUtils;
@@ -18,7 +16,6 @@ import org.squiddev.cobalt.function.VarArgFunction;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.InvocationTargetException;
 import java.util.*;
-import java.util.function.Predicate;
 
 public abstract class AbstractUserdataFactory<T, U extends InstanceUserdata<T>> {
     protected final EClass<T> clazz;
@@ -39,7 +36,7 @@ public abstract class AbstractUserdataFactory<T, U extends InstanceUserdata<T>> 
     AbstractUserdataFactory(EClass<T> clazz, EClass<? super T> targetClass, MemberFilter filter) {
         this.targetClass = targetClass;
         this.filter = filter;
-        this.candidates = deriveCandidates(targetClass, filter);
+        this.candidates = Candidates.derive(targetClass, filter);
         this.clazz = clazz;
         this.indexImpl = tryFindOp(candidates.methods(), LuaIndex.class, 1, "get");
         this.newIndexImpl = tryFindOp(candidates.methods(), null, 2, "set", "put");
@@ -85,34 +82,6 @@ public abstract class AbstractUserdataFactory<T, U extends InstanceUserdata<T>> 
                 .orElse(null);
 
         return method;
-    }
-
-    protected Candidates deriveCandidates(EClass<?> clazz, MemberFilter filter) {
-        if (filter.equals(MemberFilter.PUBLIC_MEMBERS)) {
-            return new Candidates(clazz.methods(), clazz.fields().stream().toList());
-        }
-        List<EMethod> methods = new ArrayList<>();
-        List<EField> fields = new ArrayList<>();
-        List<EClass<?>> interfaces = new ArrayList<>();
-        Map<String, EClass<?>> nameMap = new HashMap<>();
-        while (clazz != null) {
-            methods.addAll(clazz.declaredMethods().stream().filter(testMember(nameMap, filter)).toList());
-            interfaces.addAll(clazz.interfaces());
-            fields.addAll(clazz.declaredFields().stream().filter(testMember(nameMap, filter)).toList());
-            clazz = clazz.superclass();
-        }
-        interfaces.forEach((iface) ->
-                methods.addAll(iface.declaredMethods().stream().filter(testMember(nameMap, filter)).toList())
-        );
-        return new Candidates(methods, fields);
-    }
-
-    private static Predicate<EMember> testMember(Map<String, EClass<?>> nameMap, MemberFilter filter) {
-        return (m) -> {
-            if (!filter.test(m)) return false;
-            if (!nameMap.containsKey(m.name())) nameMap.put(m.name(), m.declaringClass());
-            return nameMap.get(m.name()).equals(m.declaringClass());
-        };
     }
 
     protected LuaTable createMetatable(boolean isBound) {

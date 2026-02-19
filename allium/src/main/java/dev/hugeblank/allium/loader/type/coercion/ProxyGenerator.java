@@ -2,6 +2,7 @@ package dev.hugeblank.allium.loader.type.coercion;
 
 import dev.hugeblank.allium.loader.lib.clazz.builder.InternalFieldBuilder;
 import dev.hugeblank.allium.util.asm.AsmUtil;
+import dev.hugeblank.allium.util.asm.Owners;
 import me.basiqueevangelist.enhancedreflection.api.EClass;
 import me.basiqueevangelist.enhancedreflection.api.EMethod;
 import org.objectweb.asm.ClassWriter;
@@ -52,6 +53,18 @@ public class ProxyGenerator {
 
         c.visitField(ACC_PRIVATE | ACC_FINAL, STATE_FIELD_NAME, "Lorg/squiddev/cobalt/LuaState;", null, null);
         c.visitField(ACC_PRIVATE | ACC_FINAL, FUNCTION_FIELD_NAME, "Lorg/squiddev/cobalt/function/LuaFunction;", null, null);
+
+        var clinit = c.visitMethod(ACC_STATIC, "<clinit>", "()V", null, null);
+
+        clinit.visitCode();
+
+        clinit.visitLdcInsn(Type.getType('L' + className + ';'));
+        clinit.visitMethodInsn(INVOKESTATIC, Owners.INTERNAL_FIELD_BUILDER, "apply", "(Ljava/lang/Class;)V", false);
+
+        clinit.visitInsn(RETURN);
+
+        clinit.visitMaxs(0, 0);
+        clinit.visitEnd();
 
         var ctor = c.visitMethod(ACC_PUBLIC, "<init>", INIT_DESCRIPTOR, null, null);
         ctor.visitCode();
@@ -143,7 +156,7 @@ public class ProxyGenerator {
 
         byte[] classBytes = c.toByteArray();
         Class<?> klass = AsmUtil.defineClass(className, classBytes);
-        fields.apply(klass);
+        fields.save(klass);
 
         try {
             return (BiFunction<LuaState, LuaFunction, Object>) klass.getMethod("getFactoryMethod").invoke(null);

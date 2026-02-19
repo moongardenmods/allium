@@ -27,13 +27,18 @@ public final class FieldData<I> implements PropertyData<I> {
     @Override
     public void set(String name, LuaState state, I instance, LuaValue value) throws LuaError {
         if (field.isFinal()) {
-            if (ClassBuilder.hasInstanceFieldHooks(instance)) {
-                try {
-                    ClassBuilder.setInstanceFieldHooks(instance, name, TypeCoercions.toJava(state, value, field.rawFieldType()));
+            try {
+                Object javaValue = TypeCoercions.toJava(state, value, field.rawFieldType());
+                Class<?> declaring = field.declaringClass().raw();
+                if (instance == null && ClassBuilder.hasClassFieldHooks(declaring)) {
+                    ClassBuilder.setClassFieldHooks(declaring, name, javaValue);
                     return;
-                } catch (InvalidArgumentException e) {
-                    throw new LuaError(e);
+                } else if (ClassBuilder.hasInstanceFieldHooks(instance)) {
+                    ClassBuilder.setInstanceFieldHooks(instance, name, javaValue);
+                    return;
                 }
+            } catch (InvalidArgumentException e) {
+                throw new LuaError(e);
             }
             PropertyData.super.set(name, state, instance, value);
             return;

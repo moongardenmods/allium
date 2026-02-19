@@ -10,26 +10,36 @@ public record MemberFilter(boolean expectStatic, boolean expectPublic, boolean e
                            boolean expectPrivate) implements Predicate<ModifierHolder> {
 
     public static final MemberFilter PUBLIC_STATIC_MEMBERS =
-            new MemberFilter(true, true, false, false);
+        new MemberFilter(true, true, false, false);
+
+    // Used in bytecode
+    public static final MemberFilter ALL_STATIC_MEMBERS =
+        new MemberFilter(true, true, true, true);
 
     public static final MemberFilter PUBLIC_MEMBERS =
-            new MemberFilter(false, true, false, false);
+        new MemberFilter(false, true, false, false);
 
     public static final MemberFilter CHILD_MEMBER_ACCESS =
-            new MemberFilter(false, true, true, false);
+        new MemberFilter(false, true, true, false);
 
     public static final MemberFilter STATIC_CHILD_MEMBER_ACCESS =
-            new MemberFilter(true, true, true, false);
+        new MemberFilter(true, true, true, false);
 
     public static final MemberFilter ALL_MEMBERS =
-            new MemberFilter(false, true, true, true);
+        new MemberFilter(false, true, true, true);
 
     @Override
     public boolean test(ModifierHolder holder) {
-        return (expectStatic == holder.isStatic()) &&
-                ((expectPublic == holder.isPublic()) ||
-                (expectProtected == holder.isProtected()) ||
-                expectPrivate);
+        return (expectStatic == holder.isStatic()) && (
+            expectPrivate ||
+                (expectPublic == holder.isPublic()) ||
+                (expectProtected == holder.isProtected())
+        );
+    }
+
+    public MemberFilter scopeUp() {
+        if (expectPrivate) return new MemberFilter(expectStatic, expectPublic, expectProtected, false);
+        return this;
     }
 
     public MethodHandles.Lookup lookup(Class<?> clazz) throws IllegalAccessException {

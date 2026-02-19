@@ -30,7 +30,7 @@ public final class StaticBinder {
     public static <T> ClassUserdata<T> bindClass(EClass<T> clazz, MemberFilter filter) {
         Map<String, PropertyData<? super T>> cachedProperties = new HashMap<>();
         LuaTable metatable = new LuaTable();
-        Candidates candidates = new Candidates(clazz.methods(), clazz.fields().stream().toList());
+        Candidates candidates = Candidates.derive(clazz, filter);
 
         MetatableUtils.applyPairs(metatable, clazz, cachedProperties, candidates, false, filter);
 

@@ -8,12 +8,10 @@ import org.squiddev.cobalt.function.LuaFunction;
 public class ProxyClinitReference extends ExecutableReference {
 
     private final ClinitReference reference;
-    private final String trueIndex;
 
     public ProxyClinitReference(ClinitReference reference, String index) {
-        super("<clinit>", index, new WrappedType[]{}, new WrappedType(MethodBuilder.VOID, MethodBuilder.VOID), Opcodes.ACC_STATIC, true);
+        super("<clinit>", index == null ? "initializer" : index, new WrappedType[]{}, new WrappedType(MethodBuilder.VOID, MethodBuilder.VOID), Opcodes.ACC_STATIC, true);
         this.reference = reference;
-        trueIndex = index;
     }
 
     @Override
@@ -28,11 +26,6 @@ public class ProxyClinitReference extends ExecutableReference {
 
     @Override
     public void write(ClassBuilder.BuilderContext bctx) {}
-
-    @Override
-    public String index() {
-        return trueIndex;
-    }
 
     @Override
     public void setFunction(LuaFunction function) {

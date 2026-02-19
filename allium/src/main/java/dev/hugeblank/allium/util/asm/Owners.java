@@ -4,8 +4,10 @@ import dev.hugeblank.allium.loader.Script;
 import dev.hugeblank.allium.loader.ScriptRegistry;
 import dev.hugeblank.allium.loader.lib.MixinLib;
 import dev.hugeblank.allium.loader.lib.clazz.builder.ClassBuilder;
+import dev.hugeblank.allium.loader.lib.clazz.builder.InternalFieldBuilder;
 import dev.hugeblank.allium.loader.type.StaticBinder;
 import dev.hugeblank.allium.loader.type.coercion.TypeCoercions;
+import dev.hugeblank.allium.loader.type.property.MemberFilter;
 import dev.hugeblank.allium.loader.type.userdata.*;
 import dev.hugeblank.allium.util.Pair;
 import dev.hugeblank.allium.util.Registry;
@@ -32,6 +34,7 @@ public class Owners {
     public static final String MIXIN_LIB = Type.getInternalName(MixinLib.class);
     public static final String SCRIPT_REGISTRY = Type.getInternalName(ScriptRegistry.class);
     public static final String REGISTRY = Type.getInternalName(Registry.class);
+    public static final String MEMBER_FILTER = Type.getInternalName(MemberFilter.class);
     public static final String INSTANCE_USERDATA_FACTORY = Type.getInternalName(InstanceUserdataFactory.class);
     public static final String PRIVATE_USERDATA_FACTORY = Type.getInternalName(PrivateUserdataFactory.class);
     public static final String PRIVATE_USERDATA = Type.getInternalName(PrivateUserdata.class);
@@ -40,6 +43,9 @@ public class Owners {
     public static final String STATIC_BINDER = Type.getInternalName(StaticBinder.class);
     public static final String TYPE_COERCIONS = Type.getInternalName(TypeCoercions.class);
     public static final String CLASS_BUILDER = Type.getInternalName(ClassBuilder.class);
+    public static final String INTERNAL_FIELD_BUILDER = Type.getInternalName(InternalFieldBuilder.class);
+    public static final String CLASS_FINAL_FIELD_HOLDER = Type.getInternalName(ClassBuilder.ClassFinalFieldHolder.class);
+    public static final String INSTANCE_FINAL_FIELD_HOLDER = Type.getInternalName(ClassBuilder.InstanceFinalFieldHolder.class);
     // Cobalt
     public static final String LUA_VALUE = Type.getInternalName(LuaValue.class);
     public static final String VARARGS = Type.getInternalName(Varargs.class);
