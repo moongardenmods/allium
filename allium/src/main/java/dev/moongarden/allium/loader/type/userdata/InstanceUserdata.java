@@ -52,4 +52,9 @@ public class InstanceUserdata<T> extends LuaUserdata {
         eMethod.raw().setAccessible(true);
         return eMethod.invoke(instance, params);
     }
+
+    @Override
+    public boolean equals(Object val) {
+        return (val instanceof InstanceUserdata<?> instanceUserdata) ? instanceUserdata.instance == instance : super.equals(val);
+    }
 }
