@@ -24,13 +24,14 @@ public class JavaHelpers {
     }
 
     public static EClass<?> getRawClass(String className) throws LuaError {
+        String lastName = null;
+        while(!className.equals(lastName)) {
             try {
                 return EClass.fromJava(Class.forName(className));
             } catch (ClassNotFoundException ignored) {}
-
-            try {
-                return EClass.fromJava(Class.forName(className));
-            } catch (ClassNotFoundException ignored) {}
+            lastName = className;
+            className = className.replaceFirst("^(.*)\\.(.*)$", "$1\\$$2");
+        }
 
         throw new LuaError("Couldn't find class \"" + className + "\"");
     }

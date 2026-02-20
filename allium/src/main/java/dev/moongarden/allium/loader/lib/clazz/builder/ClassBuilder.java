@@ -110,6 +110,17 @@ public class ClassBuilder extends AbstractClassBuilder {
             apply(new DefaultSuperConstructorReference(parentClass));
         }
 
+        LuaValue key = Constants.NIL;
+        while (true) {
+            Varargs entry = hooks.next(key);
+            key = entry.arg(1);
+            if (key == Constants.NIL) break;
+            String k = key.checkString();
+            ExecutableReference reference = byIndex.get(k);
+            if (reference == null) throw new ClassBuildException("No such reference with index '" + k + "'.");
+            reference.setFunction(entry.arg(2).checkFunction());
+        }
+
         if (!definitions.isEmpty()) {
             StringBuilder builder = new StringBuilder();
             boolean invalid = false;
@@ -127,17 +138,6 @@ public class ClassBuilder extends AbstractClassBuilder {
                 }
             }
             if (invalid) throw new IllegalStateException("Missing functions for method(s): " + builder);
-        }
-
-        LuaValue key = Constants.NIL;
-        while (true) {
-            Varargs entry = hooks.next(key);
-            key = entry.arg(1);
-            if (key == Constants.NIL) break;
-            String k = key.checkString();
-            ExecutableReference reference = byIndex.get(k);
-            if (reference == null) throw new ClassBuildException("No such reference with index '" + k + "'.");
-            reference.setFunction(entry.arg(2).checkFunction());
         }
 
         BuilderContext builderContext = new BuilderContext(state, c, className, fields, classFields, instanceFields);

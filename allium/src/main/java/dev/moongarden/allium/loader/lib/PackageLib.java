@@ -162,4 +162,8 @@ public class PackageLib extends WrappedScriptLibrary {
         }
         throw new LuaError("Could not find module " + mod);
     }
+
+    record Test() {
+        record B() {}
+    }
 }
