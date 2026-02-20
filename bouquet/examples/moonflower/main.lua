@@ -59,8 +59,7 @@ local MoonFlowerBlock = java.extendClass(FlowerBlock)
         :access({ public = true })
         :override("onPlace", {BlockState, Level, BlockPos, BlockState, java.boolean})
         :build()
-    :define(definition)
-    :build()
+    :build(definition)
 
 local RegisteredMoonFlower = registerBlock(
     "moonflower",

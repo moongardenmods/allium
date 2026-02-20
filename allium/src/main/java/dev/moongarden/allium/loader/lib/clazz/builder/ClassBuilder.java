@@ -101,22 +101,7 @@ public class ClassBuilder extends AbstractClassBuilder {
     }
 
     @LuaWrapped
-    public ClassBuilder define(LuaTable table) throws LuaError, ClassBuildException {
-        LuaValue key = Constants.NIL;
-        while (true) {
-            Varargs entry = table.next(key);
-            key = entry.arg(1);
-            if (key == Constants.NIL) break;
-            String k = key.checkString();
-            ExecutableReference reference = byIndex.get(k);
-            if (reference == null) throw new ClassBuildException("No such reference with index '" + k + "'.");
-            reference.setFunction(entry.arg(2).checkFunction());
-        }
-        return this;
-    }
-
-    @LuaWrapped
-    public LuaValue build() throws ClassBuildException {
+    public LuaValue build(LuaTable hooks) throws ClassBuildException, LuaError {
         if (definitions.getOrDefault("<clinit>", List.of()).isEmpty()) {
             definitions.put("<clinit>", List.of(new ClinitReference(!classFields.isEmpty())));
         }
@@ -142,6 +127,17 @@ public class ClassBuilder extends AbstractClassBuilder {
                 }
             }
             if (invalid) throw new IllegalStateException("Missing functions for method(s): " + builder);
+        }
+
+        LuaValue key = Constants.NIL;
+        while (true) {
+            Varargs entry = hooks.next(key);
+            key = entry.arg(1);
+            if (key == Constants.NIL) break;
+            String k = key.checkString();
+            ExecutableReference reference = byIndex.get(k);
+            if (reference == null) throw new ClassBuildException("No such reference with index '" + k + "'.");
+            reference.setFunction(entry.arg(2).checkFunction());
         }
 
         BuilderContext builderContext = new BuilderContext(state, c, className, fields, classFields, instanceFields);
