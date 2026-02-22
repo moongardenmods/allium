@@ -1,21 +1,17 @@
-local CommandsMixin = mixin.to("net.minecraft.commands.Commands")
+mixin.to("net.minecraft.commands.Commands")
+    :method("initCommands")
+        :inject({
+            method = {"<init>(Lnet/minecraft/commands/Commands$CommandSelection;Lnet/minecraft/commands/CommandBuildContext;)V"},
+            at = { {"TAIL"} }
+        })
+        :build()
+    :build("commands_mixin")
 
-CommandsMixin:createInjectMethod("commands_init", {
-    mixin.annotation.inject({
-        method = {"<init>(Lnet/minecraft/commands/Commands$CommandSelection;Lnet/minecraft/commands/CommandBuildContext;)V"},
-        at = { {"TAIL"} }
-    })
-})
-
-CommandsMixin:build()
-
-local ArgumentTypeInfosMixin = mixin.to("net.minecraft.commands.synchronization.ArgumentTypeInfos")
-
-ArgumentTypeInfosMixin:createInjectMethod("argument_type_infos_register", {
-    mixin.annotation.inject({
-        method = {"register(Lnet/minecraft/core/Registry;Ljava/lang/String;Ljava/lang/Class;Lnet/minecraft/commands/synchronization/ArgumentTypeInfo;)Lnet/minecraft/commands/synchronization/ArgumentTypeInfo;"},
-        at = { {"HEAD"} }
-    })
-})
-
-ArgumentTypeInfosMixin:build()
+mixin.to("net.minecraft.commands.synchronization.ArgumentTypeInfos")
+    :method("registerArgumentTypeInfos")
+        :inject({
+            method = {"register(Lnet/minecraft/core/Registry;Ljava/lang/String;Ljava/lang/Class;Lnet/minecraft/commands/synchronization/ArgumentTypeInfo;)Lnet/minecraft/commands/synchronization/ArgumentTypeInfo;"},
+            at = { {"HEAD"} }
+        })
+        :build()
+    :build("argument_type_infos_mixin")

@@ -8,13 +8,12 @@ import dev.moongarden.allium.AlliumPreLaunch;
 import dev.moongarden.allium.api.event.MixinMethodHook;
 import dev.moongarden.allium.loader.Script;
 import dev.moongarden.allium.loader.lib.mixin.MixinClassInfo;
-import dev.moongarden.allium.loader.lib.mixin.annotation.method.MixinMethodAnnotations;
-import dev.moongarden.allium.loader.lib.mixin.annotation.sugar.MixinSugars;
-import dev.moongarden.allium.loader.lib.mixin.builder.MixinClassBuilder;
+import dev.moongarden.allium.loader.lib.mixin.builder.AbstractMixinBuilder;
+import dev.moongarden.allium.loader.lib.mixin.builder.HookDefinition;
 import dev.moongarden.allium.loader.type.StaticBinder;
 import dev.moongarden.allium.api.LuaWrapped;
 import dev.moongarden.allium.api.OptionalArg;
-import dev.moongarden.allium.loader.type.userdata.ClassUserdata;
+import dev.moongarden.allium.loader.type.exception.InvalidMixinException;
 import dev.moongarden.allium.util.ByteArrayStreamHandler;
 import dev.moongarden.allium.util.JsonObjectBuilder;
 import dev.moongarden.allium.util.asm.VisitedClass;
@@ -30,29 +29,19 @@ import java.lang.invoke.MethodHandles;
 import java.lang.reflect.Method;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 @LuaWrapped(name = "mixin")
 public class MixinLib extends WrappedScriptLibrary {
     private static boolean COMPLETE = false;
 
-    // This being the way to define embedded "tables" is hilarious to me.
-    private static final ClassUserdata<MixinMethodAnnotations> ANNOTATION = StaticBinder.bindClass(EClass.fromJava(MixinMethodAnnotations.class));
-    private static final ClassUserdata<MixinSugars> SUGAR = StaticBinder.bindClass(EClass.fromJava(MixinSugars.class));
-
-
-    @LuaWrapped public final ClassUserdata<MixinMethodAnnotations> annotation = ANNOTATION;
-    @LuaWrapped public final ClassUserdata<MixinSugars> sugar = SUGAR;
     private final String mixinPackage = "allium." + script.getID() + ".mixin";
     private final String mixinConfigName = "allium-"+ script.getID() +"-generated.mixins.json";
     private final List<MixinClassInfo> mixins = new ArrayList<>();
     private final List<MixinClassInfo> client = new ArrayList<>();
     private final List<MixinClassInfo> server = new ArrayList<>();
     private final Map<String, String> duckMap = new HashMap<>();
-    private final Map<String, MixinMethodHook> eventMap = new HashMap<>();
+    private final Map<String, Map<String, MixinMethodHook>> classHooks = new HashMap<>();
 
     private int nextMixinId = 0;
 
@@ -61,8 +50,11 @@ public class MixinLib extends WrappedScriptLibrary {
     }
 
     @LuaWrapped
-    public MixinMethodHook get(String hookId) {
-        return eventMap.get(hookId);
+    public HookDefinition get(String classId) throws InvalidMixinException {
+        if (!classHooks.containsKey(classId))
+            throw new InvalidMixinException(InvalidMixinException.Type.INVALID_CLASS_ID, classId);
+
+        return new HookDefinition(classHooks.get(classId));
     }
 
     @LuaWrapped
@@ -74,7 +66,7 @@ public class MixinLib extends WrappedScriptLibrary {
     }
 
     @LuaWrapped
-    public MixinClassBuilder to(String targetClass, @OptionalArg @Nullable String[] interfaces, @OptionalArg @Nullable String targetEnvironment, @OptionalArg @Nullable Boolean duck) throws LuaError {
+    public AbstractMixinBuilder to(String targetClass, @OptionalArg @Nullable String[] interfaces, @OptionalArg @Nullable String targetEnvironment, @OptionalArg @Nullable Boolean duck) throws LuaError {
         EnvType targetEnv;
         if (targetEnvironment == null) {
             targetEnv = null;
@@ -85,7 +77,7 @@ public class MixinLib extends WrappedScriptLibrary {
         } else {
             throw new LuaError("Mixin for " + targetClass + " expects target environment of nil, 'client' or 'server'.");
         }
-        return MixinClassBuilder.create(
+        return AbstractMixinBuilder.create(
                 targetClass,
                 interfaces == null ? new String[]{} : interfaces,
                 targetEnv,
@@ -114,8 +106,8 @@ public class MixinLib extends WrappedScriptLibrary {
         duckMap.put(id, path);
     }
 
-    public void addMethodHook(String id, MixinMethodHook hook) {
-        eventMap.put(id, hook);
+    public void addHooks(String id, Map<String, MixinMethodHook> hooks) {
+        classHooks.put(id, hooks);
     }
 
     public JsonArray mixinsToJson(List<MixinClassInfo> list, Map<String, byte[]> configMap) {

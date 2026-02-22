@@ -6,11 +6,16 @@ local Blocks = require("net.minecraft.world.level.block.Blocks")
 
 -- Note that because this mixin doesn't do anything to any registries, it's reloadable! We could, say, change the flower
 -- to a poppy! Or to a diamond block!
-mixin.get("add_flower"):hook(function(self, state, world, pos, random, ci, blockPos, i)
+
+local definitions = {}
+
+function definitions:addFlower(state, world, pos, random, ci, blockPos, i)
     -- If the cactus is currently 2 blocks tall (not including the block that was just added prior to this function
     -- being called...)
     if i == 2 then
         -- Add the flower. How cute!
         world:setBlockAndUpdate(blockPos:above():above(), Blocks.ALLIUM:defaultBlockState())
     end
-end)
+end
+
+mixin.get("cactus_block_mixin"):define(definitions)

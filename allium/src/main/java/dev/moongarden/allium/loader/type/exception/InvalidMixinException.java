@@ -1,10 +1,16 @@
 package dev.moongarden.allium.loader.type.exception;
 
 public class InvalidMixinException extends Exception {
+
+    public InvalidMixinException(String message) {
+        super(message);
+    }
+
     public InvalidMixinException(Type type, String message) {
         super(switch (type) {
-            case NO_INJECTOR_ANNOTATION -> "Missing injector annotation for method with event id '" + message + "'";
-            case TOO_MANY_INJECTOR_ANNOTATIONS -> "More than one injector annotation found for method with event id '" + message + "'";
+            case NO_INJECTOR_ANNOTATION -> "Missing injector annotation for method with index '" + message + "'";
+            case TOO_MANY_INJECTOR_ANNOTATIONS -> "More than one injector annotation for method with index '" + message + "'";
+            case INVALID_CLASS_ID -> "No such class with ID '" + message + "'";
             case INVALID_DESCRIPTOR -> "Could not find method matching descriptor: "+message;
             case INVALID_CLASSTYPE -> "Attempt to use "+message+" method on non-"+message+" mixin.";
             case INJECTOR_EXISTS -> "Inject method already exists with event id '" + message + "'";
@@ -16,6 +22,7 @@ public class InvalidMixinException extends Exception {
     public enum Type {
         NO_INJECTOR_ANNOTATION,
         TOO_MANY_INJECTOR_ANNOTATIONS,
+        INVALID_CLASS_ID,
         INVALID_DESCRIPTOR,
         INVALID_CLASSTYPE,
         INJECTOR_EXISTS,

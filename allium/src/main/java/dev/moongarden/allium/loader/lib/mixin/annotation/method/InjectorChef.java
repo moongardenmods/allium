@@ -1,5 +1,6 @@
 package dev.moongarden.allium.loader.lib.mixin.annotation.method;
 
+import dev.moongarden.allium.api.event.MixinMethodHook;
 import dev.moongarden.allium.loader.Script;
 import dev.moongarden.allium.loader.lib.mixin.annotation.sugar.LuaSugar;
 import dev.moongarden.allium.loader.type.exception.InvalidArgumentException;
@@ -12,12 +13,13 @@ import org.squiddev.cobalt.LuaError;
 import java.util.List;
 
 public interface InjectorChef {
-    void bake(
+    MixinMethodHook bake(
             Script script,
+            String classId,
             String eventId,
             ClassWriter classWriter,
             VisitedClass mixinClass,
             List<LuaMethodAnnotation> annotations,
             @Nullable List<? extends LuaSugar> sugarParameters
-    ) throws InvalidMixinException, LuaError, InvalidArgumentException;
+    ) throws InvalidMixinException, LuaError;
 }

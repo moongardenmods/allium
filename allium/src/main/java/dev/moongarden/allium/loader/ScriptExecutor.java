@@ -102,16 +102,11 @@ public class ScriptExecutor{
         LuaFunction func = LoadState.load(
             state,
             stream,
-            '=' + id + ":/" + path.relativize(path),
+            '=' + id + ":/" + path.getParent().relativize(path),
             state.globals()
         );
         Allium.PROFILER.pop();
-        try {
-            return Dispatch.call(state, func);
-        } catch (UnwindThrowable e) {
-            logger.warn("Unhandled yield. Avoid using coroutine.yield in places that will bleed into Java logic.");
-        }
-        return Constants.NIL;
+        return LuaThread.runMain(state, func).first();
     }
 
     private static final class PrintMethod extends VarArgFunction {

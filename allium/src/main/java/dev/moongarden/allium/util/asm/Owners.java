@@ -5,6 +5,7 @@ import dev.moongarden.allium.loader.ScriptRegistry;
 import dev.moongarden.allium.loader.lib.MixinLib;
 import dev.moongarden.allium.loader.lib.clazz.builder.ClassBuilder;
 import dev.moongarden.allium.loader.lib.clazz.builder.InternalFieldBuilder;
+import dev.moongarden.allium.loader.lib.mixin.builder.HookDefinition;
 import dev.moongarden.allium.loader.type.StaticBinder;
 import dev.moongarden.allium.loader.type.coercion.TypeCoercions;
 import dev.moongarden.allium.loader.type.property.MemberFilter;
@@ -32,6 +33,7 @@ public class Owners {
     public static final String PAIR = Type.getInternalName(Pair.class);
     public static final String SCRIPT = Type.getInternalName(Script.class);
     public static final String MIXIN_LIB = Type.getInternalName(MixinLib.class);
+    public static final String HOOK_DEFINITION = Type.getInternalName(HookDefinition.class);
     public static final String SCRIPT_REGISTRY = Type.getInternalName(ScriptRegistry.class);
     public static final String REGISTRY = Type.getInternalName(Registry.class);
     public static final String MEMBER_FILTER = Type.getInternalName(MemberFilter.class);

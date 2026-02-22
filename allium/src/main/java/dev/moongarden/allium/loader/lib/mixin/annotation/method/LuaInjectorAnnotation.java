@@ -3,8 +3,8 @@ package dev.moongarden.allium.loader.lib.mixin.annotation.method;
 import dev.moongarden.allium.api.event.MixinMethodHook;
 import dev.moongarden.allium.loader.Script;
 import dev.moongarden.allium.loader.lib.mixin.annotation.LuaAnnotationParser;
-import dev.moongarden.allium.loader.lib.mixin.builder.MixinClassBuilder;
-import dev.moongarden.allium.loader.lib.mixin.builder.MixinMethodBuilder;
+import dev.moongarden.allium.loader.lib.mixin.builder.AbstractMixinBuilder;
+import dev.moongarden.allium.loader.lib.mixin.builder.InternalMixinMethodBuilder;
 import dev.moongarden.allium.loader.lib.mixin.builder.MixinParameter;
 import dev.moongarden.allium.loader.type.exception.InvalidArgumentException;
 import dev.moongarden.allium.loader.type.exception.InvalidMixinException;
@@ -37,7 +37,7 @@ public abstract class LuaInjectorAnnotation extends LuaMethodAnnotation implemen
     }
 
     protected static VisitedMethod getVisitedMethod(VisitedClass mixinClass, LuaAnnotationParser annotation) throws InvalidMixinException, LuaError {
-        String descriptor = MixinClassBuilder.cleanDescriptor(
+        String descriptor = AbstractMixinBuilder.cleanDescriptor(
             mixinClass,
             annotation.findElement("method", String.class)
         );
@@ -46,8 +46,9 @@ public abstract class LuaInjectorAnnotation extends LuaMethodAnnotation implemen
         return mixinClass.getMethod(descriptor);
     }
 
-    protected static MixinMethodBuilder.WriteFactory createInjectWriteFactory(Script script, String eventName) {
+    protected static InternalMixinMethodBuilder.WriteFactory createInjectWriteFactory(Script script, String classId, String eventName) {
         final Type objectType = Type.getType(Object.class);
+
         return (methodVisitor, desc, paramTypes) -> {
             int varPrefix = paramTypes.size();
             Type returnType = Type.getReturnType(desc);
@@ -55,8 +56,10 @@ public abstract class LuaInjectorAnnotation extends LuaMethodAnnotation implemen
 
             AsmUtil.getScript(methodVisitor, script);
             methodVisitor.visitMethodInsn(INVOKEVIRTUAL, Owners.SCRIPT, "getMixinLib", "()Ldev/moongarden/allium/loader/lib/MixinLib;", false);
+            methodVisitor.visitLdcInsn(classId);
+            methodVisitor.visitMethodInsn(INVOKEVIRTUAL, Owners.MIXIN_LIB, "get", "(Ljava/lang/String;)Ldev/moongarden/allium/loader/lib/mixin/builder/HookDefinition;", false);
             methodVisitor.visitLdcInsn(eventName);
-            methodVisitor.visitMethodInsn(INVOKEVIRTUAL, Owners.MIXIN_LIB, "get", "(Ljava/lang/String;)Ldev/moongarden/allium/api/event/MixinMethodHook;", false);
+            methodVisitor.visitMethodInsn(INVOKEVIRTUAL, Owners.HOOK_DEFINITION, "forId", "(Ljava/lang/String;)Ldev/moongarden/allium/api/event/MixinMethodHook;", false);
 
             AsmUtil.createArray(methodVisitor, varPrefix, types, Object.class, (visitor, index, arg) -> {
                 visitor.visitVarInsn(arg.getOpcode(ILOAD), index); // <- 2

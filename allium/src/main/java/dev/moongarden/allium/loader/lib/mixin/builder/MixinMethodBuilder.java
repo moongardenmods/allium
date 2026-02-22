@@ -1,176 +1,212 @@
 package dev.moongarden.allium.loader.lib.mixin.builder;
 
-import dev.moongarden.allium.api.event.MixinMethodHook;
-import dev.moongarden.allium.loader.Script;
-import dev.moongarden.allium.loader.lib.mixin.annotation.LuaAnnotationParser;
+import dev.moongarden.allium.api.LuaStateArg;
+import dev.moongarden.allium.api.LuaWrapped;
+import dev.moongarden.allium.api.OptionalArg;
+import dev.moongarden.allium.loader.lib.mixin.annotation.method.*;
+import dev.moongarden.allium.loader.lib.mixin.annotation.method.injectors.*;
 import dev.moongarden.allium.loader.lib.mixin.annotation.sugar.LuaCancellable;
+import dev.moongarden.allium.loader.lib.mixin.annotation.sugar.LuaLocal;
 import dev.moongarden.allium.loader.lib.mixin.annotation.sugar.LuaParameterAnnotation;
-import dev.moongarden.allium.loader.lib.mixin.annotation.sugar.LuaSugar;
+import dev.moongarden.allium.loader.lib.mixin.annotation.sugar.LuaShare;
 import dev.moongarden.allium.loader.type.exception.InvalidArgumentException;
 import dev.moongarden.allium.loader.type.exception.InvalidMixinException;
-import dev.moongarden.allium.util.asm.VisitedElement;
-import dev.moongarden.allium.util.asm.VisitedMethod;
 import me.basiqueevangelist.enhancedreflection.api.EClass;
 import org.jetbrains.annotations.Nullable;
-import org.objectweb.asm.AnnotationVisitor;
-import org.objectweb.asm.ClassWriter;
-import org.objectweb.asm.MethodVisitor;
-import org.objectweb.asm.Type;
 import org.squiddev.cobalt.LuaError;
+import org.squiddev.cobalt.LuaState;
+import org.squiddev.cobalt.LuaTable;
 
-import java.lang.annotation.Retention;
-import java.lang.annotation.RetentionPolicy;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 
-import static org.objectweb.asm.Opcodes.ACC_STATIC;
-
+@LuaWrapped
 public class MixinMethodBuilder {
-    private final ClassWriter classWriter;
-    private final VisitedElement target;
-    private int access = 0;
-    private final String name;
-    private final List<MixinParameter> initialParameters;
-    private final List<MixinParameter> additionalParameters = new ArrayList<>();
-    private List<LuaAnnotationParser> methodAnnotations;
-    private String signature = null;
-    private final List<String> exceptions = new ArrayList<>();
-    private WriteFactory code;
-    private Type returnType = Type.VOID_TYPE;
 
-    private MixinMethodBuilder(ClassWriter classWriter, VisitedElement target, String name, List<MixinParameter> initialParameters) {
-        this.classWriter = classWriter;
-        this.target = target;
-        this.name = name;
-        this.initialParameters = new ArrayList<>(initialParameters);
+    private final MixinClassBuilder classBuilder;
+    private final String index;
+    private InjectorChef chef;
+    private final List<LuaParameterAnnotation> sugars = new ArrayList<>();
+    private final List<LuaMethodAnnotation> annotations = new ArrayList<>();
+
+    public MixinMethodBuilder(MixinClassBuilder classBuilder, String index) {
+        this.classBuilder = classBuilder;
+        this.index = index;
     }
 
-    public static MixinMethodBuilder of(ClassWriter classWriter, VisitedElement target, String name, List<MixinParameter> initialParameters) {
-        return new MixinMethodBuilder(classWriter, target, name, initialParameters);
-    }
-
-    public MixinMethodBuilder access(int access) {
-        this.access = access;
+    /// Add a variable that exists within the method to the parameter list.
+    /// If `mutable` is set, the parameter becomes a corresponding LocalRef.
+    /// @see com.llamalad7.mixinextras.sugar.ref
+    @LuaWrapped
+    public MixinMethodBuilder localref(@LuaStateArg LuaState state, String type, @OptionalArg @Nullable LuaTable annotation, @OptionalArg @Nullable Boolean mutable) throws InvalidArgumentException, LuaError {
+        sugars.add(new LuaLocal(state, type,
+            mutable != null && mutable,
+            annotation == null ? new LuaTable() : annotation));
         return this;
     }
 
-    public MixinMethodBuilder returnType(Type newReturnType) {
-        returnType = newReturnType;
+    /// Add a shared value to the parameter list.
+    /// Shared values are preserved across multiple injections on the same method.
+    /// @see com.llamalad7.mixinextras.sugar.Share
+    @LuaWrapped
+    public MixinMethodBuilder share(@LuaStateArg LuaState state, String type, LuaTable annotation) throws InvalidArgumentException, LuaError {
+        sugars.add(new LuaShare(state, type, annotation));
         return this;
     }
 
-    public MixinMethodBuilder parameter(MixinParameter parameter) {
-        additionalParameters.add(parameter);
+    /// Add a CallbackInfo or CallbackInfoReturnable to the list of parameters.
+    /// Useful if one is not already provided.
+    /// @see org.spongepowered.asm.mixin.injection.callback.CallbackInfo
+    /// @see org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable
+    /// @see com.llamalad7.mixinextras.sugar.Cancellable
+    @LuaWrapped
+    public MixinMethodBuilder cancellable(@LuaStateArg LuaState state) throws InvalidArgumentException, LuaError {
+        sugars.add(new LuaCancellable(state));
         return this;
     }
 
-    @SuppressWarnings("UnusedReturnValue")
-    public MixinMethodBuilder sugars(List<? extends LuaSugar> luaSugars) throws InvalidArgumentException {
-        if (!luaSugars.isEmpty()) {
-            for (LuaSugar ls : luaSugars) {
-                if (ls instanceof LuaCancellable lc) {
-                    if (target instanceof VisitedMethod targetMethod) {
-                        lc.methodIsReturnable(!Type.getReturnType(targetMethod.descriptor()).equals(Type.VOID_TYPE));
-                    } else {
-                        throw new InvalidArgumentException(
-                                "Cancellable parameter cannot be applied to field-based mixin methods."
-                        );
-                    }
-                }
-                if (ls instanceof LuaParameterAnnotation lp) {
-                    parameter(new MixinParameter(
-                            Type.getType(ls.type()), List.of(lp.luaAnnotation())
-                    ));
-                }
-            }
-        }
+    /// Create a standard @Inject annotation.
+    ///
+    /// [Mixin Cheatsheet](https://github.com/dblsaiko/mixin-cheatsheet/blob/master/inject.md)
+    ///
+    /// [Mixin Javadoc](https://jenkins.liteloader.com/view/Other/job/Mixin/javadoc/index.html?org/spongepowered/asm/mixin/injection/Inject.html)
+    ///
+    /// @see org.spongepowered.asm.mixin.injection.Inject
+    @LuaWrapped
+    public MixinMethodBuilder inject(@LuaStateArg LuaState state, LuaTable annotation) throws InvalidArgumentException, LuaError, InvalidMixinException {
+        noChef();
+        LuaInjectorAnnotation type = new LuaInject(state, annotation);
+        chef = type;
+        annotations.add(type);
         return this;
     }
 
-    public MixinMethodBuilder code(WriteFactory methodWriteFactory) {
-        this.code = methodWriteFactory;
+    /// Create a @ModifyArg annotation.
+    ///
+    /// [Mixin Cheatsheet](https://github.com/dblsaiko/mixin-cheatsheet/blob/master/modify-arg.md)
+    ///
+    /// [Mixin Javadoc](https://jenkins.liteloader.com/view/Other/job/Mixin/javadoc/index.html?org/spongepowered/asm/mixin/injection/ModifyArg.html)
+    ///
+    /// @param targetType a type descriptor string of the argument being modified.
+    /// @see org.spongepowered.asm.mixin.injection.ModifyArg
+    @LuaWrapped
+    public MixinMethodBuilder modifyArg(@LuaStateArg LuaState state, LuaTable annotation, String targetType) throws InvalidArgumentException, LuaError, InvalidMixinException {
+        noChef();
+        LuaInjectorAnnotation type = new LuaModifyArg(state, annotation, targetType);
+        chef = type;
+        annotations.add(type);
         return this;
     }
 
-    public MixinMethodBuilder annotations(List<LuaAnnotationParser> annotations) {
-        methodAnnotations = annotations;
+    /// Create a @ModifyArgs annotation.
+    ///
+    /// [Mixin Cheatsheet](https://github.com/dblsaiko/mixin-cheatsheet/blob/master/modify-args.md)
+    ///
+    /// [Mixin Javadoc](https://jenkins.liteloader.com/view/Other/job/Mixin/javadoc/index.html?org/spongepowered/asm/mixin/injection/ModifyArgs.html)
+    ///
+    /// @see org.spongepowered.asm.mixin.injection.ModifyArgs
+    @LuaWrapped
+    public MixinMethodBuilder modifyArgs(@LuaStateArg LuaState state, LuaTable annotation) throws InvalidArgumentException, LuaError, InvalidMixinException {
+        noChef();
+        LuaInjectorAnnotation type = new LuaModifyArgs(state, annotation);
+        chef = type;
+        annotations.add(type);
         return this;
     }
 
-    public MixinMethodBuilder signature(String signature) {
-        this.signature = signature;
+    /// Create a @ModifyExpressionValue annotation.
+    ///
+    /// [MixinExtras Wiki](https://github.com/LlamaLad7/MixinExtras/wiki/ModifyExpressionValue)
+    ///
+    /// @param targetType a type descriptor string of the argument being modified.
+    /// @see com.llamalad7.mixinextras.injector.ModifyExpressionValue
+    @LuaWrapped
+    public MixinMethodBuilder modifyExpressionValue(@LuaStateArg LuaState state, LuaTable annotation, String targetType) throws InvalidArgumentException, LuaError, InvalidMixinException {
+        noChef();
+        LuaInjectorAnnotation type = new LuaModifyExpressionValue(state, annotation, targetType);
+        chef = type;
+        annotations.add(type);
         return this;
     }
 
-    public MixinMethodBuilder exceptions(String[] exceptions) {
-        if (exceptions != null) {
-            this.exceptions.addAll(Arrays.asList(exceptions));
-        }
+    /// Create a @ModifyReturnValue annotation.
+    ///
+    /// [MixinExtras Wiki](https://github.com/LlamaLad7/MixinExtras/wiki/ModifyReturnValue)
+    ///
+    /// @see com.llamalad7.mixinextras.injector.ModifyReturnValue
+    @LuaWrapped
+    public MixinMethodBuilder modifyReturnValue(@LuaStateArg LuaState state, LuaTable annotation) throws InvalidArgumentException, LuaError, InvalidMixinException {
+        noChef();
+        LuaInjectorAnnotation type = new LuaModifyReturnValue(state, annotation);
+        chef = type;
+        annotations.add(type);
         return this;
     }
 
-    public void build() throws InvalidArgumentException, InvalidMixinException, LuaError {
-        build(null, null);
+    /// Create a @WrapMethod annotation.
+    ///
+    /// [MixinExtras Wiki](https://github.com/LlamaLad7/MixinExtras/wiki/WrapMethod)
+    ///
+    /// @see com.llamalad7.mixinextras.injector.wrapmethod.WrapMethod
+    @LuaWrapped
+    public MixinMethodBuilder wrapMethod(@LuaStateArg LuaState state, LuaTable annotation) throws InvalidArgumentException, LuaError, InvalidMixinException {
+        noChef();
+        LuaInjectorAnnotation type = new LuaWrapMethod(state, annotation);
+        chef = type;
+        annotations.add(type);
+        return this;
     }
 
-    public void build(@Nullable Script script, @Nullable String id) throws LuaError, InvalidArgumentException, InvalidMixinException {
-
-        List<MixinParameter> params = new ArrayList<>(initialParameters);
-
-        params.addAll(additionalParameters);
-
-        String descriptor = Type.getMethodDescriptor(returnType, params.stream().map(MixinParameter::getType).toArray(Type[]::new));
-        final MethodVisitor methodVisitor = classWriter.visitMethod(
-                access,
-                name,
-                descriptor,
-                signature,
-                exceptions.toArray(String[]::new)
-        );
-
-        if (methodAnnotations != null) {
-            for (LuaAnnotationParser annotation : methodAnnotations) {
-                Class<?> cAnnotation = annotation.type().raw();
-                EClass<?> eAnnotation = EClass.fromJava(cAnnotation);
-                AnnotationVisitor annotationVisitor = methodVisitor.visitAnnotation(
-                        cAnnotation.descriptorString(),
-                        !eAnnotation.hasAnnotation(Retention.class) ||
-                                eAnnotation.annotation(Retention.class).value().equals(RetentionPolicy.RUNTIME)
-                );
-                annotation.apply(annotationVisitor);
-                annotationVisitor.visitEnd();
-            }
-        }
-
-        for (int i = 0; i < params.size(); i++) {
-            params.get(i).annotate(methodVisitor, i);
-        }
-
-        if ((access & ACC_STATIC) == 0) {
-            params.addFirst(new MixinParameter(target.owner().getType()));
-        }
-
-        if (code != null) {
-            methodVisitor.visitCode();
-            code.write(methodVisitor, descriptor, params);
-        }
-
-        methodVisitor.visitEnd();
-
-        if (id != null && script != null) {
-            script.getMixinLib().addMethodHook(id, new MixinMethodHook(
-                script,
-                id,
-                params.stream().map(MixinParameter::getType).toList(),
-                returnType
-            ));
-        }
+    /// Supply a custom injector annotation that does not have an existing wrapper function.
+    ///
+    /// Method descriptor, parameter types and return type must be provided using java ASM syntax (ex. Lcom.example.package.ClassName;).
+    ///
+    /// Due to the inability to infer the expected parameters of many mixins, this function is offered as a catch-all.
+    /// One must be incredibly explicit with your descriptor, parameter, and return types, or this will
+    /// generate a method that will crash at the mixin apply phase. Here be dragons, you have been warned.
+    @LuaWrapped
+    public MixinMethodBuilder custom(@LuaStateArg LuaState state, LuaTable annotation, EClass<?> annotationType, String methodDescriptor, List<String> parameterTypes, String returnType) throws InvalidArgumentException, LuaError, InvalidMixinException {
+        noChef();
+        LuaInjectorAnnotation type = new LuaCustom(state, annotation, annotationType.raw(), methodDescriptor, parameterTypes, returnType);
+        chef = type;
+        annotations.add(type);
+        return this;
     }
 
-    @FunctionalInterface
-    public interface WriteFactory {
-        void write(MethodVisitor methodVisitor, String descriptor, List<MixinParameter> parameters);
+    /// Create an @Expression annotation.
+    /// Expressions are used in tandem with @Definition to make targeting where in the method to inject easier.
+    ///
+    /// [MixinExtras Wiki](https://github.com/LlamaLad7/MixinExtras/wiki/Expressions)
+    ///
+    /// @see com.llamalad7.mixinextras.expression.Expression
+    @LuaWrapped
+    public MixinMethodBuilder expression(@LuaStateArg LuaState state, LuaTable annotation) throws InvalidArgumentException, LuaError {
+        annotations.add(new LuaExpression(state, annotation));
+        return this;
+    }
+
+    /// Create a @Definition annotation.
+    ///
+    /// [MixinExtras Wiki](https://github.com/LlamaLad7/MixinExtras/wiki/Expressions)
+    ///
+    /// @see com.llamalad7.mixinextras.expression.Definition
+    @LuaWrapped
+    public MixinMethodBuilder definition(@LuaStateArg LuaState state, LuaTable annotation) throws InvalidArgumentException, LuaError {
+        annotations.add(new LuaDefinition(state, annotation));
+        return this;
+    }
+
+    private void noChef() throws InvalidMixinException {
+        if (chef != null) throw new InvalidMixinException(InvalidMixinException.Type.TOO_MANY_INJECTOR_ANNOTATIONS, classBuilder.visitedClass.name());
+    }
+
+    @LuaWrapped
+    public MixinClassBuilder build() throws InvalidMixinException, InvalidArgumentException, LuaError {
+        AbstractMixinBuilder.checkPhase();
+
+        classBuilder.prepareMethod(chef, index, annotations, sugars);
+
+        return classBuilder;
     }
 
 }

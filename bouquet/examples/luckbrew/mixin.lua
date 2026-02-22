@@ -10,11 +10,11 @@ print("I'm feeling lucky!")
 -- For registering our recipe in the right location
 mixin.to("net.minecraft.world.item.alchemy.PotionBrewing")
     -- To obtain the hook for this mixin later (during proper initialization), we give it a unique name.
-    :createInjectMethod("add_brewing_recipes", {
+    :method("addBrewingRecipes")
         -- This table defines an array of annotations to be applied to the mixin method. One of them MUST be an injector,
         -- which can be determined by looking at the return values of the functions in the `MixinMethodAnnotations` class.
         -- If the value returned inherits from `LuaInjectorAnnotation`, then it can be used.
-        mixin.annotation.inject({
+        :inject({
             -- The first parameter is a required table with keys and values equivalent to the values expected from the
             -- respective annotation methods. For the @Inject annotation, `method` and `at` should be provided.
             at = { -- `at` is an array of @At annotations. Since it's an annotation, we pass another table.
@@ -27,5 +27,5 @@ mixin.to("net.minecraft.world.item.alchemy.PotionBrewing")
                 "addVanillaMixes(Lnet/minecraft/world/item/alchemy/PotionBrewing$Builder;)V"
             }
         })
-    })
-    :build() -- Don't forget to actually build the mixin!
+        :build()
+    :build("potion_brewing_mixin") -- Don't forget to actually build the mixin!

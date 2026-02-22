@@ -3,10 +3,15 @@ local CommandSelection = require("net.minecraft.commands.Commands$CommandSelecti
 local events = require("bouquet.api.events")
 
 local util = require("bouquet.util")
+--local command = require("build.bouquet.resources.main.bouquet.api.command")
 
-mixin.get("argument_type_infos_register"):hook(function(registry, id, brigadierType, info, cir)
+local argtypedef = {}
+
+function argtypedef:registerArgumentTypeInfos(id, brigadierType, info, cir)
     util.holders.argumentTypes[id] = brigadierType
-end)
+end
+
+mixin.get("argument_type_infos_mixin"):define(argtypedef)
 
 local function queueRegisterEvent(entry, result)
     events.server.commandRegister:invoker():onCommandRegistration(
@@ -16,11 +21,13 @@ local function queueRegisterEvent(entry, result)
     )
 end
 
-mixin.get("commands_init"):hook(function(self, commandSelection, context, ci)
+local commandsdef = {}
+
+function commandsdef:initCommands(commandSelection, context, ci)
     for _, entry in ipairs(util.holders.commands) do
         if (
-                (commandSelection:equals(entry.environment) or entry.environment:equals(CommandSelection.ALL)) and
-                        self:getDispatcher():getRoot():getChild(entry.builder:getLiteral()) == nil
+            (commandSelection:equals(entry.environment) or entry.environment:equals(CommandSelection.ALL)) and
+            self:getDispatcher():getRoot():getChild(entry.builder:getLiteral()) == nil
         ) then
             self:getDispatcher():register(entry.builder)
             queueRegisterEvent(entry, true)
@@ -28,4 +35,6 @@ mixin.get("commands_init"):hook(function(self, commandSelection, context, ci)
             queueRegisterEvent(entry, false)
         end
     end
-end)
+end
+
+mixin.get("commands_mixin"):define(commandsdef)

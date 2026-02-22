@@ -17,7 +17,6 @@ import org.squiddev.cobalt.function.LuaFunction;
 import java.util.ArrayList;
 import java.util.List;
 
-@LuaWrapped
 public class MixinMethodHook {
     private final Script script;
     private final String id;
@@ -42,7 +41,10 @@ public class MixinMethodHook {
         }
     }
 
-    @LuaWrapped
+    public String id() {
+        return id;
+    }
+
     public ScriptResource hook(LuaFunction func, @OptionalArg Boolean destroyOnUnload) {
         if (!MixinLib.isComplete())
             throw new IllegalStateException("Hook cannot be set during pre-launch phase.");
