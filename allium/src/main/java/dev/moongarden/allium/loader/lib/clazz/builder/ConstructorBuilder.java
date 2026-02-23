@@ -120,8 +120,6 @@ public class ConstructorBuilder {
 
     @LuaWrapped
     public ConstructorBuilder remapper(LuaFunction func) {
-        // TODO: When JavaLib gets script, pass it down to here.
-//        ScriptRegistry.scriptFromState(state).getLogger().warn("Remapper function defined for constructor that has no custom parameters defined");
         this.remapper = func;
         return this;
     }

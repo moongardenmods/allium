@@ -86,8 +86,7 @@ public class FileHelper {
                 Allium.LOGGER.error("Incomplete manifest on path {}", path);
             }
         } catch (IOException e) {
-            // TODO does this work?
-            Allium.LOGGER.error("Could not find {} file on path {}", MANIFEST_FILE_NAME, path, e);
+            Allium.LOGGER.error("Could not find {} on path {}", MANIFEST_FILE_NAME, path, e);
         }
     }
 
