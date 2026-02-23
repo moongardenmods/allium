@@ -1,6 +1,7 @@
 package dev.moongarden.allium.loader.type.userdata;
 
 import dev.moongarden.allium.api.LuaIndex;
+import dev.moongarden.allium.loader.type.StaticBinder;
 import dev.moongarden.allium.loader.type.coercion.TypeCoercions;
 import dev.moongarden.allium.loader.type.exception.InvalidArgumentException;
 import dev.moongarden.allium.loader.type.property.*;
@@ -14,6 +15,7 @@ import me.basiqueevangelist.enhancedreflection.api.typeuse.EClassUse;
 import org.apache.commons.lang3.ArrayUtils;
 import org.jetbrains.annotations.Nullable;
 import org.squiddev.cobalt.*;
+import org.squiddev.cobalt.function.LibFunction;
 import org.squiddev.cobalt.function.VarArgFunction;
 
 import java.lang.annotation.Annotation;
@@ -55,8 +57,6 @@ public abstract class AbstractUserdataFactory<T, U extends InstanceUserdata<T>> 
         this(clazz, clazz, MemberFilter.PUBLIC_MEMBERS);
     }
 
-
-
     @Nullable EMethod tryFindOp(List<EMethod> methods, @Nullable Class<? extends Annotation> annotation, int minParams, String... specialNames) {
         EMethod method = null;
 
@@ -85,101 +85,109 @@ public abstract class AbstractUserdataFactory<T, U extends InstanceUserdata<T>> 
         return method;
     }
 
+    protected final LibFunction __len(boolean isBound) {
+        return LibFunction.create((state, userdata) -> {
+            if (lenImpl != null) {
+                try {
+                    var instance = TypeCoercions.toJava(state, userdata, targetClass);
+                    EClassUse<?> ret = lenImpl.returnTypeUse().upperBound();
+                    Object out = lenImpl.invoke(instance);
+                    // If out is null, we can assume the length is nil
+                    if (out == null) throw new InvalidArgumentException();
+                    return TypeCoercions.toLuaValue(out, ret);
+                } catch (IllegalAccessException e) {
+                    throw new LuaError(e);
+                } catch (InvocationTargetException e) {
+                    var target = e.getTargetException();
+                    if (target instanceof LuaError err) {
+                        throw err;
+                    } else {
+                        throw new LuaError(target);
+                    }
+                } catch (InvalidArgumentException ignore) {}
+            }
+
+            PropertyData<? super T> cachedProperty = cachedProperties.get("length");
+
+            if (cachedProperty == EmptyData.INSTANCE) {
+                cachedProperty = PropertyResolver.resolveProperty(targetClass, "length", candidates);
+                cachedProperties.put("length", cachedProperty);
+            }
+
+            LuaValue out = cachedProperty.get("length", state, JavaHelpers.checkUserdata(userdata, targetClass.raw()), isBound);
+            if (!out.isNil()) return out;
+
+            throw new LuaError("attempt to get length of a " + userdata.toString() + " value");
+        });
+    }
+
+    protected LibFunction __index(boolean isBound) {
+        return LibFunction.create((LuaState state, LuaValue userdata, LuaValue luaName) -> {
+            String name = luaName.checkString();
+
+            PropertyData<? super T> cachedProperty = cachedProperties.get(name);
+
+            if (cachedProperty == null) {
+                if (luaName.checkString().equals("static")) {
+                    if (userdata instanceof SuperUserdata<?> superUserdata) {
+                        cachedProperty = new CustomData<>(StaticBinder.bindClass(superUserdata.superClass(), MemberFilter.STATIC_PARENT_MEMBERS));
+                    } else if (userdata instanceof PrivateUserdata<?> privateUserdata) {
+                        cachedProperty = new CustomData<>(StaticBinder.bindClass(privateUserdata.instanceClass(), MemberFilter.STATIC_ALL_MEMBERS));
+                    }
+                } else if (name.equals("super") && userdata instanceof PrivateUserdata<?> instance) {
+                    cachedProperty = new CustomData<>(instance.superInstance());
+                } else {
+                    cachedProperty = PropertyResolver.resolveProperty(targetClass, name, candidates);
+                }
+
+                cachedProperties.put(name, cachedProperty);
+            }
+            if (cachedProperty == EmptyData.INSTANCE) {
+                LuaValue output = MetatableUtils.getIndexMetamethod(targetClass, indexImpl, state, ValueFactory.varargsOf(userdata, luaName));
+                if (output != null) {
+                    return output;
+                }
+            }
+
+            return cachedProperty.get(name, state, JavaHelpers.checkUserdata(userdata, targetClass.raw()), isBound);
+        });
+    }
+
+    protected LibFunction __newindex(boolean isBound) {
+        return LibFunction.create((LuaState state, LuaValue userdata, LuaValue luaName, LuaValue value) -> {
+            String name = luaName.checkString();
+
+            PropertyData<? super T> cachedProperty = cachedProperties.get(name);
+
+            if (cachedProperty == null) {
+                cachedProperty = PropertyResolver.resolveProperty(targetClass, name, candidates);
+
+                cachedProperties.put(name, cachedProperty);
+            }
+
+            if (cachedProperty == EmptyData.INSTANCE && newIndexImpl != null) {
+                LuaValue output = MetatableUtils.getNewIndexMetamethod(
+                    targetClass, newIndexImpl, state,
+                    ValueFactory.varargsOf(userdata, luaName, value)
+                );
+                if (output != null) {
+                    return output;
+                }
+            }
+            cachedProperty.set(name, state, JavaHelpers.checkUserdata(userdata, targetClass.raw()), value);
+
+            return Constants.NIL;
+        });
+    }
+
     protected LuaTable createMetatable(boolean isBound) {
         LuaTable metatable = new LuaTable();
 
         MetatableUtils.applyPairs(metatable, targetClass, cachedProperties, candidates, isBound);
 
-        metatable.rawset("__len", new VarArgFunction() {
-            @Override
-            protected Varargs invoke(LuaState state, Varargs args) throws LuaError, UnwindThrowable {
-                if (lenImpl != null) {
-                    try {
-                        var instance = TypeCoercions.toJava(state, args.arg(1), targetClass);
-                        EClassUse<?> ret = lenImpl.returnTypeUse().upperBound();
-                        Object out = lenImpl.invoke(instance);
-                        // If out is null, we can assume the length is nil
-                        if (out == null) throw new InvalidArgumentException();
-                        return TypeCoercions.toLuaValue(out, ret);
-                    } catch (IllegalAccessException e) {
-                        throw new LuaError(e);
-                    } catch (InvocationTargetException e) {
-                        var target = e.getTargetException();
-                        if (target instanceof LuaError err) {
-                            throw err;
-                        } else if (target instanceof IndexOutOfBoundsException ignored) {
-                        } else {
-                            throw new LuaError(target);
-                        }
-                    } catch (InvalidArgumentException ignore) {}
-                }
-
-                PropertyData<? super T> cachedProperty = cachedProperties.get("length");
-
-                if (cachedProperty == EmptyData.INSTANCE) {
-                    cachedProperty = PropertyResolver.resolveProperty(targetClass, "length", candidates);
-                    cachedProperties.put("length", cachedProperty);
-                }
-
-                LuaValue out = cachedProperty.get("length", state, JavaHelpers.checkUserdata(args.arg(1), targetClass.raw()), isBound);
-                if (!out.isNil()) return out;
-
-                throw new LuaError("attempt to get length of a " + args.arg(1).toString() + " value");
-            }
-        });
-
-        metatable.rawset("__index", new VarArgFunction() {
-
-            @Override
-            public LuaValue invoke(LuaState state, Varargs args) throws LuaError {
-                String name = args.arg(2).checkString();
-
-                PropertyData<? super T> cachedProperty = cachedProperties.get(name);
-
-                if (cachedProperty == null) {
-                    if (name.equals("super") && args.arg(1) instanceof PrivateUserdata<?> instance) {
-                        cachedProperty = new CustomData<>(instance.superInstance());
-                    } else {
-                        cachedProperty = PropertyResolver.resolveProperty(targetClass, name, candidates);
-                    }
-
-                    cachedProperties.put(name, cachedProperty);
-                }
-                if (cachedProperty == EmptyData.INSTANCE) {
-                    LuaValue output = MetatableUtils.getIndexMetamethod(targetClass, indexImpl, state, args);
-                    if (output != null) {
-                        return output;
-                    }
-                }
-
-                return cachedProperty.get(name, state, JavaHelpers.checkUserdata(args.arg(1), targetClass.raw()), isBound);
-            }
-        });
-
-        metatable.rawset("__newindex", new VarArgFunction() {
-            @Override
-            public LuaValue invoke(LuaState state, Varargs args) throws LuaError {
-                String name = args.arg(2).checkString();
-
-                PropertyData<? super T> cachedProperty = cachedProperties.get(name);
-
-                if (cachedProperty == null) {
-                    cachedProperty = PropertyResolver.resolveProperty(targetClass, name, candidates);
-
-                    cachedProperties.put(name, cachedProperty);
-                }
-
-                if (cachedProperty == EmptyData.INSTANCE && newIndexImpl != null) {
-                    LuaValue output = MetatableUtils.getNewIndexMetamethod(targetClass, newIndexImpl, state, args);
-                    if (output != null) {
-                        return output;
-                    }
-                }
-                cachedProperty.set(name, state, JavaHelpers.checkUserdata(args.arg(1), targetClass.raw()), args.arg(3));
-
-                return Constants.NIL;
-            }
-        });
+        metatable.rawset("__len", __len(isBound));
+        metatable.rawset("__index", __index(isBound));
+        metatable.rawset("__newindex", __newindex(isBound));
 
         var comparableInst = clazz.allInterfaces().stream().filter(x -> x.raw() == Comparable.class).findFirst().orElse(null);
         if (comparableInst != null) {

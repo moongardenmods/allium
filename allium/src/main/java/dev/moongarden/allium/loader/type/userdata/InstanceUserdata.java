@@ -19,8 +19,6 @@ public class InstanceUserdata<T> extends LuaUserdata {
         return clazz;
     }
 
-    // TODO: We should probably override get/setmetatable since we reuse one for each class/bound (and it's script indiscriminate!)
-
     public boolean instanceOf(Class<?> test) {
         return clazz.isAssignableFrom(test);
     }

@@ -2,19 +2,14 @@ package dev.moongarden.allium.loader.type;
 
 import dev.moongarden.allium.api.LuaIndex;
 import dev.moongarden.allium.loader.type.coercion.TypeCoercions;
-import dev.moongarden.allium.loader.type.exception.InvalidArgumentException;
 import dev.moongarden.allium.loader.type.property.*;
 import dev.moongarden.allium.loader.type.userdata.ClassUserdata;
 import dev.moongarden.allium.util.*;
 import me.basiqueevangelist.enhancedreflection.api.EClass;
 import me.basiqueevangelist.enhancedreflection.api.EMethod;
-import me.basiqueevangelist.enhancedreflection.api.typeuse.EClassUse;
 import org.squiddev.cobalt.*;
 import org.squiddev.cobalt.function.LibFunction;
-import org.squiddev.cobalt.function.VarArgFunction;
 
-import java.lang.reflect.InvocationTargetException;
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -24,7 +19,7 @@ public final class StaticBinder {
     private StaticBinder() {}
 
     public static <T> ClassUserdata<T> bindClass(EClass<T> clazz) {
-        return bindClass(clazz, MemberFilter.PUBLIC_STATIC_MEMBERS);
+        return bindClass(clazz, MemberFilter.STATIC_PUBLIC_MEMBERS);
     }
 
     public static <T> ClassUserdata<T> bindClass(EClass<T> clazz, MemberFilter filter) {
@@ -94,54 +89,10 @@ public final class StaticBinder {
             return Constants.NIL;
         }));
 
-        metatable.rawset("__call", new VarArgFunction() {
-            @Override
-            public Varargs invoke(LuaState state, Varargs args) throws LuaError {
-                // TODO: let this function be invoked with java.callWith
-                return createInstance(
-                        clazz,
-                        state,
-                        args.subargs(2)
-                );
-            }
-        });
+        // __call passes the class userdata to the invocation function.
+        // It is a fortunate coincidence that constructors are technically not static!
+        metatable.rawset("__call", new MethodInvocationFunction<>(clazz, clazz.constructors(), "<init>", null, false));
 
         return new ClassUserdata<>(clazz, metatable);
-    }
-
-    private static Varargs createInstance(EClass<?> clazz, LuaState state, Varargs args) throws LuaError {
-        List<String> paramList = new ArrayList<>();
-        for (var constructor : clazz.constructors()) {
-            if (AnnotationUtils.isHiddenFromLua(constructor)) continue;
-
-            var parameters = constructor.parameters();
-            try {
-                var jargs = ArgumentUtils.toJavaArguments(state, args, 1, parameters, List.of());
-
-                try {
-                    EClassUse<?> ret = (EClassUse<?>) constructor.receiverTypeUse();
-
-                    if (ret == null) ret = clazz.asEmptyUse();
-
-                    Object out = constructor.invoke(jargs);
-                    return TypeCoercions.toLuaValue(out, ret);
-                } catch (IllegalAccessException | InvocationTargetException | InstantiationException e) {
-                    throw new LuaError(e);
-                }
-            } catch (InvalidArgumentException e) {
-                paramList.add(ArgumentUtils.paramsToPrettyString(parameters));
-            }
-        }
-
-        StringBuilder error = new StringBuilder("Could not find parameter match for called constructor " +
-                clazz.name() +
-                "\nThe following are correct argument types:\n"
-        );
-
-        for (String headers : paramList) {
-            error.append(headers).append("\n");
-        }
-
-        throw new LuaError(error.toString());
     }
 }

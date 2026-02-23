@@ -80,7 +80,7 @@ public class ClinitReference extends ExecutableReference {
         m.visitLdcInsn(0); // array, 0
         m.visitLdcInsn(Type.getType("L" + ctx.className() + ";")); // array, 0, classType
         m.visitMethodInsn(INVOKESTATIC, Owners.ECLASS, "fromJava", "(Ljava/lang/Class;)Lme/basiqueevangelist/enhancedreflection/api/EClass;", true); // array, 0, eClass
-        m.visitFieldInsn(GETSTATIC, Owners.MEMBER_FILTER, "ALL_STATIC_MEMBERS", Type.getDescriptor(MemberFilter.class)); // array, 0, eClass, memberFilter
+        m.visitFieldInsn(GETSTATIC, Owners.MEMBER_FILTER, "STATIC_ALL_MEMBERS", Type.getDescriptor(MemberFilter.class)); // array, 0, eClass, memberFilter
         m.visitMethodInsn(INVOKESTATIC, Owners.STATIC_BINDER, "bindClass", "(Lme/basiqueevangelist/enhancedreflection/api/EClass;Ldev/moongarden/allium/loader/type/property/MemberFilter;)Ldev/moongarden/allium/loader/type/userdata/ClassUserdata;", false); // array, 0, luaClass
         m.visitInsn(AASTORE); //
     }

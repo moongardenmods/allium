@@ -10,6 +10,8 @@ import dev.moongarden.allium.loader.type.userdata.InstanceUserdata;
 import dev.moongarden.allium.util.ArgumentUtils;
 import dev.moongarden.allium.util.JavaHelpers;
 import me.basiqueevangelist.enhancedreflection.api.EClass;
+import me.basiqueevangelist.enhancedreflection.api.EConstructor;
+import me.basiqueevangelist.enhancedreflection.api.EExecutable;
 import me.basiqueevangelist.enhancedreflection.api.EMethod;
 import me.basiqueevangelist.enhancedreflection.api.typeuse.EClassUse;
 import org.squiddev.cobalt.LuaError;
@@ -28,13 +30,13 @@ import java.util.List;
 /// Represents one or more class methods of a given name bundled together in preparation for invocation on the lua side.
 public final class MethodInvocationFunction<T> extends VarArgFunction {
     private final EClass<T> clazz;
-    private final List<EMethod> matches;
+    private final List<? extends EExecutable> matches;
     private final String name;
     private final T boundReceiver;
     private final boolean isStatic;
     private final List<EClass<?>> forcedParameters = new ArrayList<>();
 
-    public MethodInvocationFunction(EClass<T> clazz, List<EMethod> matches, String name, T boundReceiver, boolean isStatic) {
+    public MethodInvocationFunction(EClass<T> clazz, List<? extends EExecutable> matches, String name, T boundReceiver, boolean isStatic) {
         this.clazz = clazz;
         this.matches = matches;
         this.name = name;
@@ -50,25 +52,36 @@ public final class MethodInvocationFunction<T> extends VarArgFunction {
     public Varargs invoke(LuaState state, Varargs args) throws LuaError {
         try {
             T instance = boundReceiver != null || isStatic ? boundReceiver : JavaHelpers.checkUserdata(args.arg(1), clazz.raw());
-            for (EMethod method : matches) {
-                var parameters = method.parameters();
+            for (EExecutable executable : matches) {
+                var parameters = executable.parameters();
                 try {
-                    var javaArgs = ArgumentUtils.toJavaArguments(state, args, boundReceiver == null && !isStatic ? 2 : 1, parameters, forcedParameters);
+                    var javaArgs = ArgumentUtils.toJavaArguments(state, args, boundReceiver != null || isStatic ? 1 : 2, parameters, forcedParameters);
                     forcedParameters.clear();
 
                     if (javaArgs.length == parameters.size()) {
                         try {
                             Object out = null;
-                            if (boundReceiver != null || isStatic) { // Static methods
-                                method.raw().setAccessible(true);
+                            if ((boundReceiver != null || isStatic) && executable instanceof EMethod method) { // Static methods
+                                executable.raw().setAccessible(true);
                                 out = method.invoke(instance, javaArgs);
-                            } else if (args.arg(1) instanceof InstanceUserdata<?> userdata) { // Instance methods
+                            } else if (args.arg(1) instanceof InstanceUserdata<?> userdata && executable instanceof EMethod method) { // Instance methods
                                 out = userdata.invoke(method, instance, javaArgs);
+                            } else if (executable instanceof EConstructor<?> constructor) {
+                                out = constructor.invoke(javaArgs);
                             }
                             if (out instanceof Varargs outArgs) {
                                 return outArgs;
                             } else {
-                                EClassUse<?> ret = method.returnTypeUse().upperBound();
+                                EClassUse<?> ret;
+                                if (executable instanceof EMethod method) {
+                                    ret = method.returnTypeUse().upperBound();
+                                } else if (executable instanceof EConstructor<?> constructor) {
+                                    ret = (EClassUse<?>) constructor.receiverTypeUse();
+                                    if (ret == null) ret = clazz.asEmptyUse();
+                                } else {
+                                    // insane if true.
+                                    throw new LuaError("executable is not instance of method or constructor");
+                                }
                                 return TypeCoercions.toLuaValue(out, ret);
                             }
                         } catch (IllegalAccessException e) {
