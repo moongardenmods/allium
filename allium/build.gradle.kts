@@ -15,7 +15,7 @@ configurations {
 }
 
 tasks {
-    var output = "-Dcombine.output=./docs"
+    var output = "-Dcombine.output=../docs"
     var extensions = "-Dcombine.extensions=dev.moongarden.allium.util.combine.AlliumCombineExtension"
     register<JavaExec>("genLuaSources") {
         group = "allium"
@@ -23,7 +23,7 @@ tasks {
         classpath = sourceSets["main"].runtimeClasspath
         mainClass = "dev.moongarden.combine.Combine"
         jvmArgs = listOf(output, extensions)
-        workingDir = file("../run")
+        workingDir = file(".")
     }
 
     register<JavaExec>("genLuaSourcesAll") {
@@ -32,7 +32,7 @@ tasks {
         classpath = sourceSets["main"].runtimeClasspath
         mainClass = "dev.moongarden.combine.Combine"
         jvmArgs = listOf(output, extensions, "-Dcombine.ignoreAccess")
-        workingDir = file("../run")
+        workingDir = file(".")
     }
 
     register<Exec>("updateGlobals") {

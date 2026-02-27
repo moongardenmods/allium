@@ -85,8 +85,8 @@ public class MetatableUtils {
         return null;
     }
 
-    public static <T> void applyPairs(LuaTable metatable, EClass<? super T> clazz, Map<String, PropertyData<? super T>> cachedProperties, Candidates candidates, boolean isBound) {
-        metatable.rawset("__pairs", LibFunction.create((state, arg1) -> {
+    public static <T> LibFunction applyPairs(EClass<? super T> clazz, Map<String, PropertyData<? super T>> cachedProperties, Candidates candidates, boolean isBound) {
+        return LibFunction.create((state, arg1) -> {
             T instance;
             if (isBound) {
                 try {
@@ -133,6 +133,6 @@ public class MetatableUtils {
                     return iterator.next();
                 }
             };
-        }));
+        });
     }
 }

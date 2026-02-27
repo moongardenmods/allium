@@ -85,7 +85,7 @@ public abstract class AbstractUserdataFactory<T, U extends InstanceUserdata<T>> 
         return method;
     }
 
-    protected final LibFunction __len(boolean isBound) {
+    protected LibFunction __len(boolean isBound) {
         return LibFunction.create((state, userdata) -> {
             if (lenImpl != null) {
                 try {
@@ -128,20 +128,22 @@ public abstract class AbstractUserdataFactory<T, U extends InstanceUserdata<T>> 
             PropertyData<? super T> cachedProperty = cachedProperties.get(name);
 
             if (cachedProperty == null) {
-                if (luaName.checkString().equals("static")) {
+                if (name.equals("static")) {
                     if (userdata instanceof SuperUserdata<?> superUserdata) {
-                        cachedProperty = new CustomData<>(StaticBinder.bindClass(superUserdata.superClass(), MemberFilter.STATIC_PARENT_MEMBERS));
+                        cachedProperty = new CustomData<>(() -> StaticBinder.bindClass(superUserdata.superClass(), MemberFilter.STATIC_PARENT_MEMBERS));
                     } else if (userdata instanceof PrivateUserdata<?> privateUserdata) {
-                        cachedProperty = new CustomData<>(StaticBinder.bindClass(privateUserdata.instanceClass(), MemberFilter.STATIC_ALL_MEMBERS));
+                        cachedProperty = new CustomData<>(() -> StaticBinder.bindClass(privateUserdata.instanceClass(), MemberFilter.STATIC_ALL_MEMBERS));
                     }
                 } else if (name.equals("super") && userdata instanceof PrivateUserdata<?> instance) {
-                    cachedProperty = new CustomData<>(instance.superInstance());
-                } else {
-                    cachedProperty = PropertyResolver.resolveProperty(targetClass, name, candidates);
+                    cachedProperty = new CustomData<>(instance::superInstance);
                 }
-
-                cachedProperties.put(name, cachedProperty);
             }
+
+            if (cachedProperty == null)
+                cachedProperty = PropertyResolver.resolveProperty(targetClass, name, candidates);
+
+            cachedProperties.put(name, cachedProperty);
+
             if (cachedProperty == EmptyData.INSTANCE) {
                 LuaValue output = MetatableUtils.getIndexMetamethod(targetClass, indexImpl, state, ValueFactory.varargsOf(userdata, luaName));
                 if (output != null) {
@@ -180,11 +182,14 @@ public abstract class AbstractUserdataFactory<T, U extends InstanceUserdata<T>> 
         });
     }
 
+    protected LibFunction __pairs(boolean isBound) {
+        return MetatableUtils.applyPairs(targetClass, cachedProperties, candidates, isBound);
+    }
+
     protected LuaTable createMetatable(boolean isBound) {
         LuaTable metatable = new LuaTable();
 
-        MetatableUtils.applyPairs(metatable, targetClass, cachedProperties, candidates, isBound);
-
+        metatable.rawset("__pairs", __pairs(isBound));
         metatable.rawset("__len", __len(isBound));
         metatable.rawset("__index", __index(isBound));
         metatable.rawset("__newindex", __newindex(isBound));

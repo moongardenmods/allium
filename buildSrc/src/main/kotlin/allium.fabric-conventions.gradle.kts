@@ -12,6 +12,11 @@ repositories {
             includeGroup("cc.tweaked")
         }
     }
+    maven("https://maven.moongarden.dev/snapshots") {
+        content {
+            includeGroup("dev.moongarden")
+        }
+    }
     maven("https://basique.top/maven/releases") {
         content {
             includeGroup("me.basiqueevangelist")

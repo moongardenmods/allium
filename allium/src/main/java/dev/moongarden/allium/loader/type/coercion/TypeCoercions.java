@@ -4,6 +4,7 @@ import dev.moongarden.allium.loader.type.MethodInvocationFunction;
 import dev.moongarden.allium.api.CoerceToBound;
 import dev.moongarden.allium.api.CoerceToNative;
 import dev.moongarden.allium.loader.type.exception.InvalidArgumentException;
+import dev.moongarden.allium.loader.type.userdata.ArrayUserdataFactory;
 import dev.moongarden.allium.loader.type.userdata.ClassUserdata;
 import dev.moongarden.allium.loader.type.userdata.InstanceUserdata;
 import dev.moongarden.allium.loader.type.userdata.InstanceUserdataFactory;
@@ -147,24 +148,23 @@ public class TypeCoercions {
             return (LuaValue) out;
         }
 
-        var serializerFactory = TO_LUA.get(klass.raw());
-        if (serializerFactory != null) {
-            var serializer = (JavaToLuaConverter<Object>) serializerFactory.apply(out, ret);
+        for (Map.Entry<Class<?>, BiFunction<Object, EClassUse<?>, JavaToLuaConverter<?>>> classBiFunctionEntry : TO_LUA.entrySet()) {
+            if (classBiFunctionEntry.getKey().isAssignableFrom(klass.raw())) {
+                var serializerFactory = classBiFunctionEntry.getValue();
+                var serializer = (JavaToLuaConverter<Object>) serializerFactory.apply(out, ret);
 
-            if (serializer != null) {
-                LuaValue result = serializer.toLua(out);
+                if (serializer != null) {
+                    LuaValue result = serializer.toLua(out);
 
-                if (result != null) return result;
+                    if (result != null) return result;
+                }
             }
         }
 
+
         if (klass.type() == ClassType.ARRAY) {
-            var table = new LuaTable();
-            int length = Array.getLength(out);
-            for (int i = 1; i <= length; i++) {
-                table.rawset(i, toLuaValue(Array.get(out, i - 1), ret.arrayComponent()));
-            }
-            return table;
+            // TODO: If the developer wants to modify the array contents this does not work.
+            return ArrayUserdataFactory.from(klass).create(out);
         } else if (klass.type() == ClassType.INTERFACE && klass.hasAnnotation(FunctionalInterface.class)) {
             EMethod ifaceMethod = null;
 
@@ -253,6 +253,7 @@ public class TypeCoercions {
                 int i = 1;
                 for (Object o : list) {
                     table.rawset(i, toLuaValue(o, componentUse));
+                    i++;
                 }
                 return table;
             };

@@ -20,7 +20,7 @@ public class JavaHelpers {
             //noinspection unchecked
             return (T) userdata.toUserdata();
         }
-        throw new LuaError("value " + value + " is not an instance of AlliumUserData. Do you have a '.' where a ':' should go?");
+        throw new LuaError("value " + value + " is not an allium userdata. Do you have a '.' where a ':' should go?");
     }
 
     public static EClass<?> getRawClass(String className) throws LuaError {
