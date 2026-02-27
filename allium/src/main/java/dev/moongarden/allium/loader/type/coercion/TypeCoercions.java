@@ -163,7 +163,6 @@ public class TypeCoercions {
 
 
         if (klass.type() == ClassType.ARRAY) {
-            // TODO: If the developer wants to modify the array contents this does not work.
             return ArrayUserdataFactory.from(klass).create(out);
         } else if (klass.type() == ClassType.INTERFACE && klass.hasAnnotation(FunctionalInterface.class)) {
             EMethod ifaceMethod = null;
