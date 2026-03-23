@@ -4,7 +4,7 @@ import dev.moongarden.bouquet.api.event.ClientEvents;
 import net.minecraft.client.DeltaTracker;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Gui;
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
@@ -22,13 +22,13 @@ public class GuiMixin {
     @Unique
     private final Gui thiz = (Gui) (Object) this;
 
-    @Inject(at = @At("HEAD"), method = "render")
-    private void renderHead(GuiGraphics context, DeltaTracker deltaTracker, CallbackInfo ci) {
+    @Inject(at = @At("HEAD"), method = "extractRenderState")
+    private void renderHead(GuiGraphicsExtractor context, DeltaTracker deltaTracker, CallbackInfo ci) {
         ClientEvents.GUI_RENDER_HEAD.invoker().onGuiRender(minecraft, context, deltaTracker, thiz);
     }
 
-    @Inject(at = @At("TAIL"), method = "render")
-    private void renderTail(GuiGraphics context, DeltaTracker deltaTracker, CallbackInfo ci) {
+    @Inject(at = @At("TAIL"), method = "extractRenderState")
+    private void renderTail(GuiGraphicsExtractor context, DeltaTracker deltaTracker, CallbackInfo ci) {
         ClientEvents.GUI_RENDER_TAIL.invoker().onGuiRender(minecraft, context, deltaTracker, thiz);
     }
 }

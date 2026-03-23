@@ -3,7 +3,7 @@ package dev.moongarden.bouquet.api.event;
 import net.minecraft.client.DeltaTracker;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Gui;
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 
 // For all events that use classes that the server doesn't have.
 // Make sure to provide a dummy method with no parameters for it.
@@ -12,6 +12,6 @@ import net.minecraft.client.gui.GuiGraphics;
 public class ClientEventHandlers {
 
     public interface GuiRender {
-        void onGuiRender(Minecraft client, GuiGraphics context,  DeltaTracker deltaTracker, Gui hud);
+        void onGuiRender(Minecraft client, GuiGraphicsExtractor context, DeltaTracker deltaTracker, Gui hud);
     }
 }
