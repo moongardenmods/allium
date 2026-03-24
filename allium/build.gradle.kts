@@ -37,7 +37,7 @@ tasks {
 
     register<Exec>("updateGlobals") {
         group = "allium"
-        commandLine = listOf("git", "submodule", "update", "--recursive")
+        commandLine = listOf("git", "submodule", "update", "--init", "--recursive")
         workingDir = file("..")
     }
 }

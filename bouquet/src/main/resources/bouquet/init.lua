@@ -30,5 +30,5 @@ return {
     http = HttpLib.INSTANCE,
     json = require("bouquet.api.json"),
     recipe = RecipeLib.INSTANCE,
-    tag = require("bouquet.api.tag"),
+    nbt = require("bouquet.api.nbt"),
 }
